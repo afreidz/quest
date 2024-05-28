@@ -1,0 +1,8 @@
+---
+import PrivateLayout from "@/layouts/private.astro";
+import ClientList from "@/components/clients/client-list.svelte";
+---
+
+<PrivateLayout class="flex flex-1">
+  <ClientList client:only="svelte" />
+</PrivateLayout>

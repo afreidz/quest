@@ -1,0 +1,26 @@
+<html lang="en" class="bg-base-100/10">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>QUEST by Hitachi Solutions</title>
+  </head>
+  <body>
+    <style is:global>
+      html {
+        @apply h-screen relative tracking-tighter text-base-content font-sans font-normal text-base min-h-full flex flex-col;
+      }
+      body {
+        @apply !contents;
+      }
+      video {
+        @apply max-w-none;
+      }
+    </style>
+    <slot />
+    <script>
+      import "iconify-icon";
+    </script>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "name": "@hsalux/quest",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "preview": "astro preview",
+    "seed": "npm run seed -w prisma",
+    "studio": "npm run studio -w prisma",
+    "build": "astro check && astro build",
+    "migrate": "npm run migrate -w prisma",
+    "generate": "npm run generate -w prisma",
+    "migrate-dev": "npm run migrate-dev -w prisma",
+    "postinstall": "npm run generate -w prisma && npm run migrate -w prisma",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.7.0",
+    "@astrojs/svelte": "^5.4.0",
+    "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/vercel": "^7.6.0",
+    "@auth/core": "^0.18.6",
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/typography": "^0.5.13",
+    "astro": "^4.8.6",
+    "auth-astro": "^4.1.1",
+    "iconify-icon": "^2.1.0",
+    "svelte": "^5.0.0-next.90",
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "daisyui": "^4.11.1"
+  },
+  "workspaces": [
+    "prisma"
+  ]
+}

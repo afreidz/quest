@@ -1,0 +1,34 @@
+---
+import BaseLayout from "@/layouts/base.astro";
+import Nav from "@/components/app/nav.svelte";
+import { getSession } from "auth-astro/server";
+import Logo from "@/components/app/logo.svelte";
+import AuthMenu from "@/components/app/auth-menu.svelte";
+import MessageBoundary from "@/components/app/message-boundary.svelte";
+
+const session = await getSession(Astro.request);
+const fname = session?.user?.name?.split(" ")[0] ?? "";
+const lname = session?.user?.name?.split(" ")[1] ?? "";
+const image = session?.user?.image ?? "";
+
+const { class: className } = Astro.props;
+---
+
+<BaseLayout>
+  <MessageBoundary client:load>
+    <main
+      class="grid grid-rows-[5rem,auto] grid-cols-[5rem,auto] max-h-screen h-full"
+    >
+      <div class="navbar bg-neutral border-b border-neutral-200 col-span-2">
+        <div class="flex-1">
+          <Logo />
+        </div>
+        <AuthMenu client:visible {fname} {lname} {image} />
+      </div>
+      <Nav />
+      <div class={`overflow-auto ${className ?? ""}`}>
+        <slot />
+      </div>
+    </main>
+  </MessageBoundary>
+</BaseLayout>

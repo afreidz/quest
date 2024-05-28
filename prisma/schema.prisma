@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  name String @unique
+
+  systems System[]
+}
+
+model System {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  title String
+
+  clientId    String
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  revisions   Revision[]
+  respondents Respondent[]
+
+  @@unique([clientId, title])
+}
+
+model Revision {
+  id        String   @id @default(uuid())
+  createdBy String
+  createdAt DateTime @default(now())
+
+  title String
+
+  systemId String
+  system   System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  surveyId String? @unique
+  survey   Survey? @relation("RevisionSurvey", fields: [surveyId], references: [id])
+
+  checklistId String? @unique
+  checklist   Survey? @relation("RevisionChecklist", fields: [checklistId], references: [id])
+
+  respondents Respondent[]
+
+  @@unique([systemId, title])
+}
+
+model Respondent {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  email    String
+  imageURL String?
+  name     String?
+  title    String?
+  profile  String?
+
+  systemId String
+  system   System @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  surveys   Survey[]
+  revisions Revision[]
+  responses Response[]
+
+  @@unique([email, systemId])
+}
+
+enum SurveyType {
+  SUS_CURRENT
+  SUS_PROPOSED
+  CHECKLIST
+}
+
+model Survey {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  type SurveyType
+
+  questions   Question[]
+  responses   Response[]
+  respondents Respondent[]
+
+  revisionAsSurvey    Revision? @relation("RevisionSurvey")
+  revisionAsChecklist Revision? @relation("RevisionChecklist")
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  position Int?
+  text     String
+  group    String?
+  imageURL String?
+  positive Boolean @default(true)
+
+  type            SurveyType
+  surveys         Survey[]
+  responses       Response[]
+  responseOptions CurratedResponse[]
+}
+
+model CurratedResponse {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  position       Int?
+  numericalValue Int?
+  label          String
+  value          String
+
+  types     SurveyType[]
+  questions Question[]
+  responses Response[]
+}
+
+model Response {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  freeformResponse String?
+
+  responseId String?
+  response   CurratedResponse? @relation(fields: [responseId], references: [id])
+
+  respondentId String
+  respondent   Respondent @relation(fields: [respondentId], references: [id])
+
+  surveyId String
+  survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([respondentId, surveyId, questionId])
+}
+
+// model Session {
+//   id                String                      @id @default(uuid())
+//   createdAt         DateTime                    @default(now())
+//   updatedAt         DateTime                    @updatedAt
+//   createdBy         String
+//   respondentId      String
+//   respondent        Respondent                  @relation(fields: [respondentId], references: [id])
+//   videoURL          String?
+//   moments           KeyMoment[]
+//   responses         Response[]
+//   transcripts       TranscriptionSegment[]
+//   clips             SessionClip[]
+//   feedback          SummarizedFeedbackItem[]
+//   results           SummarizedChecklistResult[]
+//   suggestions       SummarizedSuggestion[]
+//   serverRecordingId String?                     @unique
+//   summarized        Boolean                     @default(false)
+// }
+
+// model KeyMoment {
+//   id        String   @id @default(uuid())
+//   time      DateTime @default(now())
+//   text      String
+//   createdBy String
+//   sessionId String
+//   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+// }
+
+// model TranscriptionSegment {
+//   id        String   @id @default(uuid())
+//   time      DateTime @default(now())
+//   speaker   String
+//   text      String
+//   sessionId String
+//   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+// }
+
+// model SessionClip {
+//   id        String   @id @default(uuid())
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//   createdBy String
+//   startTime DateTime
+//   endTime   DateTime
+//   sessionId String
+//   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+//   videoURL  String?
+// }
+
+// model SummarizedFeedbackItem {
+//   id         String    @id @default(uuid())
+//   createdAt  DateTime  @default(now())
+//   updatedAt  DateTime  @updatedAt
+//   createdBy  String
+//   revisionId String?
+//   sessionId  String?
+//   text       String
+//   session    Session?  @relation(fields: [sessionId], references: [id])
+//   revision   Revision? @relation(fields: [revisionId], references: [id])
+// }
+
+// model SummarizedChecklistResult {
+//   id         String    @id @default(uuid())
+//   createdAt  DateTime  @default(now())
+//   updatedAt  DateTime  @updatedAt
+//   createdBy  String
+//   text       String
+//   revisionId String?
+//   sessionId  String?
+//   session    Session?  @relation(fields: [sessionId], references: [id])
+//   revision   Revision? @relation(fields: [revisionId], references: [id])
+// }
+
+// model SummarizedSuggestion {
+//   id         String    @id @default(uuid())
+//   createdAt  DateTime  @default(now())
+//   updatedAt  DateTime  @updatedAt
+//   createdBy  String
+//   text       String
+//   revisionId String?
+//   sessionId  String?
+//   session    Session?  @relation(fields: [sessionId], references: [id])
+//   revision   Revision? @relation(fields: [revisionId], references: [id])
+// }
+
+// model Summary {
+//   id         String    @id @default(uuid())
+//   createdAt  DateTime  @default(now())
+//   updatedAt  DateTime  @updatedAt
+//   createdBy  String
+//   text       String
+//   revisionId String?   @unique
+//   revision   Revision? @relation(fields: [revisionId], references: [id])
+// }
