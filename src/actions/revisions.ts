@@ -12,7 +12,13 @@ const include = {
   },
   respondents: {
     include: {
-      surveys: true,
+      surveys: {
+        include: {
+          _count: {
+            select: { questions: true },
+          },
+        },
+      },
       responses: { include: { response: true, question: true } },
     },
   },

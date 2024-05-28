@@ -607,3 +607,195 @@ await orm.$transaction([
     },
   }),
 ]);
+
+await orm.$transaction([
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: currentQuestions[0].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[1].id,
+      responseId: susCurratedResponses.find((r) => r.value === "disagree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[2].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[3].id,
+      responseId: susCurratedResponses.find((r) => r.value === "disagree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[4].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[5].id,
+      responseId: susCurratedResponses.find((r) => r.value === "disagree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[6].id,
+      responseId: susCurratedResponses.find((r) => r.value === "neutral").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[7].id,
+      responseId: susCurratedResponses.find((r) => r.value === "disagree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[8].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: bruceBanner.id,
+      questionId: proposedQuestions[9].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+]);
+
+await orm.$transaction([
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[0].id,
+      responseId: susCurratedResponses.find((r) => r.value === "strongly_agree")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[1].id,
+      responseId: susCurratedResponses.find((r) => r.value === "disagree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[2].id,
+      responseId: susCurratedResponses.find((r) => r.value === "strongly_agree")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[3].id,
+      responseId: susCurratedResponses.find((r) => r.value === "neutral").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[4].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[5].id,
+      responseId: susCurratedResponses.find((r) => r.value === "disagree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[6].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[7].id,
+      responseId: susCurratedResponses.find(
+        (r) => r.value === "strongly_disagree"
+      ).id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[8].id,
+      responseId: susCurratedResponses.find((r) => r.value === "agree").id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeSurvey.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: proposedQuestions[9].id,
+      responseId: susCurratedResponses.find(
+        (r) => r.value === "strongly_disagree"
+      ).id,
+    },
+  }),
+]);

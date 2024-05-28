@@ -24,3 +24,9 @@ export default {
   "--rounded-badge": "1rem",
   "--tab-radius": "0.5rem",
 };
+
+export const gauge = {
+  items: ["#95C4CB", "#66ABB6", "#0A506A"],
+  positive: "#43C478",
+  negative: "#f04259",
+};

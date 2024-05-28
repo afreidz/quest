@@ -4,7 +4,14 @@ import { getSession } from "auth-astro/server";
 import { defineAction, z, getApiContext } from "astro:actions";
 
 const include = {
-  surveys: true,
+  surveys: {
+    include: {
+      questions: true,
+      _count: {
+        select: { questions: true },
+      },
+    },
+  },
   responses: {
     include: {
       question: true,

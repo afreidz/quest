@@ -2,9 +2,8 @@
   import { actions } from "astro:actions";
   import { SurveyType } from "@hsalux/quest-db";
   import revisions from "@/stores/revisions.svelte";
+  import { MAX_AGGREGATE } from "@/utilities/numbers";
   import type { SystemFromAll } from "@/actions/systems";
-
-  const MAX_AGGREGATE = 2;
 
   type Props = {
     system: SystemFromAll;
