@@ -38,8 +38,8 @@
       </CardHeader>
       {#if revisions.active.length === 1}
         {@const average = calculateAverageSUSScore(
-          revisions.active[0].respondents,
-          revisions.active[0].surveyId
+          revisions.active[0]?.respondents,
+          revisions.active[0]?.surveyId
         )}
         {@const differential = average - benchmark}
         <Gauge

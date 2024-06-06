@@ -1,7 +1,7 @@
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
+import { defineAction, z } from "astro:actions";
 import orm, { SurveyType } from "@hsalux/quest-db";
-import { defineAction, z, getApiContext } from "astro:actions";
 
 const include = {
   system: true,
@@ -42,8 +42,7 @@ export const getAll = defineAction({
 
 export const create = defineAction({
   input: revisionSchema,
-  handler: async (input) => {
-    const context = getApiContext();
+  handler: async (input, context) => {
     const user = (await getSession(context.request))?.user as User;
 
     if (input.surveyType) {
@@ -52,7 +51,7 @@ export const create = defineAction({
       });
 
       const respondents = await orm.respondent.findMany({
-        where: { systemId: input.systemId },
+        where: { systems: { some: { id: input.systemId } } },
       });
 
       return await orm.revision.create({

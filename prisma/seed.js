@@ -4,6 +4,7 @@ const orm = new PrismaClient();
 
 await orm.$transaction([
   orm.curratedResponse.deleteMany(),
+  orm.respondent.deleteMany(),
   orm.question.deleteMany(),
   orm.survey.deleteMany(),
   orm.client.deleteMany(),
@@ -391,7 +392,9 @@ const heroFinderPrototypeSurvey = await orm.survey.create({
 const tonyStark = await orm.respondent.create({
   data: {
     email: "tony.stark@marvel.com",
-    systemId: heroFinderSystem.id,
+    systems: {
+      connect: { id: heroFinderSystem.id },
+    },
     createdBy: "system@seed.com",
     revisions: {
       connect: [{ id: currentStateRevision.id }, { id: prototypeRevision.id }],
@@ -408,7 +411,9 @@ const tonyStark = await orm.respondent.create({
 const bruceBanner = await orm.respondent.create({
   data: {
     email: "bruce.banner@marvel.com",
-    systemId: heroFinderSystem.id,
+    systems: {
+      connect: { id: heroFinderSystem.id },
+    },
     createdBy: "system@seed.com",
     revisions: {
       connect: [{ id: currentStateRevision.id }, { id: prototypeRevision.id }],

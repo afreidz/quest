@@ -1,6 +1,8 @@
 <script lang="ts">
   import { actions } from "astro:actions";
+  import { preventDefault } from "@/utilities/events";
   import type { SystemFromAll } from "@/actions/systems";
+  import Avatar from "@/components/respondents/avatar.svelte";
 
   type Props = {
     system: string;
@@ -11,6 +13,7 @@
   let newDialog: HTMLDialogElement;
   let showNewDialog = $state(false);
   let system = $state<SystemFromAll | null>(null);
+  let suggestions = $state<SystemFromAll["respondents"]>([]);
 
   $effect(() => {
     if (newDialog && showNewDialog) newDialog.showModal();
@@ -20,10 +23,34 @@
     if (!system && systemId) refreshSystem();
   });
 
+  $effect(() => {
+    if (newEmail) {
+      actions.respondents.getBySearch(newEmail).then((r) => (suggestions = r));
+    } else if (system?.respondents.length) {
+      suggestions = system.respondents;
+    }
+  });
+
   async function refreshSystem() {
     loading = true;
     system = await actions.system.getById(systemId);
+    console.log("SYSTEM", system);
     loading = false;
+  }
+
+  async function toggleExisting(add: boolean, r: (typeof suggestions)[number]) {
+    if (add) {
+      await actions.respondents.addToSystems({
+        id: r.id,
+        systemIds: [systemId],
+      });
+    } else {
+      await actions.respondents.removeFromSystems({
+        id: r.id,
+        systemIds: [systemId],
+      });
+    }
+    await refreshSystem();
   }
 
   async function createNewRespondent() {
@@ -70,25 +97,13 @@
   >
     {#if !loading && !!system}
       {#each system.respondents as respondent}
-        <button
+        <a
+          href={`/respondents/${respondent.id}`}
           class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 border-t-0 flex items-center"
         >
-          <div
-            class:placeholder={!respondent.imageURL}
-            class="avatar flex-none"
-          >
-            <div class="bg-secondary text-secondary-content rounded-full w-10">
-              {#if respondent.imageURL}
-                <img src={respondent.imageURL} alt={respondent.email} />
-              {:else}
-                <span class="text-xl"
-                  >{respondent.email.charAt(0).toLocaleUpperCase()}</span
-                >
-              {/if}
-            </div>
-          </div>
+          <Avatar {respondent} />
           <span class="flex-1">{respondent.email}</span>
-        </button>
+        </a>
       {/each}
     {/if}
   </div>
@@ -107,7 +122,7 @@
       </form>
     </h3>
     <form
-      on:submit|preventDefault={createNewRespondent}
+      onsubmit={preventDefault(createNewRespondent)}
       class="p-3 flex-none border-neutral-200 border-t flex"
     >
       <label class="join overflow-clip input-bordered border flex-1">
@@ -125,5 +140,32 @@
         >
       </label>
     </form>
+    {#if suggestions.length}
+      <div class="text-center mb-2 text-sm">
+        Or select an existing respondent from the list below:
+      </div>
+      <ul class="mx-3">
+        {#each suggestions as suggestion}
+          {@const existing = system?.respondents.some(
+            (r) => r.id === suggestion.id
+          )}
+          <li class="form-control bg-base-100/10 mb-1 p-2 rounded">
+            <label class="label cursor-pointer">
+              <span class="label-text"
+                >{suggestion.name ?? suggestion.email}</span
+              >
+              <input
+                type="checkbox"
+                checked={existing}
+                class="checkbox checkbox-primary"
+                onchange={preventDefault(() =>
+                  toggleExisting(!existing, suggestion)
+                )}
+              />
+            </label>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   </div>
 </dialog>

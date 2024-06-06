@@ -1,0 +1,10 @@
+---
+import PrivateLayout from "@/layouts/private.astro";
+import RespondentDetails from "@/components/respondents/details.svelte";
+
+const id = Astro.params.id as string;
+---
+
+<PrivateLayout class="flex flex-1">
+  <RespondentDetails client:only="svelte" respondent={id} />
+</PrivateLayout>

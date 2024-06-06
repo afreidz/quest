@@ -17,7 +17,7 @@
   let surveyType = $state<keyof typeof SurveyType | undefined>();
 
   $effect(() => {
-    if (system.id && !revisions.all.length) revisions.refresh(system.id);
+    if (system.id && revisions.all === null) revisions.refresh(system.id);
   });
 
   $effect(() => {
@@ -26,6 +26,10 @@
 
   $effect(() => {
     revisions.setActive(aggregated);
+  });
+
+  $effect(() => {
+    aggregated = revisions.active;
   });
 
   async function createNewRevision() {
@@ -72,7 +76,7 @@
     class="bg-neutral rounded-none flex-1 overflow-auto"
   >
     {#if !loading}
-      {#each revisions.all as revision}
+      {#each revisions.all ?? [] as revision}
         <div
           class:highlight={revisions.active.includes(revision)}
           class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left pl-0 border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
@@ -95,7 +99,7 @@
                 value={revision}
                 bind:group={aggregated}
                 class="checkbox checkbox-secondary"
-                checked={revisions.active.includes(revision)}
+                checked={revisions.active.some((r) => r.id === revision.id)}
                 disabled={revisions.active.length >= MAX_AGGREGATE &&
                   !revisions.active.includes(revision)}
               />

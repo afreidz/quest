@@ -1,7 +1,7 @@
 import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
-import { defineAction, z, getApiContext } from "astro:actions";
+import { defineAction, z } from "astro:actions";
 
 const include = {
   client: true,
@@ -26,8 +26,7 @@ export const getAll = defineAction({
 
 export const create = defineAction({
   input: schema,
-  handler: async (input) => {
-    const context = getApiContext();
+  handler: async (input, context) => {
     const user = (await getSession(context.request))?.user as User;
     return await orm.system.create({
       data: {

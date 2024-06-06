@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -65,14 +66,12 @@ model Respondent {
   title    String?
   profile  String?
 
-  systemId String
-  system   System @relation(fields: [systemId], references: [id], onDelete: Cascade)
-
   surveys   Survey[]
+  systems   System[]
   revisions Revision[]
   responses Response[]
 
-  @@unique([email, systemId])
+  @@unique([email])
 }
 
 enum SurveyType {
