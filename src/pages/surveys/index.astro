@@ -1,0 +1,8 @@
+---
+import PrivateLayout from "@/layouts/private.astro";
+import SurveyList from "@/components/surveys/survey-list.svelte";
+---
+
+<PrivateLayout class="flex flex-1">
+  <SurveyList client:only="svelte" />
+</PrivateLayout>

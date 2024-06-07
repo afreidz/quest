@@ -1,6 +1,7 @@
 <script lang="ts">
   import { actions } from "astro:actions";
   import clients from "@/stores/clients.svelte";
+  import { preventDefault } from "@/utilities/events";
   import SystemsList from "@/components/clients/systems-list.svelte";
 
   let newName = $state("");
@@ -22,7 +23,6 @@
 
   $effect(() => {
     if (window.location.hash) {
-      console.log(window.location.hash);
       const client = clients.all.find(
         (c) => c.id === window.location.hash.replace("#", "")
       );
@@ -101,7 +101,7 @@
         <a
           href={`#${client.id}`}
           class:highlight={clients.active?.id === client.id}
-          on:click|preventDefault={() => clients.setActive(client)}
+          onclick={preventDefault(() => clients.setActive(client))}
           class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
         >
           <span class="flex-1">{client.name}</span>
@@ -133,7 +133,7 @@
       </form>
     </h3>
     <form
-      on:submit|preventDefault={createNewClient}
+      onsubmit={preventDefault(createNewClient)}
       class="p-3 flex-none border-neutral-200 border-t flex"
     >
       <label class="join overflow-clip input-bordered border flex-1">
