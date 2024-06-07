@@ -2,13 +2,15 @@
   type Props = {
     icon?: string;
     class?: string;
+    border?: boolean;
   };
 
-  let { icon, class: className }: Props = $props();
+  let { icon, class: className, border = true }: Props = $props();
 </script>
 
 <header
-  class="flex items-center gap-2 pb-4 border-b border-neutral-300 border-dotted {className ??
+  class:border-b={border}
+  class="flex items-center gap-2 pb-4 border-neutral-300 border-dotted {className ??
     ''}"
 >
   <iconify-icon class="text-2xl mt-1 flex-none self-start" {icon}

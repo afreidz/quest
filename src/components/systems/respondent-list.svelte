@@ -10,6 +10,7 @@
 
   let newEmail = $state("");
   let loading = $state(true);
+  let suggestionText = $state("");
   let newDialog: HTMLDialogElement;
   let showNewDialog = $state(false);
   let system = $state<SystemFromAll | null>(null);
@@ -25,9 +26,13 @@
 
   $effect(() => {
     if (newEmail) {
+      suggestionText = "Or select an existing respondent from the list";
       actions.respondents.getBySearch(newEmail).then((r) => (suggestions = r));
     } else if (system?.respondents.length) {
       suggestions = system.respondents;
+      suggestionText = "Toggle existing respondents";
+    } else {
+      suggestions = [];
     }
   });
 
@@ -80,13 +85,14 @@
     <span>Respondents</span>
     <div
       class="tooltip tooltip-bottom tooltip-primary"
-      data-tip="Invite a respondent for {system?.title}"
+      data-tip="Add or remove a respondent for {system?.title}"
     >
       <button
         class="btn btn-sm btn-ghost"
         on:click={() => (showNewDialog = true)}
       >
-        <iconify-icon class="text-xl" icon="ic:baseline-plus"></iconify-icon>
+        <iconify-icon class="text-xl" icon="mdi:plus-minus-variant"
+        ></iconify-icon>
       </button>
     </div>
   </h2>
@@ -115,9 +121,11 @@
 >
   <div class="modal-box bg-neutral">
     <h3 class="font-bold text-lg flex items-center justify-between gap-3">
-      New respondent for {system?.title}
+      Manage respondents for {system?.title}
       <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost mb-3">✕</button>
+        <button class="btn btn-sm btn-circle btn-ghost mb-3">
+          <iconify-icon class="text-xl" icon="mdi:close"></iconify-icon>
+        </button>
       </form>
     </h3>
     <form
@@ -141,7 +149,7 @@
     </form>
     {#if suggestions.length}
       <div class="text-center mb-2 text-sm">
-        Or select an existing respondent from the list below:
+        {suggestionText}
       </div>
       <ul class="mx-3">
         {#each suggestions as suggestion}

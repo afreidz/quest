@@ -4,7 +4,9 @@ import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
 
 const include = {
-  systems: true,
+  systems: {
+    include: { client: true },
+  },
   surveys: {
     include: {
       questions: true,

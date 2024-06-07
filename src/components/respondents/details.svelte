@@ -1,6 +1,7 @@
 <script lang="ts">
   import Meta from "./meta.svelte";
   import { actions } from "astro:actions";
+  import List from "./respondent-system-list.svelte";
   import type { RespondentFromAll } from "@/actions/respondents";
 
   type Props = {
@@ -15,7 +16,6 @@
 
   async function refreshRespondent() {
     respondent = await actions.respondents.getById(respondentId);
-    console.log(respondent);
   }
 
   let { respondent: respondentId }: Props = $props();
@@ -27,5 +27,10 @@
 >
   {#if respondent}
     <Meta {respondent} />
+  {/if}
+</div>
+<div class="p-4 w-full">
+  {#if respondent}
+    <List {respondent} />
   {/if}
 </div>
