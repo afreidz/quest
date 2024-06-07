@@ -1,6 +1,7 @@
 <script lang="ts">
   import clients from "@/stores/clients.svelte";
   import { preventDefault } from "@/utilities/events";
+  import QuestionList from "@/components/surveys/question-list.svelte";
   import surveysAndChecklists from "@/stores/surveysAndChecklists.svelte";
 
   let loading = $state(false);
@@ -94,10 +95,10 @@
           href={`#${survey.id}`}
           class:highlight={surveysAndChecklists.active?.id === survey.id}
           onclick={preventDefault(() => surveysAndChecklists.setActive(survey))}
-          class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 !h-auto p-6"
+          class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 !h-auto px-4 py-4"
         >
-          <div class="flex-1 flex flex-col gap-3">
-            <span class="flex items-center gap-2">
+          <div class="flex flex-1 items-center justify-start gap-4">
+            <div class="flex-none flex justify-center">
               {#if survey.type === "CHECKLIST"}
                 <iconify-icon
                   class="text-neutral-400"
@@ -107,17 +108,32 @@
                 <iconify-icon class="text-neutral-400" icon="ri:survey-line"
                 ></iconify-icon>
               {/if}
-              {revision?.system.title}
-              {survey.type === "CHECKLIST" ? "checklist" : "survey"} for {revision?.title}
-            </span>
-            <span class="badge bg-neutral-200 border-neutral-300">
-              {revision?.system.client.name}
-            </span>
+            </div>
+            <div class="flex flex-col gap-2 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="badge badge-primary"
+                  >{revision?.system.client.name}</span
+                >
+                <span class="badge badge-secondary"
+                  >{revision?.system.title}</span
+                >
+              </div>
+              <strong class="font-semibold"
+                >{survey.type === "CHECKLIST" ? "Checklist" : "Survey"} for {revision?.title}</strong
+              >
+              <small class="text-xs text-neutral-400">{survey.type}</small>
+            </div>
           </div>
         </a>
       {/each}
     {/if}
   </div>
+</div>
+
+<div class="p-4 w-full flex flex-col gap-6">
+  {#if surveysAndChecklists.active}
+    <QuestionList survey={surveysAndChecklists.active} />
+  {/if}
 </div>
 
 <style lang="postcss">

@@ -90,6 +90,14 @@ const checklistCurratedResponses = await orm.curratedResponse.createMany({
       numericalValue: 0,
       types: ["CHECKLIST"],
     },
+    {
+      position: 5,
+      createdBy: "system@seed.com",
+      label: "Skipped",
+      value: "na",
+      numericalValue: null,
+      types: ["CHECKLIST"],
+    },
   ],
 });
 
@@ -620,7 +628,7 @@ await orm.$transaction([
       surveyId: heroFinderPrototypeSurvey.id,
       createdBy: "system@seed.com",
       respondentId: bruceBanner.id,
-      questionId: currentQuestions[0].id,
+      questionId: proposedQuestions[0].id,
       responseId: susCurratedResponses.find((r) => r.value === "agree").id,
     },
   }),

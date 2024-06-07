@@ -7,6 +7,15 @@ export const getAll = defineAction({
   handler: async () => {
     return await orm.survey.findMany({
       include: {
+        questions: {
+          include: {
+            responseOptions: {
+              include: {
+                responses: true,
+              },
+            },
+          },
+        },
         revisionAsChecklist: {
           include: {
             system: { include: { client: true } },

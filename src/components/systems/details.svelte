@@ -7,6 +7,7 @@
   import CardHeader from "@/components/app/card-header.svelte";
   import { calculateAverageSUSScore } from "@/utilities/score";
   import RevisionList from "@/components/systems/revision-list.svelte";
+  import QuestionList from "@/components/surveys/question-list.svelte";
   import RespondentList from "@/components/systems/respondent-list.svelte";
 
   let system: SystemFromAll | null = $state(null);
@@ -28,7 +29,7 @@
 {#if system}
   {@const benchmark = 50}
   <RevisionList {system} />
-  <div class="flex-1 p-4 flex flex-col items-center">
+  <div class="flex-1 p-4 flex flex-col items-center gap-6">
     <div
       class="card bg-neutral rounded-lg shadow-sm p-4 w-full flex flex-col max-w-3xl"
     >
@@ -85,6 +86,9 @@
       {@render nullResult(`Select 1 - ${MAX_AGGREGATE} revisions from the list`)}
       {/if}
     </div>
+    {#if revisions.active.length === 1 && revisions.active[0].survey}
+      <QuestionList hideType={true} survey={revisions.active[0].survey} />
+    {/if}
   </div>
   <RespondentList system={systemId} />
 {/if}

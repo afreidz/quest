@@ -7,7 +7,25 @@ const include = {
   system: true,
   survey: {
     include: {
-      questions: { include: { responses: true, responseOptions: true } },
+      questions: {
+        include: {
+          responseOptions: {
+            include: {
+              responses: true,
+            },
+          },
+        },
+      },
+      revisionAsChecklist: {
+        include: {
+          system: { include: { client: true } },
+        },
+      },
+      revisionAsSurvey: {
+        include: {
+          system: { include: { client: true } },
+        },
+      },
     },
   },
   respondents: {
@@ -126,3 +144,4 @@ export const deleteById = defineAction({
 
 export type Revisions = Awaited<ReturnType<typeof getAll>>;
 export type RevisionFromAll = Revisions[number];
+export type SurveyFromRevision = NonNullable<RevisionFromAll["survey"]>;
