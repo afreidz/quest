@@ -15,6 +15,7 @@
 
   async function refreshRespondent() {
     respondent = await actions.respondents.getById(respondentId);
+    console.log(respondent);
   }
 
   let { respondent: respondentId }: Props = $props();

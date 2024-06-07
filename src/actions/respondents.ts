@@ -13,6 +13,7 @@ const include = {
       },
     },
   },
+  _count: { select: { revisions: true, responses: true, systems: true } },
   revisions: true,
   responses: {
     include: {
@@ -134,9 +135,16 @@ export const addToSystems = defineAction({
     systemIds: z.array(z.string()),
   }),
   handler: async ({ id, systemIds }) => {
+    const revisions = await orm.revision.findMany({
+      where: { systemId: { in: systemIds } },
+    });
+
     return await orm.respondent.update({
       where: { id },
       data: {
+        revisions: {
+          connect: revisions.map((r) => ({ id: r.id })),
+        },
         systems: {
           connect: systemIds.map((id) => ({ id })),
         },

@@ -21,6 +21,10 @@
   export { systemId };
 </script>
 
+{#snippet nullResult(text)}
+ <span class="uppercase font-semibold opacity-40 py-40 text-center">{text}</span>
+{/snippet}
+
 {#if system}
   {@const benchmark = 50}
   <RevisionList {system} />
@@ -41,37 +45,44 @@
           revisions.active[0]?.respondents,
           revisions.active[0]?.surveyId
         )}
-        {@const differential = average - benchmark}
-        <Gauge
-          {differential}
-          values={[average, benchmark]}
-          scores={[[average, benchmark], [benchmark]]}
-          keys={[revisions.active[0].title, "Benchmark"]}
-        />
+        {@const differential = average !== null ? average - benchmark : null}
+        {#if differential && average !== null}
+          <Gauge
+            {differential}
+            values={[average, benchmark]}
+            scores={[[average, benchmark], [benchmark]]}
+            keys={[revisions.active[0].title, "Benchmark"]}
+          />
+          {:else}
+          {@render nullResult(`No score available for this revision`)}
+        {/if}
       {:else if revisions.active.length > 1}
-        {@const score1 = calculateAverageSUSScore(
-          revisions.active[0].respondents,
-          revisions.active[0].surveyId
+      {@const score1 = calculateAverageSUSScore(
+        revisions.active[0].respondents,
+        revisions.active[0].surveyId
         )}
         {@const score2 = calculateAverageSUSScore(
           revisions.active[1].respondents,
           revisions.active[1].surveyId
         )}
-        {@const differential = score2 - score1}
-        <Gauge
-          {differential}
-          values={[score2, score1, benchmark]}
-          scores={[[score2, score2], [score2, score1], [benchmark]]}
-          keys={[
-            revisions.active[1].title,
-            revisions.active[0].title,
-            "Benchmark",
-          ]}
-        />
+        {@const differential =
+          score2 === null || score1 === null ? null : score2 - score1}
+        {#if differential && score1 !== null && score2 !== null}
+          <Gauge
+            {differential}
+            values={[score2, score1, benchmark]}
+            scores={[[score2, score2], [score2, score1], [benchmark]]}
+            keys={[
+              revisions.active[1].title,
+              revisions.active[0].title,
+              "Benchmark",
+            ]}
+          />
+          {:else}
+          {@render nullResult(`No score available for 1 or more of the revisions selected`)}
+        {/if}
       {:else}
-        <span class="uppercase font-semibold opacity-40 py-40 text-center"
-          >Select 1 - {MAX_AGGREGATE} revisions from the list</span
-        >
+      {@render nullResult(`Select 1 - ${MAX_AGGREGATE} revisions from the list`)}
       {/if}
     </div>
   </div>

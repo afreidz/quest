@@ -34,7 +34,6 @@
   async function refreshSystem() {
     loading = true;
     system = await actions.system.getById(systemId);
-    console.log("SYSTEM", system);
     loading = false;
   }
 

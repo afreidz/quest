@@ -20,15 +20,15 @@
   <p class="prose">{respondent.profile}</p>
   <div class="flex justify-between w-full">
     <p class="prose">
-      <strong>{respondent.systems.length}</strong>
+      <strong>{respondent._count.systems}</strong>
       <span>systems</span>
     </p>
     <p class="prose">
-      <strong>{respondent.revisions.length}</strong>
+      <strong>{respondent._count.revisions}</strong>
       <span>revisions</span>
     </p>
     <p class="prose">
-      <strong>{respondent.responses.length}</strong>
+      <strong>{respondent._count.responses}</strong>
       <span>responses</span>
     </p>
   </div>

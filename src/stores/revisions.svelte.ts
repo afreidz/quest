@@ -14,7 +14,7 @@ export default {
   refresh: async (systemId: string) => {
     revisions = await actions.revision.getBySystemId(systemId);
 
-    if (!active.length) active = [revisions[0]];
+    if (!active.length && revisions[0]) active = [revisions[0]];
 
     return revisions;
   },

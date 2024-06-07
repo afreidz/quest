@@ -138,7 +138,7 @@ model Response {
   response   CurratedResponse? @relation(fields: [responseId], references: [id])
 
   respondentId String
-  respondent   Respondent @relation(fields: [respondentId], references: [id])
+  respondent   Respondent @relation(fields: [respondentId], references: [id], onDelete: Cascade)
 
   surveyId String
   survey   Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade)

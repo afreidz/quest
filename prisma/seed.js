@@ -5,6 +5,7 @@ const orm = new PrismaClient();
 await orm.$transaction([
   orm.curratedResponse.deleteMany(),
   orm.respondent.deleteMany(),
+  orm.response.deleteMany(),
   orm.question.deleteMany(),
   orm.survey.deleteMany(),
   orm.client.deleteMany(),

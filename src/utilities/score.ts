@@ -18,6 +18,7 @@ export async function calculatePracticeAverageSUSScore() {
       return survey && calculateSUSScoreFromRespondent(r, survey.id);
     })
     .filter(Boolean) as number[];
+  if (!scores.length) return null;
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 
@@ -29,6 +30,7 @@ export function calculateAverageSUSScore(
   const scores = calculateSUSScoreFromRespondents(respondents, surveyId).filter(
     Boolean
   ) as number[];
+  if (!scores.length) return null;
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
 }
 
@@ -37,9 +39,9 @@ export function calculateSUSScoreFromRespondents(
   surveyId?: string | null
 ) {
   if (!surveyId) throw new Error("Survey Id required to calculate score");
-  const scores = respondents.map((r) =>
-    calculateSUSScoreFromRespondent(r, surveyId)
-  );
+  const scores = respondents
+    .map((r) => calculateSUSScoreFromRespondent(r, surveyId))
+    .filter(Boolean);
   return scores;
 }
 
@@ -54,7 +56,8 @@ export function calculateSUSScoreFromRespondent(
     (r) => survey.id === r.surveyId
   );
 
-  if (responses.length !== survey._count.questions) return undefined;
+  if (responses.length !== survey._count.questions || !responses.length)
+    return undefined;
 
   const score = responses.reduce((score, response) => {
     if (!response.response?.numericalValue) return score;
