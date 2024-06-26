@@ -10,14 +10,13 @@
 
 <header
   class:border-b={border}
-  class="flex items-center gap-2 pb-4 border-neutral-300 border-dotted {className ??
-    ''}"
+  class="flex items-center gap-2 p-3 pb-2 border-neutral-200 {className ?? ''}"
 >
   <iconify-icon class="text-2xl mt-1 flex-none self-start" {icon}
   ></iconify-icon>
-  <div class="prose flex-1 max-w-none">
-    <h3 class="mb-1"><slot /></h3>
-    <p class="text-sm text-neutral-400">
+  <div class="flex-1 max-w-none text-xl leading-relaxed font-bold">
+    <h3><slot /></h3>
+    <p class="text-sm text-neutral-400 mt-1">
       <slot name="sub" />
     </p>
   </div>

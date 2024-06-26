@@ -66,7 +66,7 @@
   >
     {#each orderedQuestions as question (question.id)}
       <li
-        class="rounded bg-neutral p-2 italic mb-2 !outline-secondary flex items-center justify-center gap-4"
+        class="rounded bg-neutral shadow-sm p-2 italic mb-2 !outline-secondary flex items-center justify-center gap-4"
         animate:flip={{ duration: flipDurationMs }}
       >
         {#if survey.type === "CHECKLIST"}

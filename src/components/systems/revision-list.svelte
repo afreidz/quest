@@ -2,7 +2,6 @@
   import { actions } from "astro:actions";
   import { SurveyType } from "@hsalux/quest-db";
   import revisions from "@/stores/revisions.svelte";
-  import { MAX_AGGREGATE } from "@/utilities/numbers";
   import type { SystemFromAll } from "@/actions/systems";
 
   type Props = {
@@ -13,7 +12,6 @@
   let loading = $state(false);
   let newDialog: HTMLDialogElement;
   let showNewDialog = $state(false);
-  let aggregated = $state<typeof revisions.active>([]);
   let surveyType = $state<keyof typeof SurveyType | undefined>();
 
   $effect(() => {
@@ -22,14 +20,6 @@
 
   $effect(() => {
     if (showNewDialog && newDialog) newDialog.showModal();
-  });
-
-  $effect(() => {
-    revisions.setActive(aggregated);
-  });
-
-  $effect(() => {
-    aggregated = revisions.active;
   });
 
   async function createNewRevision() {
@@ -78,33 +68,14 @@
     {#if !loading}
       {#each revisions.all ?? [] as revision}
         <div
-          class:highlight={revisions.active.includes(revision)}
+          class:highlight={revisions.active?.id === revision.id}
           class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left pl-0 border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
         >
           <button
-            on:click={() => revisions.setActive([revision])}
+            on:click={() => revisions.setActive(revision)}
             class="flex-1 h-full flex items-center pl-4"
             >{revision.title}</button
           >
-
-          {#if revisions.active}
-            <div
-              class="tooltip tooltip-primary tooltip-left"
-              data-tip={revisions.active.length >= MAX_AGGREGATE
-                ? `Max ${MAX_AGGREGATE} for aggregated scoring`
-                : "Add to aggregate score"}
-            >
-              <input
-                type="checkbox"
-                value={revision}
-                bind:group={aggregated}
-                class="checkbox checkbox-secondary"
-                checked={revisions.active.some((r) => r.id === revision.id)}
-                disabled={revisions.active.length >= MAX_AGGREGATE &&
-                  !revisions.active.includes(revision)}
-              />
-            </div>
-          {/if}
         </div>
       {/each}
     {/if}

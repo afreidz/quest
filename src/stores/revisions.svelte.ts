@@ -1,8 +1,8 @@
 import { actions } from "astro:actions";
 import type { Revisions } from "@/actions/revisions";
 
-let active = $state<Revisions>([]);
 let revisions = $state<Revisions | null>(null);
+let active = $state<Revisions[number] | null>(null);
 
 export default {
   get all() {
@@ -14,7 +14,7 @@ export default {
   refresh: async (systemId: string) => {
     revisions = await actions.revision.getBySystemId(systemId);
 
-    if (!active.length && revisions[0]) active = [revisions[0]];
+    if (!active) active = revisions[0];
 
     return revisions;
   },

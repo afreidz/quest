@@ -76,9 +76,7 @@
   let { system: systemId }: Props = $props();
 </script>
 
-<div
-  class="min-w-80 max-w-md w-1/3 bg-neutral flex flex-col border-neutral-200 border-l"
->
+<div class="min-w-80 bg-neutral flex flex-col border-neutral-200 border-t">
   <h2
     class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
   >
@@ -89,7 +87,7 @@
     >
       <button
         class="btn btn-sm btn-ghost"
-        on:click={() => (showNewDialog = true)}
+        on:click="{() => (showNewDialog = true)}"
       >
         <iconify-icon class="text-xl" icon="mdi:plus-minus-variant"
         ></iconify-icon>
@@ -97,13 +95,13 @@
     </div>
   </h2>
   <div
-    class:skeleton={loading}
+    class:skeleton="{loading}"
     class="bg-neutral rounded-none flex-1 overflow-auto"
   >
     {#if !loading && !!system}
       {#each system.respondents as respondent}
         <a
-          href={`/respondents/${respondent.id}`}
+          href="{`/respondents/${respondent.id}`}"
           class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 border-t-0 flex items-center"
         >
           <Avatar {respondent} />
@@ -116,8 +114,8 @@
 
 <dialog
   class="modal"
-  bind:this={newDialog}
-  on:close={() => (showNewDialog = false)}
+  bind:this="{newDialog}"
+  on:close="{() => (showNewDialog = false)}"
 >
   <div class="modal-box bg-neutral">
     <h3 class="font-bold text-lg flex items-center justify-between gap-3">
@@ -129,14 +127,14 @@
       </form>
     </h3>
     <form
-      onsubmit={preventDefault(createNewRespondent)}
+      onsubmit="{preventDefault(createNewRespondent)}"
       class="p-3 flex-none border-neutral-200 border-t flex"
     >
       <label class="join overflow-clip input-bordered border flex-1">
         <input
           required
           type="email"
-          bind:value={newEmail}
+          bind:value="{newEmail}"
           placeholder="Respondent email"
           class="input join-item flex-1 bg-base-100/10"
         />
@@ -163,11 +161,11 @@
               >
               <input
                 type="checkbox"
-                checked={existing}
+                checked="{existing}"
                 class="checkbox checkbox-primary"
-                onchange={preventDefault(() =>
+                onchange="{preventDefault(() =>
                   toggleExisting(!existing, suggestion)
-                )}
+                )}"
               />
             </label>
           </li>
