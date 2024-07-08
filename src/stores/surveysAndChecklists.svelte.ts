@@ -1,7 +1,9 @@
 import { actions } from "astro:actions";
 import type { SurveyFromAll } from "@/actions/surveys";
 
-let active = $state<SurveyFromAll | null>(null);
+let warn = $state(false);
+let activeDirty = $state(false);
+let active: SurveyFromAll | null = $state(null);
 let surveysAndChecklists = $state(await actions.surveys.getAll());
 
 export default {
@@ -11,10 +13,21 @@ export default {
   get active() {
     return active;
   },
-  refresh: async () => {
-    surveysAndChecklists = [];
+  get activeDirty() {
+    return activeDirty;
+  },
+  set activeDirty(b: boolean) {
+    activeDirty = b;
+  },
+  refreshAll: async () => {
+    surveysAndChecklists = await actions.surveys.getAll();
+  },
+  refreshActive: async () => {
+    if (!active) return;
+    active = await actions.surveys.getById(active.id);
   },
   setActive: (c: typeof active) => {
+    if (activeDirty) return (warn = true);
     active = c;
   },
 };

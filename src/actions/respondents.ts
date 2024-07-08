@@ -9,7 +9,7 @@ const include = {
   },
   surveys: {
     include: {
-      questions: true,
+      questions: { include: { group: true } },
       _count: {
         select: { questions: true },
       },
@@ -103,7 +103,10 @@ export const create = defineAction({
 export const getById = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await orm.respondent.findUnique({ where: { id }, include });
+    return await orm.respondent.findUnique({
+      where: { id },
+      include,
+    });
   },
 });
 

@@ -102,14 +102,27 @@ model Question {
 
   position Int?
   text     String
-  group    String?
-  imageURL String?
   positive Boolean @default(true)
+
+  groupId String?
+  group QuestionGroup? @relation(fields: [groupId], references: [id])
 
   type            SurveyType
   surveys         Survey[]
   responses       Response[]
   responseOptions CurratedResponse[]
+}
+
+model QuestionGroup {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
+
+  position Int?
+  text     String
+  imageURL String?
+
+  questions Question[]
 }
 
 model CurratedResponse {

@@ -22,8 +22,8 @@
 </script>
 
 <div
-  class:skeleton={!respondent}
-  class="min-w-80 max-w-80 bg-neutral flex flex-col border-neutral-200 border-r"
+  class:skeleton="{!respondent}"
+  class="min-w-80 max-w-80 bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
 >
   {#if respondent}
     <Meta {respondent} />

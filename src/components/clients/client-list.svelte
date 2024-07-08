@@ -61,7 +61,7 @@
 </script>
 
 <div
-  class="min-w-80 max-w-md w-1/3 bg-neutral flex flex-col border-neutral-200 border-r"
+  class="min-w-80 max-w-md w-1/3 bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
 >
   <h2
     class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
@@ -72,7 +72,7 @@
       data-tip="Add a new client"
     >
       <button
-        on:click={() => (showNewDialog = true)}
+        on:click="{() => (showNewDialog = true)}"
         class="btn btn-sm btn-ghost"
       >
         <iconify-icon class="text-xl" icon="ic:baseline-plus"></iconify-icon>
@@ -84,24 +84,24 @@
       <input
         type="text"
         class="grow"
-        bind:this={search}
+        bind:this="{search}"
         placeholder="Search"
-        bind:value={searchString}
+        bind:value="{searchString}"
       />
       <iconify-icon class="text-xl" icon="material-symbols:search"
       ></iconify-icon>
     </label>
   </form>
   <div
-    class:skeleton={loading}
+    class:skeleton="{loading}"
     class="bg-neutral rounded-none flex-1 overflow-auto"
   >
     {#if !loading}
       {#each filteredClients as client}
         <a
-          href={`#${client.id}`}
-          class:highlight={clients.active?.id === client.id}
-          onclick={preventDefault(() => clients.setActive(client))}
+          href="{`#${client.id}`}"
+          class:highlight="{clients.active?.id === client.id}"
+          onclick="{preventDefault(() => clients.setActive(client))}"
           class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
         >
           <span class="flex-1">{client.name}</span>
@@ -117,13 +117,13 @@
 </div>
 
 {#if clients.active}
-  <SystemsList client={clients.active} />
+  <SystemsList client="{clients.active}" />
 {/if}
 
 <dialog
   class="modal"
-  bind:this={newDialog}
-  on:close={() => (showNewDialog = false)}
+  bind:this="{newDialog}"
+  on:close="{() => (showNewDialog = false)}"
 >
   <div class="modal-box bg-neutral">
     <h3 class="font-bold text-lg flex items-center justify-between gap-3">
@@ -133,14 +133,14 @@
       </form>
     </h3>
     <form
-      onsubmit={preventDefault(createNewClient)}
+      onsubmit="{preventDefault(createNewClient)}"
       class="p-3 flex-none border-neutral-200 border-t flex"
     >
       <label class="join overflow-clip input-bordered border flex-1">
         <input
           required
           placeholder="Client name"
-          bind:value={newName}
+          bind:value="{newName}"
           class="input join-item flex-1 bg-base-100/10"
         />
         <button

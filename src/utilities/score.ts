@@ -5,6 +5,7 @@
 // sum and multiply the final score by 2.5 to get a score out of 100
 // average all the responses to get a final raw score
 import { actions } from "astro:actions";
+import messages from "@/stores/messages.svelte";
 import type { Revisions } from "@/actions/revisions";
 import type { Respondents } from "@/actions/respondents";
 
@@ -26,7 +27,7 @@ export function calculateAverageSUSScore(
   respondents: SurveyRespondents,
   surveyId?: string | null
 ) {
-  if (!surveyId) throw new Error("Survey Id required to calculate score");
+  if (!surveyId) throw messages.error("Survey Id required to calculate score");
   const scores = calculateSUSScoreFromRespondents(respondents, surveyId).filter(
     Boolean
   ) as number[];
@@ -38,7 +39,7 @@ export function calculateSUSScoreFromRespondents(
   respondents: SurveyRespondents,
   surveyId?: string | null
 ) {
-  if (!surveyId) throw new Error("Survey Id required to calculate score");
+  if (!surveyId) throw messages.error("Survey Id required to calculate score");
   const scores = respondents
     .map((r) => calculateSUSScoreFromRespondent(r, surveyId))
     .filter(Boolean);
@@ -50,13 +51,13 @@ export function calculateSUSScoreFromRespondent(
   surveyId?: string | null
 ) {
   const survey = respondent.surveys.find((s) => s.id === surveyId);
-  if (!survey) throw new Error("Survey Id required to calculate score");
+  if (!survey) throw messages.error("Survey Id required to calculate score");
 
   const responses = respondent.responses.filter(
-    (r) => survey.id === r.surveyId
+    (r) => survey?.id === r.surveyId
   );
 
-  if (responses.length !== survey._count.questions || !responses.length)
+  if (responses.length !== survey?._count.questions || !responses.length)
     return undefined;
 
   const score = responses.reduce((score, response) => {

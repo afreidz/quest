@@ -17,7 +17,7 @@ export default {
   "success-content": "#080e0f",
   warning: "#facc15",
   "warning-content": "#080e0f",
-  error: "#ec1330",
+  error: "#FF5861",
   "error-content": "#080e0f",
   "--rounded-box": "0.5rem",
   "--rounded-btn": "0.25rem",
@@ -28,5 +28,5 @@ export default {
 export const gauge = {
   items: ["#95C4CB", "#66ABB6", "#0A506A"],
   positive: "#43C478",
-  negative: "#f04259",
+  negative: "#FF5861",
 };

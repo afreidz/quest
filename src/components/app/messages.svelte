@@ -1,32 +1,13 @@
 <script lang="ts">
-  import messages, {
-    MessageHandler,
-    DismissMessage,
-  } from "@/stores/messages.svelte";
-
-  import { slide } from "svelte/transition";
+  import messages from "@/stores/messages.svelte";
 </script>
 
-<svelte:window
-  on:unhandledrejection={(e) => {
-    MessageHandler({
-      type: "error",
-      message: e.reason.message || "Something went wrong",
-      detail: e.reason.stack,
-    });
-  }}
-/>
-
-<slot />
-
-<div class="toast toast-center w-full min-w-[320px] max-w-[50%] z-50">
-  {#each messages as message, i}
+<div class="toast toast-center w-full min-w-[320px] max-w-[50%]">
+  {#each messages.all as message}
     <div
-      in:slide
-      out:slide
-      class:alert-error={message.type === "error"}
-      class:alert-success={message.type === "success"}
-      class:alert-info={!["error", "success"].includes(message.type)}
+      class:alert-error="{message.type === 'error'}"
+      class:alert-success="{message.type === 'success'}"
+      class:alert-info="{!['error', 'success'].includes(message.type)}"
       class="alert flex p-0"
     >
       <details class="flex-1 collapse group bg-transparent">
@@ -34,7 +15,7 @@
           class="collapse-title text-xl font-medium min-h-0 w-full !pr-4 !flex items-center gap-1"
         >
           <button
-            on:click={() => DismissMessage(i)}
+            on:click="{() => messages.dismiss(message.id)}"
             class="btn btn-sm btn-ghost flex-none"
           >
             <iconify-icon icon="mdi:close" class="text-xl"></iconify-icon>

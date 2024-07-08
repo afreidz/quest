@@ -9,6 +9,30 @@ const include = {
     include: {
       questions: {
         include: {
+          group: true,
+          responseOptions: {
+            include: {
+              responses: true,
+            },
+          },
+        },
+      },
+      revisionAsChecklist: {
+        include: {
+          system: { include: { client: true } },
+        },
+      },
+      revisionAsSurvey: {
+        include: {
+          system: { include: { client: true } },
+        },
+      },
+    },
+  },
+  checklist: {
+    include: {
+      questions: {
+        include: {
           responseOptions: {
             include: {
               responses: true,
@@ -117,7 +141,10 @@ export const getById = defineAction({
 export const getBySystemId = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await orm.revision.findMany({ where: { systemId: id }, include });
+    return await orm.revision.findMany({
+      where: { systemId: id },
+      include,
+    });
   },
 });
 

@@ -43,18 +43,18 @@
 </script>
 
 <div
-  class="min-w-80 max-w-80 bg-neutral flex flex-col border-neutral-200 border-r"
+  class="min-w-80 max-w-80 bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
 >
   <h2
     class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
   >
     <span>{system.title} Revisions</span>
     <div
-      class="tooltip tooltip-bottom tooltip-primary"
+      class="tooltip tooltip-left tooltip-primary"
       data-tip="Add a revision for {system.title}"
     >
       <button
-        on:click={() => (showNewDialog = true)}
+        on:click="{() => (showNewDialog = true)}"
         class="btn btn-sm btn-ghost"
       >
         <iconify-icon class="text-xl" icon="ic:baseline-plus"></iconify-icon>
@@ -62,17 +62,17 @@
     </div>
   </h2>
   <div
-    class:skeleton={loading}
+    class:skeleton="{loading}"
     class="bg-neutral rounded-none flex-1 overflow-auto"
   >
     {#if !loading}
       {#each revisions.all ?? [] as revision}
         <div
-          class:highlight={revisions.active?.id === revision.id}
+          class:highlight="{revisions.active?.id === revision.id}"
           class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left pl-0 border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
         >
           <button
-            on:click={() => revisions.setActive(revision)}
+            on:click="{() => revisions.setActive(revision)}"
             class="flex-1 h-full flex items-center pl-4"
             >{revision.title}</button
           >
@@ -84,8 +84,8 @@
 
 <dialog
   class="modal"
-  bind:this={newDialog}
-  on:close={() => (showNewDialog = false)}
+  bind:this="{newDialog}"
+  on:close="{() => (showNewDialog = false)}"
 >
   <div class="modal-box bg-neutral">
     <h3 class="font-bold text-lg flex justify-between items-center gap-3">
@@ -95,16 +95,16 @@
       </form>
     </h3>
     <form
-      on:submit|preventDefault={createNewRevision}
+      on:submit|preventDefault="{createNewRevision}"
       class="p-3 flex-none border-neutral-200 border-t flex flex-col gap-2"
     >
       <select
-        bind:value={surveyType}
+        bind:value="{surveyType}"
         class="select select-bordered bg-base-100/10 w-full"
       >
         <option disabled selected>What type of revision is this?</option>
         {#each Object.keys(SurveyType).filter((k) => !k.includes("CHECKLIST")) as type}
-          <option value={type}
+          <option value="{type}"
             >{type.includes("CURRENT")
               ? "Current State Survey Type"
               : "Proposed State Survey Type"}</option
@@ -114,7 +114,7 @@
       <label class="join overflow-clip input-bordered border flex-1">
         <input
           required
-          bind:value={newName}
+          bind:value="{newName}"
           placeholder="Revision title"
           class="input join-item flex-1 bg-base-100/10"
         />

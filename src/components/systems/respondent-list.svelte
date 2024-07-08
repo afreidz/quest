@@ -82,7 +82,7 @@
   >
     <span>Respondents</span>
     <div
-      class="tooltip tooltip-bottom tooltip-primary"
+      class="tooltip tooltip-left tooltip-primary"
       data-tip="Add or remove a respondent for {system?.title}"
     >
       <button

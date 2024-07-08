@@ -23,7 +23,7 @@
   <RevisionList {system} />
   <div class="flex-1 p-4 flex flex-col items-center gap-6 overflow-auto">
     {#if revisions.active && revisions.active.survey}
-      <QuestionList hideType="{true}" survey="{revisions.active.survey}" />
+      <QuestionList survey="{revisions.active.survey}" />
     {/if}
   </div>
   <div class="bg-neutral flex flex-col max-w-md border-l w-full flex-1">

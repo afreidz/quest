@@ -5,6 +5,7 @@ const AUTHLESS_ROUTES = [
   "/404",
   "/error",
   "/public",
+  "/api/auth",
   "/auth/login",
   "/_actions/public",
 ];

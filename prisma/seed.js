@@ -4,6 +4,7 @@ const orm = new PrismaClient();
 
 await orm.$transaction([
   orm.curratedResponse.deleteMany(),
+  orm.questionGroup.deleteMany(),
   orm.respondent.deleteMany(),
   orm.response.deleteMany(),
   orm.question.deleteMany(),
@@ -56,50 +57,51 @@ const susCurratedResponses = await orm.curratedResponse.createManyAndReturn({
   ],
 });
 
-const checklistCurratedResponses = await orm.curratedResponse.createMany({
-  data: [
-    {
-      position: 1,
-      createdBy: "system@seed.com",
-      label: "Pass",
-      value: "pass",
-      numericalValue: 3,
-      types: ["CHECKLIST"],
-    },
-    {
-      position: 2,
-      createdBy: "system@seed.com",
-      label: "delayed",
-      value: "Delayed",
-      numericalValue: 2,
-      types: ["CHECKLIST"],
-    },
-    {
-      position: 3,
-      createdBy: "system@seed.com",
-      label: "Prompted",
-      value: "prompted",
-      numericalValue: 1,
-      types: ["CHECKLIST"],
-    },
-    {
-      position: 4,
-      createdBy: "system@seed.com",
-      label: "Fail",
-      value: "fail",
-      numericalValue: 0,
-      types: ["CHECKLIST"],
-    },
-    {
-      position: 5,
-      createdBy: "system@seed.com",
-      label: "Skipped",
-      value: "na",
-      numericalValue: null,
-      types: ["CHECKLIST"],
-    },
-  ],
-});
+const checklistCurratedResponses =
+  await orm.curratedResponse.createManyAndReturn({
+    data: [
+      {
+        position: 1,
+        createdBy: "system@seed.com",
+        label: "Pass",
+        value: "pass",
+        numericalValue: 3,
+        types: ["CHECKLIST"],
+      },
+      {
+        position: 2,
+        createdBy: "system@seed.com",
+        label: "delayed",
+        value: "Delayed",
+        numericalValue: 2,
+        types: ["CHECKLIST"],
+      },
+      {
+        position: 3,
+        createdBy: "system@seed.com",
+        label: "Prompted",
+        value: "prompted",
+        numericalValue: 1,
+        types: ["CHECKLIST"],
+      },
+      {
+        position: 4,
+        createdBy: "system@seed.com",
+        label: "Fail",
+        value: "fail",
+        numericalValue: 0,
+        types: ["CHECKLIST"],
+      },
+      {
+        position: 5,
+        createdBy: "system@seed.com",
+        label: "Skipped",
+        value: "na",
+        numericalValue: null,
+        types: ["CHECKLIST"],
+      },
+    ],
+  });
 
 const currentQuestions = await orm.$transaction([
   orm.question.create({
@@ -349,6 +351,172 @@ const proposedQuestions = await orm.$transaction([
   }),
 ]);
 
+const heroFinderChecklistGroups = await orm.$transaction([
+  orm.questionGroup.create({
+    data: {
+      position: 2,
+      text: "Access",
+      createdBy: "system@seed.com",
+    },
+  }),
+  orm.questionGroup.create({
+    data: {
+      position: 1,
+      text: "Find by keyword",
+      createdBy: "system@seed.com",
+    },
+  }),
+  orm.questionGroup.create({
+    data: {
+      position: 3,
+      text: "Find by browse",
+      createdBy: "system@seed.com",
+    },
+  }),
+  orm.questionGroup.create({
+    data: {
+      position: 4,
+      text: "Send Help Request",
+      createdBy: "system@seed.com",
+    },
+  }),
+]);
+
+const heroFinderChecklistQuestions = await orm.$transaction([
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Locate/Launch the HeroFinderPRO Application",
+      group: { connect: { id: heroFinderChecklistGroups[0].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Locate the login button",
+      group: { connect: { id: heroFinderChecklistGroups[0].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 3,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Login using email address and password",
+      group: { connect: { id: heroFinderChecklistGroups[0].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Locate the keyword search",
+      group: { connect: { id: heroFinderChecklistGroups[1].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate Hero "Superman" with search',
+      group: { connect: { id: heroFinderChecklistGroups[1].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 3,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Filter all heros by "cape" with search',
+      group: { connect: { id: heroFinderChecklistGroups[1].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate the "Caped" category link',
+      group: { connect: { id: heroFinderChecklistGroups[2].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate "Superman" and navigate to the details page',
+      group: { connect: { id: heroFinderChecklistGroups[2].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate "Superman" and navigate to the details page',
+      group: { connect: { id: heroFinderChecklistGroups[3].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Find the status of your "Superman" a request',
+      group: { connect: { id: heroFinderChecklistGroups[3].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 3,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Send "Superman" a request for help',
+      group: { connect: { id: heroFinderChecklistGroups[3].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+]);
+
 const marvelClient = await orm.client.create({
   data: {
     name: "Marvel Inc.",
@@ -398,6 +566,17 @@ const heroFinderPrototypeSurvey = await orm.survey.create({
   },
 });
 
+const heroFinderChecklist = await orm.survey.create({
+  data: {
+    type: "CHECKLIST",
+    createdBy: "system@seed.com",
+    revisionAsChecklist: { connect: { id: prototypeRevision.id } },
+    questions: {
+      connect: heroFinderChecklistQuestions.map((q) => ({ id: q.id })),
+    },
+  },
+});
+
 const tonyStark = await orm.respondent.create({
   data: {
     email: "tony.stark@marvel.com",
@@ -412,6 +591,7 @@ const tonyStark = await orm.respondent.create({
       connect: [
         { id: heroFinderCurrentStateSurvey.id },
         { id: heroFinderPrototypeSurvey.id },
+        { id: heroFinderChecklist.id },
       ],
     },
   },
@@ -431,6 +611,7 @@ const bruceBanner = await orm.respondent.create({
       connect: [
         { id: heroFinderCurrentStateSurvey.id },
         { id: heroFinderPrototypeSurvey.id },
+        { id: heroFinderChecklist.id },
       ],
     },
   },

@@ -1,20 +1,29 @@
-const messages = $state<ApplicationMessage[]>([]);
+let messages: ApplicationMessage[] = $state([]);
 
 export type ApplicationMessage = {
-  type: "error" | "success" | "info";
+  id: string;
   message: string;
   detail?: string;
+  type: "error" | "success" | "info";
   timer?: ReturnType<typeof setTimeout>;
 };
 
-export function MessageHandler(msg: ApplicationMessage) {
-  messages.push(msg);
-  msg.timer = setTimeout(() => DismissMessage(msg), 10000);
-}
-
-export function DismissMessage(m: number | ApplicationMessage) {
-  const idx = typeof m === "number" ? m : messages.indexOf(m);
-  messages.splice(idx, 1);
-}
-
-export default messages;
+export default {
+  get all() {
+    return messages;
+  },
+  error(message: string, detail?: string) {
+    let id = `message_${+new Date() + Math.random()}`;
+    messages.push({
+      id,
+      detail,
+      message,
+      type: "error",
+      timer: setTimeout(() => this.dismiss(id), 10000),
+    });
+    return new Error(message);
+  },
+  dismiss(id: string) {
+    messages = messages.filter((m) => m.id !== id);
+  },
+};

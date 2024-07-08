@@ -1,3 +1,7 @@
+---
+import Messages from "@/components/app/messages.svelte";
+---
+
 <html lang="en" class="bg-base-100/10">
   <head>
     <meta charset="utf-8" />
@@ -19,6 +23,7 @@
       }
     </style>
     <slot />
+    <Messages client:only="svelte" />
     <script>
       import "iconify-icon";
     </script>
