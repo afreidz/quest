@@ -5,6 +5,7 @@
   import { fileToDataUri } from "@/utilities/image";
   import { preventDefault } from "@/utilities/events";
   import { orderByPosition } from "@/utilities/order";
+  import Editable from "@/components/app/editable.svelte";
   import surveys from "@/stores/surveysAndChecklists.svelte";
   import type { RevisionFromAll } from "@/actions/revisions";
   import ConfirmDialog from "@/components/app/confirm-dialog.svelte";
@@ -37,10 +38,10 @@
     }[];
   };
 
+  let proposed: Groups = $state([]);
+
   let newGroupName = $state("");
   let newQuestionText = $state("");
-  let proposed: Groups = $state([]);
-  let showConfirmDialog: boolean = $state(false);
   let showNewGroupDialog: boolean = $state(false);
   let showNewQuestionDialog: boolean = $state(false);
   let confirmDialog: HTMLDialogElement | null = $state(null);
@@ -48,63 +49,65 @@
   let newGroupDialog: HTMLDialogElement | null = $state(null);
   let newQuestionInput: HTMLInputElement | null = $state(null);
   let newGroupNameInput: HTMLInputElement | null = $state(null);
+  let showConfirmDialog: "save" | "delete" | null = $state(null);
   let newQuestionDialog: HTMLDialogElement | null = $state(null);
 
   let { editable: canEdit = false, survey }: Props = $props();
-  let questions = $derived(survey?.questions ?? surveys.active?.questions);
   let editable = $derived(canEdit && surveys.active?.type === "CHECKLIST");
 
   let groups: Groups = $derived.by(() => {
     const groupedObj = Object.groupBy(
-      clone(questions ?? []),
+      clone((survey?.questions || surveys.active?.questions) ?? []),
       ({ group }) => group?.text ?? "null"
     );
 
-    return orderByPosition(Object.entries(groupedObj).map(([groupName, questions], i) => ({
-      name: groupName,
-      image: questions?.[0].group?.imageURL ?? null,
-      position: questions?.[0].group?.position ?? (i + 1),
-      id: questions?.[0].group?.id ?? `group_${+new Date}`,
-      questions: orderByPosition(questions ?? []).map((question) => ({
-        id: question.id,
-        text: question.text,
-        group: question.groupId,
-        position: question.position,
-        positive: question.positive,
-        responses: question.responseOptions
-          .sort((a, b) => (a?.numericalValue ?? 0) - (b?.numericalValue ?? 0))
-          .map((ro) => ({
-            label: ro.label,
-            value: ro.numericalValue,
-            count: ro.responses.length,
-          })),
-      })),
-    })));
+    return orderByPosition(
+      Object.entries(groupedObj).map(([groupName, questions], i) => ({
+        name: groupName,
+        image: questions?.[0].group?.imageURL ?? null,
+        position: questions?.[0].group?.position ?? i + 1,
+        id: questions?.[0].group?.id ?? `group_${+new Date()}`,
+        questions: orderByPosition(questions ?? []).map((question) => ({
+          id: question.id,
+          text: question.text,
+          group: question.groupId,
+          position: question.position,
+          positive: question.positive,
+          responses: question.responseOptions
+            .sort((a, b) => (a?.numericalValue ?? 0) - (b?.numericalValue ?? 0))
+            .map((ro) => {
+              return {
+                label: ro.label,
+                value: ro.numericalValue,
+                count: ro.responses.filter((r) => r.questionId === question.id)
+                  .length,
+              };
+            }),
+        })),
+      }))
+    );
   });
 
   let clean = $derived.by(() => {
-    const currentGroupOrder = groups.map((g) => g.id);
-    const proposedGroupOrder = proposed.map((g) => g.id);
-    const groupOrder = proposedGroupOrder.every(
-      (id, i) => currentGroupOrder[i] === id
+    const groupsClean = proposed.every(
+      (p, i) => groups[i]?.id === p.id && groups[i]?.name === p.name
     );
 
-    const questionOrder = groups.every((g, i) => {
+    const questionsClean = groups.every((g, i) => {
       const p = proposed?.[i];
       if (!p) return false;
-      const currentQuestionOrder = g.questions.map((q) => q.text);
-      const proposedQuestionOrder = p.questions.map((q) => q.text);
-      return proposedQuestionOrder.length === currentQuestionOrder.length && proposedQuestionOrder.every(
-        (id, i) => currentQuestionOrder[i] === id
+      return (
+        g.questions.length === p.questions.length &&
+        p.questions.every(
+          (pq, i) =>
+            g.questions[i].id === pq.id && g.questions[i].text === pq.text
+        )
       );
     });
 
-    const currentImages = groups.map((g) => g.image);
-    const proposedImages = proposed.map((p) => p.image);
+    const imagesClean = proposed.every((p, i) => groups[i]?.image === p?.image);
 
-    const images = proposedImages.every((img,i) => currentImages[i] === img);
-
-    return images && groupOrder && questionOrder;
+    return imagesClean && groupsClean && questionsClean;
   });
 
   $effect(() => {
@@ -112,7 +115,7 @@
   });
 
   $effect(() => {
-    if (questions && groups) proposed = clone(groups);
+    if (surveys.active || survey) proposed = clone(groups);
   });
 
   $effect(() => {
@@ -174,13 +177,14 @@
 
     if (!group) throw messages.error(`unable to add image to group: ${g.id}`);
 
-    group.image = await fileToDataUri(target.files)
+    group.image = await fileToDataUri(target.files);
   }
 
   function removeImage(g: Groups[number]) {
-    const group = proposed.find(p => p.id === g.id);
+    const group = proposed.find((p) => p.id === g.id);
 
-    if (!group) throw messages.error(`unable to remove image for group: ${g.id}`);
+    if (!group)
+      throw messages.error(`unable to remove image for group: ${g.id}`);
     group.image = null;
   }
 
@@ -192,7 +196,10 @@
   function createNewQuestion() {
     const group = proposed.find((g) => g.id === newQuestionGroup?.id);
 
-    if (!group) throw messages.error(`unable to add question to group: ${newQuestionGroup}`);
+    if (!group)
+      throw messages.error(
+        `unable to add question to group: ${newQuestionGroup}`
+      );
 
     const question: Groups[number]["questions"][number] = {
       responses: [],
@@ -209,90 +216,134 @@
 
   function removeQuestion(question: Question) {
     const group = proposed.find((g) => g.id === question.group);
-    if (!group) throw messages.error(`unable to remove question from group: ${question.group}`);
+    if (!group)
+      throw messages.error(
+        `unable to remove question from group: ${question.group}`
+      );
 
     group.questions = group.questions.filter((q) => q.id !== question.id);
   }
 
   function removeGroup(group: Groups[number]) {
-    const newGroups = proposed.filter(g => g.id !== group.id);
+    const newGroups = proposed.filter((g) => g.id !== group.id);
     proposed = newGroups;
   }
 
   function handleConfirm(resp?: string) {
-    showConfirmDialog = false;
+    const action = showConfirmDialog === "delete" ? deleteSurvey : saveSurvey;
+    showConfirmDialog = null;
     if (resp !== "YES") return;
-    return saveSurvey(true);
+    return action(true);
+  }
+
+  function changeGroupName(s: string, g: Groups[number]) {
+    const group = proposed.find((p) => g.id === p.id);
+    if (!group) return;
+    group.name = s;
+  }
+
+  function changeQuestionText(s: string, q: Question) {
+    const question = proposed
+      .map((p) => p.questions)
+      .flat()
+      .find((pq) => pq.id === q.id);
+    if (!question) return;
+    question.text = s;
+  }
+
+  async function deleteSurvey(confirmed: boolean | undefined = false) {
+    const id = survey?.id || surveys.active?.id;
+    if (!confirmed || !id) return;
+    await actions.surveys.deleteById(id);
+    surveys.setActive(null);
+    await surveys.refreshAll();
   }
 
   async function saveSurvey(confirmed: boolean | undefined = false) {
-    const id = survey?.id || surveys.active?.id;
+    const id = surveys.active?.id;
 
     if (!id) throw messages.error("Unable to find survey for saving");
 
     const groupDelta = Object.groupBy(proposed, (g) => {
-      const existing = groups.find(e => e.id === g.id);
-      return existing && existing.position === g.position
+      const existing = groups.find((e) => e.id === g.id);
+      return existing && existing.position === g.position && existing.name === g.name
         ? "unchanged"
         : !existing
-        ? "new"
-        : "changed";
-        return "removed";
+          ? "new"
+          : "changed";
+      return "removed";
     });
 
-    groupDelta.removed = groups.filter(g => !proposed.find(p => p.id === g.id));
+    groupDelta.removed = groups.filter(
+      (g) => !proposed.find((p) => p.id === g.id)
+    );
 
     const proposedQuestions = proposed.map((g) => g.questions).flat();
     const existingQuestions = groups.map((g) => g.questions).flat();
 
     const questionsDelta = Object.groupBy(proposedQuestions, (q) => {
-      const existing = existingQuestions.find(e => e.id === q.id);
-      return existing && existing.position === q.position
-      ? "unchanged"
-      : !existing
-      ? "new"
-      : "changed";
+      const existing = existingQuestions.find((e) => e.id === q.id);
+      return existing && existing.position === q.position && existing.text === q.text
+        ? "unchanged"
+        : !existing
+          ? "new"
+          : "changed";
       return "removed";
     });
 
-    questionsDelta.removed = existingQuestions.filter((e) => !proposedQuestions.find((p) => e.id === p.id));
+    questionsDelta.removed = existingQuestions.filter(
+      (e) => !proposedQuestions.find((p) => e.id === p.id)
+    );
 
-    if ((questionsDelta.removed.length || groupDelta.removed.length) && !confirmed) return showConfirmDialog = true;
+    if (
+      (questionsDelta.removed.length || groupDelta.removed.length) &&
+      !confirmed
+    )
+      return (showConfirmDialog = "save");
 
-    const resp = await actions.surveys.updateChecklistById({ id, data:
-      { groups: groupDelta, questions: questionsDelta }
+    const resp = await actions.surveys.updateChecklistById({
+      id,
+      data: { groups: groupDelta, questions: questionsDelta },
     });
 
-    survey = await actions.surveys.getById(id);
+    surveys.activeDirty = false;
+    await surveys.refreshActive();
+    proposed = clone(groups);
   }
 </script>
 
 {#snippet group(group: Groups[number])}
-<div class="card-body p-6">
+<div class="card-body p-6 w-[900px]">
   {#if group.name !== "null"}
     <strong class="card-title flex justify-between items-center">
-      <span>{group.name}</span>
+      <Editable
+        size="sm"
+        as="span"
+        enabled={editable}
+        value="{group.name}"
+        onUpdate="{(s) => changeGroupName(s, group)}"
+      />
       {#if editable}
         <div class="join">
           <button
             onclick="{() => removeGroup(group)}"
-            class="btn btn-outline btn-sm join-item tooltip tooltip-left tooltip-primary"
             data-tip="Remove group and all questions"
+            class="btn btn-outline btn-sm join-item tooltip tooltip-left tooltip-primary"
           >
             <iconify-icon icon="mdi:trash-outline" class="pointer-events-none"
             ></iconify-icon>
           </button>
           <button
+            data-tip="Add a question to group"
             onclick="{() => showNewQuestionForGroup(group)}"
             class="btn btn-outline btn-sm join-item tooltip tooltip-left tooltip-primary"
-            data-tip="Add a question to group"
           >
             <iconify-icon icon="mdi:plus" class="pointer-events-none"
             ></iconify-icon>
           </button>
           <button
-            class="btn btn-outline btn-sm handle join-item tooltip tooltip-left tooltip-primary"
             data-tip="Drag to reorder group"
+            class="btn btn-outline btn-sm handle join-item tooltip tooltip-left tooltip-primary"
           >
             <iconify-icon icon="mdi:chevron-up-down" class="pointer-events-none"
             ></iconify-icon>
@@ -303,19 +354,37 @@
   {/if}
   <div class="flex gap-4">
     {#if editable}
-    <div class="flex-none w-1/4">
-      <label class="bg-base-100/20 rounded flex items-center justify-center relative w-full min-h-60 aspect-square">
-        {#if group.image}
-        <img src="{group.image}" alt="{group.name} screenshot" class="w-full" />
-        <button class="btn btn-sm btn-secondary absolute rounded-full h-8 w-8 top-2 right-2 shadow-xl" onclick={preventDefault(() => removeImage(group))}>
-          <iconify-icon icon="mdi:trash" class="pointer-events-none"></iconify-icon>
-        </button>
-        {:else}
-        <strong class="uppercase font-semibold opacity-50 text-sm">Click to add image</strong>
-        <input type="file" class="hidden" accept="image/*" multiple={false} onchange={(e) => handleGroupImage(e.target, group)} />
-        {/if}
-      </label>
-    </div>
+      <div class="flex-none w-1/4">
+        <label
+          class="bg-base-100/20 rounded flex items-center justify-center relative w-full min-h-60 aspect-square"
+        >
+          {#if group.image}
+            <img
+              src="{group.image}"
+              alt="{group.name} screenshot"
+              class="w-full"
+            />
+            <button
+              class="btn btn-sm btn-secondary absolute rounded-full h-8 w-8 top-2 right-2 shadow-xl"
+              onclick="{preventDefault(() => removeImage(group))}"
+            >
+              <iconify-icon icon="mdi:trash" class="pointer-events-none"
+              ></iconify-icon>
+            </button>
+          {:else}
+            <strong class="uppercase font-semibold opacity-50 text-sm"
+              >Click to add image</strong
+            >
+            <input
+              type="file"
+              class="hidden"
+              accept="image/*"
+              multiple="{false}"
+              onchange="{(e) => handleGroupImage(e.target, group)}"
+            />
+          {/if}
+        </label>
+      </div>
     {/if}
     <OrderableList
       class="flex-1"
@@ -340,7 +409,14 @@
     {question.position}
   </aside>
   <div class="flex-1 flex flex-col gap-4">
-    <span class="italic text-xl font-light">{question.text}</span>
+    <Editable
+      as="span"
+      size="sm"
+      enabled={editable}
+      value="{question.text}"
+      class="italic text-xl font-light"
+      onUpdate="{(s) => changeQuestionText(s, question)}"
+    />
     {#if !question.responses.length}
       <span class="badge">No responses yet</span>
     {:else}
@@ -364,7 +440,7 @@
   {#if editable}
     <div class="join self-end">
       <button
-        onclick={() => removeQuestion(question)}
+        onclick="{() => removeQuestion(question)}"
         data-tip="Remove question and all responses"
         class="btn btn-outline btn-sm join-item tooltip tooltip-left tooltip-primary"
       >
@@ -384,25 +460,33 @@
 {/snippet}
 
 {#if editable}
-  <div class="flex justify-between p-4 bg-neutral rounded-md shadow-lg sticky top-4 left-0 right-0 z-[2]">
+  <div
+    class="flex justify-between p-4 bg-neutral rounded-md shadow-lg sticky top-4 left-0 right-0 z-[2] w-full"
+  >
     <button
-      onclick="{() => (showNewGroupDialog = true)}"
       class="btn btn-sm btn-outline flex-none"
+      onclick="{() => (showNewGroupDialog = true)}"
     >
       <iconify-icon icon="mdi:plus" class="pointer-events-none"></iconify-icon>
       <span>Add Group</span>
     </button>
-    <div class="join">
-      <button
-        disabled="{clean}"
-        onclick={() => proposed = [...groups]}
-        class="btn btn-sm bg-base-100/50 flex-none join-item">Cancel</button
-      >
-      <button
-      disabled="{clean}"
-      onclick={() => saveSurvey()}
-        class="btn btn-primary btn-sm flex-none join-item">Save Changes</button
-      >
+    <div class="flex item-center gap-4">
+      <div class="join">
+        <button
+          disabled="{clean}"
+          onclick="{() => (proposed = [...groups])}"
+          class="btn btn-sm bg-base-100/50 flex-none join-item">Cancel</button
+        >
+        <button
+          disabled="{clean}"
+          onclick="{() => saveSurvey()}"
+          class="btn btn-primary btn-sm flex-none join-item">Save Changes</button
+        >
+      </div>
+      <button onclick="{() => showConfirmDialog = "delete"}" disabled="{!clean}" class="btn btn-error btn-sm">
+        <iconify-icon icon="mdi:trash-outline" class="pointer-events-none"></iconify-icon>
+        <span>Permanently Delete</span>
+      </button>
     </div>
   </div>
   <dialog
@@ -478,8 +562,20 @@
       </form>
     </div>
   </dialog>
-  <ConfirmDialog onclose={handleConfirm} bind:elm={confirmDialog} confirmText="YES" open={showConfirmDialog}>
-    Are you sure you want make these updates? Some of the questions/groups have been removed. You will lose the connected responses and or questions from anything removed. This cannot be undone!
+  <ConfirmDialog
+    confirmText="YES"
+    onclose="{handleConfirm}"
+    bind:elm="{confirmDialog}"
+    open="{!!showConfirmDialog}"
+  >
+    {#if showConfirmDialog === "save"}
+    Are you sure you want make these updates? Some of the questions/groups have
+    been removed. You will lose the connected responses and or questions from
+    anything removed. This cannot be undone!
+    {:else}
+    Are you sure you want permanently delete this survey/checklist? You will
+    lose the connected questions, groups and responses. This cannot be undone!
+    {/if}
   </ConfirmDialog>
 {/if}
 <OrderableList

@@ -37,8 +37,7 @@ const questionSchema = z.object({
 
 const groupSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  text: z.string().optional(),
+  name: z.string().optional(),
   image: z.string().nullable(),
   position: z.number().nullable(),
   questions: z.array(questionSchema).optional(),
@@ -57,6 +56,31 @@ const surveySchema = z.object({
     removed: z.array(questionSchema).optional(),
     unchanged: z.array(questionSchema).optional(),
   }),
+});
+
+export const create = defineAction({
+  input: z.string(),
+  handler: async (id, context) => {
+    const user = (await getSession(context.request))?.user as User;
+    const existing = await orm.survey.findFirst({
+      where: { revisionAsChecklist: { id } },
+    });
+
+    if (existing) throw new Error(`Revision "${id}" already has a checklist`);
+
+    const respondents = await orm.respondent.findMany({
+      where: { revisions: { some: { id } } },
+    });
+
+    return await orm.survey.create({
+      data: {
+        type: "CHECKLIST",
+        createdBy: user.email!,
+        revisionAsChecklist: { connect: { id } },
+        respondents: { connect: respondents.map((r) => ({ id: r.id })) },
+      },
+    });
+  },
 });
 
 export const getAll = defineAction({
@@ -106,7 +130,7 @@ export const updateChecklistById = defineAction({
           data: {
             position: group.position,
             imageURL: group.image,
-            text: group.text,
+            text: group.name,
           },
         });
       }),
@@ -151,6 +175,17 @@ export const updateChecklistById = defineAction({
         });
       }),
     ]);
+  },
+});
+
+export const deleteById = defineAction({
+  input: z.string(),
+  async handler(id) {
+    const survey = await orm.survey.findFirst({ where: { id } });
+    if (!survey || survey.type !== "CHECKLIST")
+      throw new Error(`Unable to delete survey: ${id}`);
+
+    return await orm.survey.delete({ where: { id } });
   },
 });
 

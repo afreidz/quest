@@ -24,10 +24,13 @@ export default {
   },
   refreshActive: async () => {
     if (!active) return;
-    active = await actions.surveys.getById(active.id);
+    const newSurvey = await actions.surveys.getById(active.id);
+    surveysAndChecklists = surveysAndChecklists.map((s) =>
+      s.id === newSurvey?.id ? newSurvey : s
+    );
   },
-  setActive: (c: typeof active) => {
+  setActive: (a: typeof active) => {
     if (activeDirty) return (warn = true);
-    active = c;
+    active = a;
   },
 };
