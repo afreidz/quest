@@ -30,8 +30,8 @@ const respondentSchema = z.object({
   name: z.string().optional(),
   title: z.string().optional(),
   profile: z.string().optional(),
-  systemId: z.string().optional(),
   imageURL: z.string().optional(),
+  revisionId: z.string().optional(),
 });
 
 export const getAll = defineAction({
@@ -67,22 +67,19 @@ export const create = defineAction({
   handler: async (input, context) => {
     const user = (await getSession(context.request))?.user as User;
 
-    const system = await orm.system.findFirst({
-      where: { id: input.systemId },
-      include: { revisions: true },
+    const revision = await orm.revision.findFirst({
+      where: { id: input.revisionId },
     });
+    delete input.revisionId;
 
     const surveyConnections: { id: string }[] = [];
-    const systemConnections: { id: string }[] = [];
     const revisionConnections: { id: string }[] = [];
 
-    if (system) {
-      systemConnections.push({ id: system.id });
-      system.revisions.forEach((r) => {
-        revisionConnections.push({ id: r.id });
-        if (r.surveyId) surveyConnections.push({ id: r.surveyId });
-        if (r.checklistId) surveyConnections.push({ id: r.checklistId });
-      });
+    if (revision) {
+      revisionConnections.push({ id: revision.id });
+      if (revision.surveyId) surveyConnections.push({ id: revision.surveyId });
+      if (revision.checklistId)
+        surveyConnections.push({ id: revision.checklistId });
     }
 
     return await orm.respondent.create({

@@ -80,6 +80,7 @@
   }
 
   function navigateToRevision(r: typeof store.revisions.active) {
+    if (store.revisions.unsaved) return;
     store.setActiveRevision(r);
     window.history.replaceState(null, "", `#${r?.id}`);
   }
@@ -141,7 +142,9 @@
             >
               <a
                 href="#{revision.id}"
+                class:tooltip="{store.revisions.unsaved}"
                 on:click="{preventDefault(() => navigateToRevision(revision))}"
+                data-tip="{'You have unsaved changes to the current revision!'}"
                 class="flex-1 h-full flex items-center pl-4">{revision.title}</a
               >
             </div>

@@ -55,15 +55,15 @@
   }
 
   async function createNewRespondent() {
-    if (!store.systems.active) return;
+    if (!store.revisions.active) return;
     loading = true;
 
     await actions.respondents.create({
       email: newEmail,
-      systemId: store.systems.active.id,
+      revisionId: store.revisions.active.id,
     });
 
-    await store.refreshActiveSystem();
+    await store.refreshActiveRevision();
 
     showNewDialog = false;
     newDialog?.close();

@@ -56,6 +56,7 @@
   });
 
   function navigateToSurvey(s: typeof store.surveys.active) {
+    if (store.surveys.unsaved) return;
     store.setActiveSurvey(s);
     window.history.replaceState(null, "", `#${s?.id}`);
   }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { preventDefault } from "@/utilities/events";
   import type { HTMLAttributes } from "svelte/elements";
 
   type Props = HTMLAttributes<any> & {
@@ -22,6 +23,7 @@
 
   let editing: boolean = $state(false);
   let currentValue: string = $state(value);
+  let form: HTMLFormElement | null = $state(null);
   let input: HTMLInputElement | null = $state(null);
 
   $effect(() => {
@@ -35,43 +37,61 @@
 </script>
 
 {#if editing}
-  <label class="flex items-center gap-2">
-    <input
-      type="text"
-      onblur="{update}"
-      bind:this="{input}"
-      bind:value="{currentValue}"
-      class="input bg-base-100/10 w-full"
-      class:input-xs="{size === 'xs'}"
-      class:input-sm="{size === 'sm'}"
-      class:input-md="{size === 'md'}"
-      class:input-lg="{size === 'lg'}"
-    />
-    <button
-      onclick="{update}"
-      class="btn btn-outline"
-      class:btn-xs="{size === 'xs'}"
-      class:btn-sm="{size === 'sm'}"
-      class:btn-md="{size === 'md'}"
-      class:btn-lg="{size === 'lg'}"
+  <dialog open class="contents appearance-none">
+    <form
+      method="dialog"
+      bind:this="{form}"
+      onsubmit="{preventDefault(update)}"
+      onreset="{preventDefault(() => (editing = false))}"
     >
-      {#if currentValue === value}
-        <iconify-icon icon="mdi:close"></iconify-icon>
-      {:else}
-        <iconify-icon icon="mdi:check"></iconify-icon>
-      {/if}
-    </button>
-  </label>
+      <label class="flex items-center gap-2">
+        <input
+          type="text"
+          onblur="{update}"
+          bind:this="{input}"
+          bind:value="{currentValue}"
+          class:input-xs="{size === 'xs'}"
+          class:input-sm="{size === 'sm'}"
+          class:input-md="{size === 'md'}"
+          class:input-lg="{size === 'lg'}"
+          class="input bg-base-100/10 w-full"
+          onkeydown="{(e) => {
+            if (e.key === 'Escape' && form) form.reset();
+          }}"
+        />
+        <button
+          type="submit"
+          class="btn btn-outline"
+          class:btn-xs="{size === 'xs'}"
+          class:btn-sm="{size === 'sm'}"
+          class:btn-md="{size === 'md'}"
+          class:btn-lg="{size === 'lg'}"
+        >
+          {#if currentValue === value}
+            <iconify-icon icon="mdi:close"></iconify-icon>
+          {:else}
+            <iconify-icon icon="mdi:check"></iconify-icon>
+          {/if}
+        </button>
+      </label>
+    </form>
+  </dialog>
 {:else}
   <svelte:element
     this="{as}"
-    class="flex items-center gap-1 {classList}"
+    class="flex items-center gap-1 group {classList}"
     {...rest}
+    tabindex="{enabled && -1}"
+    role="{enabled && 'button'}"
+    onclick="{() => {
+      if (enabled) editing = true;
+    }}"
   >
     {value}
     {#if enabled}
       <button
-        class="btn btn-ghost text-neutral-300 hover:text-neutral-950"
+        value="confirm"
+        class="btn btn-ghost transition-colors invisible group-hover:visible text-neutral-400 hover:!text-neutral-950"
         class:btn-xs="{size === 'xs'}"
         class:btn-sm="{size === 'sm'}"
         class:btn-md="{size === 'md'}"

@@ -6,6 +6,7 @@
 
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { preventDefault } from "@/utilities/events";
 
   type Props = {
     open?: Boolean;
@@ -38,18 +39,23 @@
   });
 </script>
 
-<dialog class="modal text-neutral-950" bind:this="{elm}" onclose="{() => onclose?.(elm?.returnValue)}">
+<dialog
+  class="modal text-neutral-950"
+  bind:this="{elm}"
+  onclose="{() => onclose?.(elm?.returnValue)}"
+>
   <form
     method="dialog"
     class="modal-box bg-neutral {className ?? ''}"
-    on:submit|preventDefault="{() =>
+    onsubmit="{preventDefault(() =>
       elm?.close(
         confirmText && confirmTextValue === confirmText
           ? confirmText
           : confirmText && confirmTextValue !== confirmText
             ? ''
             : defaultConfirmValue
-      )}"
+      )
+    )}"
   >
     <h3 class="font-bold text-lg">{title}</h3>
     <div class="prose max-w-none">
@@ -79,7 +85,7 @@
       <button
         value="cancel"
         formmethod="dialog"
-        on:click|preventDefault="{() => elm?.close()}"
+        onclick="{preventDefault(() => elm?.close())}"
         class="btn btn-secondary text-neutral">Close</button
       >
     </div>

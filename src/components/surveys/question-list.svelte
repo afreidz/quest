@@ -462,7 +462,7 @@
 
 {#if editable}
   <div
-    class="flex justify-between p-4 bg-neutral rounded-md shadow-lg sticky top-4 left-0 right-0 z-[2] w-[900px]"
+    class="flex justify-between p-4 bg-neutral border rounded-box shadow-lg sticky top-4 left-0 right-0 z-[2] w-[900px]"
   >
     <button
       class="btn btn-sm btn-outline flex-none"
@@ -584,5 +584,5 @@
   enabled="{editable}"
   items="{clone(proposed ?? [])}"
   onUpdate="{(updated) => (proposed = updated)}"
-  itemClass="card bg-neutral shadow-sm rounded mb-4 outline-secondary"
+  itemClass="card border bg-neutral shadow-sm rounded-box mb-4 outline-secondary"
 />
