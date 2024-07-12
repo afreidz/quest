@@ -1,44 +1,56 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { actions } from "astro:actions";
-  import clients from "@/stores/clients.svelte";
+  import store from "@/stores/global.svelte";
   import { preventDefault } from "@/utilities/events";
   import SystemsList from "@/components/clients/systems-list.svelte";
 
   let newName = $state("");
   let loading = $state(true);
-  let search: HTMLInputElement;
   let searchString = $state("");
-  let newDialog: HTMLDialogElement;
   let showNewDialog = $state(false);
+  let search: HTMLInputElement | null = $state(null);
+  let newDialog: HTMLDialogElement | null = $state(null);
+  let newClientInput: HTMLInputElement | null = $state(null);
+
+  onMount(async () => {
+    await store.refreshAllClients();
+    if (!store.clients.active && store.clients.all.length)
+      store.setActiveClient(store.clients.all[0]);
+  });
 
   let filteredClients = $derived.by(() => {
-    if (searchString.length && clients.all.length) {
-      return clients.all.filter((c) =>
+    if (searchString.length && store.clients.all.length) {
+      return store.clients.all.filter((c) =>
         c.name.toLowerCase().includes(searchString.toLowerCase())
       );
     } else {
-      return clients.all;
+      return store.clients.all;
     }
   });
 
   $effect(() => {
     if (window.location.hash) {
-      const client = clients.all.find(
+      const client = store.clients.all.find(
         (c) => c.id === window.location.hash.replace("#", "")
       );
-      if (client) clients.setActive(client);
+      if (client) store.setActiveClient(client);
     }
   });
 
   $effect(() => {
-    if (clients.active)
-      window.history.replaceState({}, "", `#${clients.active.id}`);
+    if (store.clients.active)
+      window.history.replaceState({}, "", `#${store.clients.active.id}`);
   });
 
   $effect(() => {
     if (showNewDialog && newDialog) {
       newDialog.showModal();
     }
+  });
+
+  $effect(() => {
+    if (showNewDialog && newClientInput) newClientInput.focus();
   });
 
   $effect(() => {
@@ -50,11 +62,11 @@
     loading = true;
 
     await actions.client.create({ name: newName });
-    await clients.refresh();
+    await store.refreshAllClients();
 
     showNewDialog = false;
+    newDialog?.close();
     searchString = "";
-    newDialog.close();
     loading = false;
     newName = "";
   }
@@ -100,8 +112,8 @@
       {#each filteredClients as client}
         <a
           href="{`#${client.id}`}"
-          class:highlight="{clients.active?.id === client.id}"
-          onclick="{preventDefault(() => clients.setActive(client))}"
+          class:highlight="{store.clients.active?.id === client.id}"
+          onclick="{preventDefault(() => store.setActiveClient(client))}"
           class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
         >
           <span class="flex-1">{client.name}</span>
@@ -116,9 +128,7 @@
   </div>
 </div>
 
-{#if clients.active}
-  <SystemsList client="{clients.active}" />
-{/if}
+<SystemsList />
 
 <dialog
   class="modal"
@@ -139,8 +149,9 @@
       <label class="join overflow-clip input-bordered border flex-1">
         <input
           required
-          placeholder="Client name"
           bind:value="{newName}"
+          bind:this="{newClientInput}"
+          placeholder="Client name"
           class="input join-item flex-1 bg-base-100/10"
         />
         <button

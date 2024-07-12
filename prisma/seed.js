@@ -580,9 +580,6 @@ const heroFinderChecklist = await orm.survey.create({
 const tonyStark = await orm.respondent.create({
   data: {
     email: "tony.stark@marvel.com",
-    systems: {
-      connect: { id: heroFinderSystem.id },
-    },
     createdBy: "system@seed.com",
     revisions: {
       connect: [{ id: currentStateRevision.id }, { id: prototypeRevision.id }],
@@ -600,9 +597,6 @@ const tonyStark = await orm.respondent.create({
 const bruceBanner = await orm.respondent.create({
   data: {
     email: "bruce.banner@marvel.com",
-    systems: {
-      connect: { id: heroFinderSystem.id },
-    },
     createdBy: "system@seed.com",
     revisions: {
       connect: [{ id: currentStateRevision.id }, { id: prototypeRevision.id }],

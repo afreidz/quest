@@ -2,11 +2,9 @@ import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
+import { PaginationSchema } from "@/utilities/actions";
 
 const include = {
-  systems: {
-    include: { client: true },
-  },
   surveys: {
     include: {
       questions: { include: { group: true } },
@@ -15,8 +13,10 @@ const include = {
       },
     },
   },
-  _count: { select: { revisions: true, responses: true, systems: true } },
-  revisions: true,
+  _count: { select: { revisions: true, responses: true } },
+  revisions: {
+    include: { system: true },
+  },
   responses: {
     include: {
       question: true,
@@ -35,8 +35,12 @@ const respondentSchema = z.object({
 });
 
 export const getAll = defineAction({
-  handler: async () => {
+  input: PaginationSchema,
+  handler: async (pagination) => {
     return await orm.respondent.findMany({
+      orderBy: { createdAt: "asc" },
+      take: pagination?.take,
+      skip: pagination?.skip,
       include,
     });
   },
@@ -88,9 +92,6 @@ export const create = defineAction({
         revisions: {
           connect: revisionConnections,
         },
-        systems: {
-          connect: systemConnections,
-        },
         surveys: {
           connect: surveyConnections,
         },
@@ -114,7 +115,7 @@ export const getBySystemId = defineAction({
   input: z.string(),
   handler: async (id) => {
     return await orm.respondent.findMany({
-      where: { systems: { some: { id } } },
+      where: { revisions: { some: { systemId: id } } },
       include,
     });
   },
@@ -150,9 +151,6 @@ export const addToSystems = defineAction({
         revisions: {
           connect: revisions.map((r) => ({ id: r.id })),
         },
-        systems: {
-          connect: systemIds.map((id) => ({ id })),
-        },
       },
     });
   },
@@ -174,9 +172,6 @@ export const removeFromSystems = defineAction({
         revisions: {
           disconnect: revisions.map((r) => ({ id: r.id })),
         },
-        systems: {
-          disconnect: systemIds.map((id) => ({ id })),
-        },
       },
     });
   },
@@ -195,9 +190,6 @@ export const addToRevisions = defineAction({
     return await orm.respondent.update({
       where: { id },
       data: {
-        systems: {
-          connect: systems.map((s) => ({ id: s.id })),
-        },
         revisions: {
           connect: revisionIds.map((id) => ({ id })),
         },

@@ -18,7 +18,10 @@
       (r) => r.surveyId === survey.id
     );
 
-    return responses.length === survey._count.questions;
+    return (
+      survey._count.questions > 0 &&
+      responses.length === survey._count.questions
+    );
   }
 
   let { respondent }: Props = $props();

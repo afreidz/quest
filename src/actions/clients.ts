@@ -2,11 +2,13 @@ import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
+import { PaginationSchema } from "@/utilities/actions";
 
 const include = {
   _count: {
     select: { systems: true },
   },
+  systems: true,
 };
 
 const schema = z.object({
@@ -14,8 +16,12 @@ const schema = z.object({
 });
 
 export const getAll = defineAction({
-  handler: async () => {
+  input: PaginationSchema,
+  handler: async (pagination) => {
     return await orm.client.findMany({
+      orderBy: { createdAt: "asc" },
+      take: pagination?.take,
+      skip: pagination?.skip,
       include,
     });
   },

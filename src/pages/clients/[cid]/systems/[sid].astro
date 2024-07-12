@@ -1,0 +1,11 @@
+---
+import PrivateLayout from "@/layouts/private.astro";
+import SystemDetails from "@/components/systems/details.svelte";
+
+const sid = Astro.params.sid as string;
+const cid = Astro.params.cid as string;
+---
+
+<PrivateLayout class="flex flex-1">
+  <SystemDetails client:only="svelte" systemId={sid} clientId={cid} />
+</PrivateLayout>

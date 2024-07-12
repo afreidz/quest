@@ -2,6 +2,7 @@ import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
 import orm, { SurveyType } from "@hsalux/quest-db";
+import { PaginationSchema } from "@/utilities/actions";
 
 const include = {
   system: true,
@@ -75,8 +76,12 @@ const revisionSchema = z.object({
 });
 
 export const getAll = defineAction({
-  handler: async () => {
+  input: PaginationSchema,
+  handler: async (pagination) => {
     return await orm.revision.findMany({
+      orderBy: { createdAt: "asc" },
+      take: pagination?.take,
+      skip: pagination?.skip,
       include,
     });
   },
@@ -92,27 +97,17 @@ export const create = defineAction({
         where: { type: input.surveyType },
       });
 
-      const respondents = await orm.respondent.findMany({
-        where: { systems: { some: { id: input.systemId } } },
-      });
-
       return await orm.revision.create({
         data: {
           title: input.title,
           system: { connect: { id: input.systemId } },
           createdBy: user.email!,
-          respondents: {
-            connect: respondents.map((r) => ({ id: r.id })),
-          },
           survey: {
             create: {
               type: input.surveyType,
               createdBy: "system@seed.com",
               questions: {
                 connect: questions.map((q) => ({ id: q.id })),
-              },
-              respondents: {
-                connect: respondents.map((r) => ({ id: r.id })),
               },
             },
           },

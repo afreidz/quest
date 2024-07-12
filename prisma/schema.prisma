@@ -26,10 +26,9 @@ model System {
 
   title String
 
-  clientId    String
-  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  revisions   Revision[]
-  respondents Respondent[]
+  clientId  String
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  revisions Revision[]
 
   @@unique([clientId, title])
 }
@@ -50,6 +49,7 @@ model Revision {
   checklistId String? @unique
   checklist   Survey? @relation("RevisionChecklist", fields: [checklistId], references: [id])
 
+  sessions    Session[]
   respondents Respondent[]
 
   @@unique([systemId, title])
@@ -66,10 +66,11 @@ model Respondent {
   title    String?
   profile  String?
 
-  surveys   Survey[]
-  systems   System[]
-  revisions Revision[]
-  responses Response[]
+  surveys    Survey[]
+  sessions   Session[]
+  revisions  Revision[]
+  responses  Response[]
+  utterances TranscriptionSegment[]
 
   @@unique([email])
 }
@@ -105,7 +106,7 @@ model Question {
   positive Boolean @default(true)
 
   groupId String?
-  group QuestionGroup? @relation(fields: [groupId], references: [id])
+  group   QuestionGroup? @relation(fields: [groupId], references: [id])
 
   type            SurveyType
   surveys         Survey[]
@@ -162,53 +163,64 @@ model Response {
   @@unique([respondentId, surveyId, questionId])
 }
 
-// model Session {
-//   id                String                      @id @default(uuid())
-//   createdAt         DateTime                    @default(now())
-//   updatedAt         DateTime                    @updatedAt
-//   createdBy         String
-//   respondentId      String
-//   respondent        Respondent                  @relation(fields: [respondentId], references: [id])
-//   videoURL          String?
-//   moments           KeyMoment[]
-//   responses         Response[]
-//   transcripts       TranscriptionSegment[]
-//   clips             SessionClip[]
-//   feedback          SummarizedFeedbackItem[]
-//   results           SummarizedChecklistResult[]
-//   suggestions       SummarizedSuggestion[]
-//   serverRecordingId String?                     @unique
-//   summarized        Boolean                     @default(false)
-// }
+model Session {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  createdBy String
 
-// model KeyMoment {
-//   id        String   @id @default(uuid())
-//   time      DateTime @default(now())
-//   text      String
-//   createdBy String
-//   sessionId String
-//   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-// }
+  videoURL          String?
+  serverRecordingId String? @unique
 
-// model TranscriptionSegment {
-//   id        String   @id @default(uuid())
-//   time      DateTime @default(now())
-//   speaker   String
-//   text      String
-//   sessionId String
-//   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-// }
+  respondentId String
+  respondent   Respondent @relation(fields: [respondentId], references: [id])
+
+  revisionId String
+  revision   Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  moments     KeyMoment[]
+  transcripts TranscriptionSegment[]
+
+  // clips       SessionClip[]
+  // feedback          SummarizedFeedbackItem[]
+  // results           SummarizedChecklistResult[]
+  // suggestions       SummarizedSuggestion[]
+}
+
+model KeyMoment {
+  id        String   @id @default(uuid())
+  time      DateTime @default(now())
+  createdBy String
+
+  text String
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model TranscriptionSegment {
+  id   String   @id @default(uuid())
+  time DateTime @default(now())
+
+  text      String
+  moderator Boolean?
+
+  speakerId String?
+  speaker   Respondent? @relation(fields: [speakerId], references: [id], onDelete: Cascade)
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
 
 // model SessionClip {
 //   id        String   @id @default(uuid())
 //   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
 //   createdBy String
+
 //   startTime DateTime
 //   endTime   DateTime
+
 //   sessionId String
 //   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-//   videoURL  String?
 // }
 
 // model SummarizedFeedbackItem {

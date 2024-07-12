@@ -2,8 +2,12 @@ import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
 import orm, { type ORM } from "@hsalux/quest-db";
+import { PaginationSchema } from "@/utilities/actions";
 
 const include = {
+  _count: {
+    select: { questions: true },
+  },
   questions: {
     include: {
       group: true,
@@ -84,8 +88,12 @@ export const create = defineAction({
 });
 
 export const getAll = defineAction({
-  handler: async () => {
+  input: PaginationSchema,
+  handler: async (pagination) => {
     return await orm.survey.findMany({
+      orderBy: { createdAt: "asc" },
+      take: pagination?.take,
+      skip: pagination?.skip,
       include,
     });
   },

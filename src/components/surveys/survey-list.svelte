@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { actions } from "astro:actions";
-  import clients from "@/stores/clients.svelte";
+  import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
   import { preventDefault } from "@/utilities/events";
   import QuestionList from "@/components/surveys/question-list.svelte";
-  import surveysAndChecklists from "@/stores/surveysAndChecklists.svelte";
 
   let loading = $state(false);
   let includeSurveys = $state(true);
@@ -12,6 +12,17 @@
   let client = $state<string | null>(null);
   let showNewDialog: Boolean = $state(false);
   let newDialog: HTMLDialogElement | null = $state(null);
+  let newSurveyInput: HTMLSelectElement | null = $state(null);
+
+  onMount(async () => {
+    await store.refreshAllClients();
+    await store.refreshAllSurveys();
+    const survey = store.surveys.all.find((r) =>
+      window.location.hash.includes(r.id)
+    );
+    store.setActiveSurvey(survey || store.surveys.all[0]);
+    window.location.hash = "";
+  });
 
   let newChecklist: {
     clientId: string | null;
@@ -35,34 +46,29 @@
 
   $effect(() => {
     if (showNewDialog && newDialog) {
-      clients.refresh();
+      store.refreshAllClients();
       newDialog.showModal();
     }
   });
 
   $effect(() => {
-    if (window.location.hash) {
-      const client = surveysAndChecklists.all.find(
-        (c) => c.id === window.location.hash.replace("#", "")
-      );
-      if (client) surveysAndChecklists.setActive(client);
-    }
+    if (showNewDialog && newSurveyInput) newSurveyInput.focus();
   });
 
-  $effect(() => {
-    if (surveysAndChecklists.active)
-      window.history.replaceState({}, "", `#${surveysAndChecklists.active.id}`);
-  });
+  function navigateToSurvey(s: typeof store.surveys.active) {
+    store.setActiveSurvey(s);
+    window.history.replaceState(null, "", `#${s?.id}`);
+  }
 
   let filteredSurveysAndChecklists = $derived.by(() => {
     const filteredByClient = client
-      ? surveysAndChecklists.all.filter((s) => {
+      ? store.surveys.all.filter((s) => {
           return (
             s.revisionAsChecklist?.system.client.id === client ||
             s.revisionAsSurvey?.system.client.id === client
           );
         })
-      : surveysAndChecklists.all;
+      : store.surveys.all;
 
     return filteredByClient.filter((s) => {
       return !includeSurveys && s.type !== "CHECKLIST"
@@ -81,7 +87,7 @@
       .create(newChecklist.revisionId)
       .catch((err) => messages.error(err.message, err.detail));
 
-    await surveysAndChecklists.refreshAll();
+    await store.refreshAllSurveys();
   }
 </script>
 
@@ -108,7 +114,7 @@
           class="select select-bordered bg-neutral select-sm"
         >
           <option value="{null}">Client...</option>
-          {#each clients.all as client}
+          {#each store.clients.all as client}
             <option value="{client.id}">{client.name}</option>
           {/each}
         </select>
@@ -142,11 +148,9 @@
         <a
           href="{`#${survey.id}`}"
           data-tip="{'You have unsaved changes to the current checklist or survey!'}"
-          class:tooltip="{surveysAndChecklists.activeDirty}"
-          class:highlight="{surveysAndChecklists.active?.id === survey.id}"
-          onclick="{preventDefault(() =>
-            surveysAndChecklists.setActive(survey)
-          )}"
+          class:tooltip="{store.surveys.unsaved}"
+          class:highlight="{store.surveys.active?.id === survey.id}"
+          onclick="{preventDefault(() => navigateToSurvey(survey))}"
           class="btn btn-primary btn-lg btn-outline rounded-none w-full tooltip-error tooltip-top first:tooltip-bottom tooltip-b text-left border-neutral-200 border-t-0 border-r-0 border-l-0 !h-auto px-4 py-4"
         >
           <div class="flex flex-1 items-center justify-start gap-4">
@@ -183,9 +187,7 @@
 </div>
 
 <div class="p-4 w-full flex flex-col gap-4 items-center">
-  {#if surveysAndChecklists.active}
-    <QuestionList editable="{true}" />
-  {/if}
+  <QuestionList editable="{true}" />
 </div>
 
 <dialog
@@ -210,11 +212,12 @@
         </div>
         <select
           required
+          bind:this="{newSurveyInput}"
           bind:value="{newChecklist.clientId}"
           class="select select-bordered bg-base-100/10"
         >
           <option disabled selected value="{null}">Pick one...</option>
-          {#each clients.all as client}
+          {#each store.clients.all as client}
             <option value="{client.id}">{client.name}</option>
           {/each}
         </select>

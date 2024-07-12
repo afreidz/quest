@@ -29,8 +29,10 @@
     <Meta {respondent} />
   {/if}
 </div>
-<div class="p-4 w-full">
+<div class="p-4 w-full flex justify-center">
   {#if respondent}
-    <List {respondent} />
+    <div class="flex flex-col items-stretch w-[900px]">
+      <List {respondent} />
+    </div>
   {/if}
 </div>

@@ -1,12 +1,12 @@
 <script lang="ts">
   import clone from "@/utilities/clone";
   import { actions } from "astro:actions";
+  import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
   import { fileToDataUri } from "@/utilities/image";
   import { preventDefault } from "@/utilities/events";
   import { orderByPosition } from "@/utilities/order";
   import Editable from "@/components/app/editable.svelte";
-  import surveys from "@/stores/surveysAndChecklists.svelte";
   import type { RevisionFromAll } from "@/actions/revisions";
   import ConfirmDialog from "@/components/app/confirm-dialog.svelte";
   import OrderableList from "@/components/app/orderable-list.svelte";
@@ -53,11 +53,11 @@
   let newQuestionDialog: HTMLDialogElement | null = $state(null);
 
   let { editable: canEdit = false, survey }: Props = $props();
-  let editable = $derived(canEdit && surveys.active?.type === "CHECKLIST");
+  let editable = $derived(canEdit && store.surveys.active?.type === "CHECKLIST");
 
   let groups: Groups = $derived.by(() => {
     const groupedObj = Object.groupBy(
-      clone((survey?.questions || surveys.active?.questions) ?? []),
+      clone((survey?.questions || store.surveys.active?.questions) ?? []),
       ({ group }) => group?.text ?? "null"
     );
 
@@ -76,10 +76,11 @@
           responses: question.responseOptions
             .sort((a, b) => (a?.numericalValue ?? 0) - (b?.numericalValue ?? 0))
             .map((ro) => {
+              const surveyId = survey?.id || store.surveys.active?.id;
               return {
                 label: ro.label,
                 value: ro.numericalValue,
-                count: ro.responses.filter((r) => r.questionId === question.id)
+                count: ro.responses.filter((r) => r.questionId === question.id && r.surveyId === surveyId)
                   .length,
               };
             }),
@@ -111,11 +112,11 @@
   });
 
   $effect(() => {
-    surveys.activeDirty = !clean;
+    store.surveys.unsaved = !clean;
   });
 
   $effect(() => {
-    if (surveys.active || survey) proposed = clone(groups);
+    if (store.surveys.active || survey) proposed = clone(groups);
   });
 
   $effect(() => {
@@ -252,15 +253,15 @@
   }
 
   async function deleteSurvey(confirmed: boolean | undefined = false) {
-    const id = survey?.id || surveys.active?.id;
+    const id = survey?.id || store.surveys.active?.id;
     if (!confirmed || !id) return;
     await actions.surveys.deleteById(id);
-    surveys.setActive(null);
-    await surveys.refreshAll();
+    store.setActiveSurvey(null);
+    await store.refreshAllSurveys();
   }
 
   async function saveSurvey(confirmed: boolean | undefined = false) {
-    const id = surveys.active?.id;
+    const id = store.surveys.active?.id;
 
     if (!id) throw messages.error("Unable to find survey for saving");
 
@@ -301,19 +302,19 @@
     )
       return (showConfirmDialog = "save");
 
-    const resp = await actions.surveys.updateChecklistById({
+    await actions.surveys.updateChecklistById({
       id,
       data: { groups: groupDelta, questions: questionsDelta },
     });
 
-    surveys.activeDirty = false;
-    await surveys.refreshActive();
+    store.surveys.unsaved = false;
+    await store.refreshActiveSurvey();
     proposed = clone(groups);
   }
 </script>
 
 {#snippet group(group: Groups[number])}
-<div class="card-body p-6 w-[900px]">
+<div class="card-body p-6 max-w-[900px] min-w-[600px] w-full">
   {#if group.name !== "null"}
     <strong class="card-title flex justify-between items-center">
       <Editable
@@ -461,7 +462,7 @@
 
 {#if editable}
   <div
-    class="flex justify-between p-4 bg-neutral rounded-md shadow-lg sticky top-4 left-0 right-0 z-[2] w-full"
+    class="flex justify-between p-4 bg-neutral rounded-md shadow-lg sticky top-4 left-0 right-0 z-[2] w-[900px]"
   >
     <button
       class="btn btn-sm btn-outline flex-none"

@@ -5,18 +5,22 @@
 // sum and multiply the final score by 2.5 to get a score out of 100
 // average all the responses to get a final raw score
 import { actions } from "astro:actions";
-import messages from "@/stores/messages.svelte";
-import type { Revisions } from "@/actions/revisions";
-import type { Respondents } from "@/actions/respondents";
+import type { SurveyFromAll } from "@/actions/surveys";
+import type { RevisionFromAll, Revisions } from "@/actions/revisions";
+import type { RespondentFromAll, Respondents } from "@/actions/respondents";
 
 type SurveyRespondents = Respondents | Revisions[number]["respondents"];
+type Surveys =
+  | SurveyFromAll
+  | RevisionFromAll["survey"]
+  | RespondentFromAll["surveys"][number];
 
 export async function calculatePracticeAverageSUSScore() {
-  const respondents = await actions.respondents.getAll();
+  const respondents = await actions.respondents.getAll(undefined);
   const scores = respondents
     .map((r) => {
       const survey = r.surveys.find((s) => s.type === "SUS_PROPOSED");
-      return survey && calculateSUSScoreFromRespondent(r, survey.id);
+      return survey && calculateSUSScoreFromRespondent(r, survey);
     })
     .filter(Boolean) as number[];
   if (!scores.length) return null;
@@ -25,10 +29,9 @@ export async function calculatePracticeAverageSUSScore() {
 
 export function calculateAverageSUSScore(
   respondents: SurveyRespondents,
-  surveyId?: string | null
+  survey: Surveys
 ) {
-  if (!surveyId) throw messages.error("Survey Id required to calculate score");
-  const scores = calculateSUSScoreFromRespondents(respondents, surveyId).filter(
+  const scores = calculateSUSScoreFromRespondents(respondents, survey).filter(
     Boolean
   ) as number[];
   if (!scores.length) return null;
@@ -37,27 +40,23 @@ export function calculateAverageSUSScore(
 
 export function calculateSUSScoreFromRespondents(
   respondents: SurveyRespondents,
-  surveyId?: string | null
+  survey: Surveys
 ) {
-  if (!surveyId) throw messages.error("Survey Id required to calculate score");
   const scores = respondents
-    .map((r) => calculateSUSScoreFromRespondent(r, surveyId))
+    .map((r) => calculateSUSScoreFromRespondent(r, survey))
     .filter(Boolean);
   return scores;
 }
 
 export function calculateSUSScoreFromRespondent(
   respondent: SurveyRespondents[number],
-  surveyId?: string | null
+  survey: Surveys
 ) {
-  const survey = respondent.surveys.find((s) => s.id === surveyId);
-  if (!survey) throw messages.error("Survey Id required to calculate score");
-
   const responses = respondent.responses.filter(
     (r) => survey?.id === r.surveyId
   );
 
-  if (responses.length !== survey?._count.questions || !responses.length)
+  if (responses.length !== survey?.questions.length || !responses.length)
     return undefined;
 
   const score = responses.reduce((score, response) => {

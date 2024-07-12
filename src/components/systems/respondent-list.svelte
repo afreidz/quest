@@ -1,79 +1,75 @@
 <script lang="ts">
   import { actions } from "astro:actions";
+  import store from "@/stores/global.svelte";
   import { preventDefault } from "@/utilities/events";
-  import type { SystemFromAll } from "@/actions/systems";
+  import type { RevisionFromAll } from "@/actions/revisions";
   import Avatar from "@/components/respondents/avatar.svelte";
 
-  type Props = {
-    system: string;
-  };
-
   let newEmail = $state("");
-  let loading = $state(true);
+  let loading = $state(false);
   let suggestionText = $state("");
-  let newDialog: HTMLDialogElement;
   let showNewDialog = $state(false);
-  let system = $state<SystemFromAll | null>(null);
-  let suggestions = $state<SystemFromAll["respondents"]>([]);
+  let newDialog: HTMLDialogElement | null = $state(null);
+  let suggestions = $state<RevisionFromAll["respondents"]>([]);
+  let newRespondentInput: HTMLInputElement | null = $state(null);
 
   $effect(() => {
     if (newDialog && showNewDialog) newDialog.showModal();
   });
 
   $effect(() => {
-    if (!system && systemId) refreshSystem();
+    if (showNewDialog && newRespondentInput) newRespondentInput.focus();
   });
 
   $effect(() => {
     if (newEmail) {
       suggestionText = "Or select an existing respondent from the list";
       actions.respondents.getBySearch(newEmail).then((r) => (suggestions = r));
-    } else if (system?.respondents.length) {
-      suggestions = system.respondents;
+    } else if (store.revisions.active?.respondents.length) {
+      suggestions = store.revisions.active.respondents;
       suggestionText = "Toggle existing respondents";
     } else {
       suggestions = [];
     }
   });
 
-  async function refreshSystem() {
-    loading = true;
-    system = await actions.system.getById(systemId);
-    loading = false;
-  }
+  async function toggleExisting(r: (typeof suggestions)[number]) {
+    if (!store.revisions.active) return;
 
-  async function toggleExisting(add: boolean, r: (typeof suggestions)[number]) {
-    if (add) {
-      await actions.respondents.addToSystems({
+    const existing = store.revisions.active.respondents.find(
+      (er) => er.id === r.id
+    );
+
+    if (existing) {
+      await actions.respondents.removeFromRevisions({
         id: r.id,
-        systemIds: [systemId],
+        revisionIds: [store.revisions.active.id],
       });
     } else {
-      await actions.respondents.removeFromSystems({
+      await actions.respondents.addToRevisions({
         id: r.id,
-        systemIds: [systemId],
+        revisionIds: [store.revisions.active.id],
       });
     }
-    await refreshSystem();
+    await store.refreshActiveRevision();
   }
 
   async function createNewRespondent() {
+    if (!store.systems.active) return;
     loading = true;
 
     await actions.respondents.create({
-      systemId,
       email: newEmail,
+      systemId: store.systems.active.id,
     });
 
-    await refreshSystem();
+    await store.refreshActiveSystem();
 
     showNewDialog = false;
-    newDialog.close();
+    newDialog?.close();
     loading = false;
     newEmail = "";
   }
-
-  let { system: systemId }: Props = $props();
 </script>
 
 <div class="min-w-80 bg-neutral flex flex-col border-neutral-200 border-t">
@@ -83,7 +79,7 @@
     <span>Respondents</span>
     <div
       class="tooltip tooltip-left tooltip-primary"
-      data-tip="Add or remove a respondent for {system?.title}"
+      data-tip="Add or remove a respondent for {store.systems.active?.title}"
     >
       <button
         class="btn btn-sm btn-ghost"
@@ -98,8 +94,8 @@
     class:skeleton="{loading}"
     class="bg-neutral rounded-none flex-1 overflow-auto"
   >
-    {#if !loading && !!system}
-      {#each system.respondents as respondent}
+    {#if store.revisions.active}
+      {#each store.revisions.active.respondents as respondent}
         <a
           href="{`/respondents/${respondent.id}`}"
           class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 border-t-0 flex items-center"
@@ -119,7 +115,7 @@
 >
   <div class="modal-box bg-neutral">
     <h3 class="font-bold text-lg flex items-center justify-between gap-3">
-      Manage respondents for {system?.title}
+      Manage respondents for {store.systems.active?.title}
       <form method="dialog">
         <button class="btn btn-sm btn-circle btn-ghost mb-3">
           <iconify-icon class="text-xl" icon="mdi:close"></iconify-icon>
@@ -136,6 +132,7 @@
           type="email"
           bind:value="{newEmail}"
           placeholder="Respondent email"
+          bind:this="{newRespondentInput}"
           class="input join-item flex-1 bg-base-100/10"
         />
         <button
@@ -151,7 +148,7 @@
       </div>
       <ul class="mx-3">
         {#each suggestions as suggestion}
-          {@const existing = system?.respondents.some(
+          {@const existing = store.revisions.active?.respondents.some(
             (r) => r.id === suggestion.id
           )}
           <li class="form-control bg-base-100/10 mb-1 p-2 rounded">
@@ -163,9 +160,7 @@
                 type="checkbox"
                 checked="{existing}"
                 class="checkbox checkbox-primary"
-                onchange="{preventDefault(() =>
-                  toggleExisting(!existing, suggestion)
-                )}"
+                onchange="{preventDefault(() => toggleExisting(suggestion))}"
               />
             </label>
           </li>
