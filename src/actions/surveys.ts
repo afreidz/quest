@@ -13,7 +13,9 @@ const include = {
       group: true,
       responseOptions: {
         include: {
-          responses: true,
+          responses: {
+            include: { respondent: true },
+          },
         },
       },
     },
@@ -94,7 +96,31 @@ export const getAll = defineAction({
       orderBy: { createdAt: "asc" },
       take: pagination?.take,
       skip: pagination?.skip,
-      include,
+      include: {
+        _count: {
+          select: { questions: true },
+        },
+        questions: {
+          include: {
+            group: true,
+            responseOptions: {
+              include: {
+                responses: { include: { respondent: true } },
+              },
+            },
+          },
+        },
+        revisionAsChecklist: {
+          include: {
+            system: { include: { client: true } },
+          },
+        },
+        revisionAsSurvey: {
+          include: {
+            system: { include: { client: true } },
+          },
+        },
+      },
     });
   },
 });

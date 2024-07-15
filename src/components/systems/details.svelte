@@ -26,7 +26,7 @@
 
 <RevisionList />
 <div class="flex-1 p-4 flex flex-col items-center gap-6 overflow-auto">
-  <QuestionList survey="{store.revisions.active?.survey}" />
+  <QuestionList survey="{store.revisions.active?.survey}" detailed />
 </div>
 {#if store.revisions.all.length}
   <div class="bg-neutral flex flex-col max-w-md border-l w-full flex-1">

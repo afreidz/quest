@@ -13,7 +13,7 @@
 
   type Props = {
     editable?: boolean;
-    hideType?: boolean;
+    detailed?: boolean;
     survey?: RevisionFromAll["survey"];
   };
 
@@ -32,9 +32,11 @@
     group: string | null;
     position: number | null;
     responses: {
+      id: string;
       label: string;
       count: number;
       value: number | null;
+      respondents: string[];
     }[];
   };
 
@@ -52,8 +54,14 @@
   let showConfirmDialog: "save" | "delete" | null = $state(null);
   let newQuestionDialog: HTMLDialogElement | null = $state(null);
 
-  let { editable: canEdit = false, survey }: Props = $props();
-  let editable = $derived(canEdit && store.surveys.active?.type === "CHECKLIST");
+  let { editable: canEdit = false, survey, detailed = false }: Props = $props();
+
+  let showDetails: boolean = $state(true);
+  let detailsExposed: boolean = $derived(detailed && showDetails);
+
+  let editable = $derived(
+    canEdit && store.surveys.active?.type === "CHECKLIST"
+  );
 
   let groups: Groups = $derived.by(() => {
     const groupedObj = Object.groupBy(
@@ -78,10 +86,18 @@
             .map((ro) => {
               const surveyId = survey?.id || store.surveys.active?.id;
               return {
+                id: ro.id,
                 label: ro.label,
                 value: ro.numericalValue,
-                count: ro.responses.filter((r) => r.questionId === question.id && r.surveyId === surveyId)
-                  .length,
+                respondents: ro.responses
+                  .filter(
+                    (r) =>
+                      r.questionId === question.id && r.surveyId === surveyId
+                  )
+                  .map((resp) => resp.respondent.email),
+                count: ro.responses.filter(
+                  (r) => r.questionId === question.id && r.surveyId === surveyId
+                ).length,
               };
             }),
         })),
@@ -267,7 +283,9 @@
 
     const groupDelta = Object.groupBy(proposed, (g) => {
       const existing = groups.find((e) => e.id === g.id);
-      return existing && existing.position === g.position && existing.name === g.name
+      return existing &&
+        existing.position === g.position &&
+        existing.name === g.name
         ? "unchanged"
         : !existing
           ? "new"
@@ -284,7 +302,9 @@
 
     const questionsDelta = Object.groupBy(proposedQuestions, (q) => {
       const existing = existingQuestions.find((e) => e.id === q.id);
-      return existing && existing.position === q.position && existing.text === q.text
+      return existing &&
+        existing.position === q.position &&
+        existing.text === q.text
         ? "unchanged"
         : !existing
           ? "new"
@@ -314,13 +334,25 @@
 </script>
 
 {#snippet group(group: Groups[number])}
-<div class="card-body p-6 max-w-[900px] min-w-[600px] w-full">
+<div class="card-body p-6 max-w-[1200px] min-w-[900px] w-full">
+  {#if detailed}
+    <div class="form-control flex items-end">
+      <label class="label cursor-pointer">
+        <span class="label-text mr-2">Show Respondents</span>
+        <input
+          type="checkbox"
+          class="toggle toggle-primary [--tglbg:#ffffff]"
+          bind:checked="{showDetails}"
+        />
+      </label>
+    </div>
+  {/if}
   {#if group.name !== "null"}
     <strong class="card-title flex justify-between items-center">
       <Editable
         size="sm"
         as="span"
-        enabled={editable}
+        enabled="{editable}"
         value="{group.name}"
         onUpdate="{(s) => changeGroupName(s, group)}"
       />
@@ -413,7 +445,7 @@
     <Editable
       as="span"
       size="sm"
-      enabled={editable}
+      enabled="{editable}"
       value="{question.text}"
       class="italic text-xl font-light"
       onUpdate="{(s) => changeQuestionText(s, question)}"
@@ -421,10 +453,10 @@
     {#if !question.responses.length}
       <span class="badge">No responses yet</span>
     {:else}
-      <ul class="flex flex-wrap gap-2">
+      <ul class="flex flex-none justify-evenly gap-2">
         {#each question.responses as response}
           <li
-            class="badge badge-lg border-none {getBadgeColor(
+            class="flex-1 badge badge-lg border-none text-sm {getBadgeColor(
               response.value,
               question.responses[0].value,
               question.responses.at(-1)?.value,
@@ -433,6 +465,19 @@
           >
             <span>{response.label}:</span>
             <strong>{response.count}</strong>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+    {#if detailsExposed}
+      <ul class="join w-full">
+        {#each question.responses as response}
+          <li
+            class="join-item border flex-1 flex flex-col gap-2 items-center justify-center p-2"
+          >
+            {#each response.respondents as respondent}
+              <p class="badge badge-sm bg-base-100/20">{respondent ?? ""}</p>
+            {/each}
           </li>
         {/each}
       </ul>
@@ -481,11 +526,17 @@
         <button
           disabled="{clean}"
           onclick="{() => saveSurvey()}"
-          class="btn btn-primary btn-sm flex-none join-item">Save Changes</button
+          class="btn btn-primary btn-sm flex-none join-item"
+          >Save Changes</button
         >
       </div>
-      <button onclick="{() => showConfirmDialog = "delete"}" disabled="{!clean}" class="btn btn-error btn-sm">
-        <iconify-icon icon="mdi:trash-outline" class="pointer-events-none"></iconify-icon>
+      <button
+        onclick="{() => (showConfirmDialog = 'delete')}"
+        disabled="{!clean}"
+        class="btn btn-error btn-sm"
+      >
+        <iconify-icon icon="mdi:trash-outline" class="pointer-events-none"
+        ></iconify-icon>
         <span>Permanently Delete</span>
       </button>
     </div>
@@ -570,12 +621,12 @@
     open="{!!showConfirmDialog}"
   >
     {#if showConfirmDialog === "save"}
-    Are you sure you want make these updates? Some of the questions/groups have
-    been removed. You will lose the connected responses and or questions from
-    anything removed. This cannot be undone!
+      Are you sure you want make these updates? Some of the questions/groups
+      have been removed. You will lose the connected responses and or questions
+      from anything removed. This cannot be undone!
     {:else}
-    Are you sure you want permanently delete this survey/checklist? You will
-    lose the connected questions, groups and responses. This cannot be undone!
+      Are you sure you want permanently delete this survey/checklist? You will
+      lose the connected questions, groups and responses. This cannot be undone!
     {/if}
   </ConfirmDialog>
 {/if}

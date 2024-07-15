@@ -13,7 +13,7 @@ const include = {
           group: true,
           responseOptions: {
             include: {
-              responses: true,
+              responses: { include: { respondent: true } },
             },
           },
         },

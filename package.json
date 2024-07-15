@@ -31,6 +31,7 @@
     "svelte-dnd-action": "^0.9.48"
   },
   "devDependencies": {
+    "chartjs": "^0.3.24",
     "daisyui": "^4.11.1",
     "prettier": "^3.3.2",
     "prettier-plugin-svelte": "^3.2.4",
