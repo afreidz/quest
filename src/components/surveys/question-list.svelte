@@ -8,6 +8,7 @@
   import { orderByPosition } from "@/utilities/order";
   import Editable from "@/components/app/editable.svelte";
   import type { RevisionFromAll } from "@/actions/revisions";
+  import { surveysAndCharts as theme } from "@/utilities/theme";
   import ConfirmDialog from "@/components/app/confirm-dialog.svelte";
   import OrderableList from "@/components/app/orderable-list.svelte";
 
@@ -155,25 +156,17 @@
     max: number | null | undefined,
     p: boolean
   ) {
-    const positive = "bg-success/30";
-    const nearPositive = "bg-warning/15";
-
-    const negative = "bg-error/30";
-    const nearNegative = "bg-warning/15";
-
-    const neutral = "bg-info/15";
-
     if (num === null || min === null || max === null || max === undefined)
-      return neutral;
-    if (p && num === max) return positive;
-    if (!p && num === max) return negative;
-    if (p && num === min) return negative;
-    if (!p && num === min) return positive;
-    if (p && num === max - 1) return nearPositive;
-    if (!p && num === max - 1) return nearNegative;
-    if (p && num === min + 1) return nearNegative;
-    if (!p && num === min + 1) return nearPositive;
-    return neutral;
+      return theme.neutral;
+    if (p && num === max) return theme.positive;
+    if (!p && num === max) return theme.negative;
+    if (p && num === min) return theme.negative;
+    if (!p && num === min) return theme.positive;
+    if (p && num === max - 1) return theme.nearPositive;
+    if (!p && num === max - 1) return theme.nearNegative;
+    if (p && num === min + 1) return theme.nearNegative;
+    if (!p && num === min + 1) return theme.nearPositive;
+    return theme.neutral;
   }
 
   function createNewGroup() {
@@ -334,15 +327,15 @@
 </script>
 
 {#snippet group(group: Groups[number])}
-<div class="card-body p-6 max-w-[1200px] min-w-[900px] w-full">
+<div class="card-body p-6">
   {#if detailed}
     <div class="form-control flex items-end">
       <label class="label cursor-pointer">
         <span class="label-text mr-2">Show Respondents</span>
         <input
           type="checkbox"
-          class="toggle toggle-primary [--tglbg:#ffffff]"
           bind:checked="{showDetails}"
+          class="toggle toggle-primary toggle-sm [--tglbg:#ffffff]"
         />
       </label>
     </div>
@@ -436,7 +429,7 @@
 
 {#snippet question(question: Groups[number]["questions"][number])}
 <div
-  class="flex items-start justify-start py-4 gap-6 border-b group-last:border-b-0"
+  class="flex items-start justify-start py-4 gap-6 border-b border-dotted group-last:border-b-0"
 >
   <aside class="flex-none w-8 text-center font-bold text-2xl">
     {question.position}
@@ -453,27 +446,25 @@
     {#if !question.responses.length}
       <span class="badge">No responses yet</span>
     {:else}
-      <ul class="flex flex-none justify-evenly gap-2">
+      <ul class="join bg-base-100/10">
         {#each question.responses as response}
-          <li
-            class="flex-1 badge badge-lg border-none text-sm {getBadgeColor(
+          <li class="join-item p-3 flex-1 border justify-between text-sm flex gap-2">
+            <span class="flex-none">{response.label}</span>
+            <strong class="flex-none w-5 h-5 text-xs leading-none flex items-center justify-center rounded-full" style="background-color: {getBadgeColor(
               response.value,
               question.responses[0].value,
               question.responses.at(-1)?.value,
               question.positive === false ? false : true
-            )}"
-          >
-            <span>{response.label}:</span>
-            <strong>{response.count}</strong>
+            )};">{response.count}</strong>
           </li>
         {/each}
       </ul>
     {/if}
     {#if detailsExposed}
-      <ul class="join w-full">
+      <ul class="join bg-base-100/10">
         {#each question.responses as response}
           <li
-            class="join-item border flex-1 flex flex-col gap-2 items-center justify-center p-2"
+            class="join-item p-3 flex-1 border text-sm flex flex-col gap-1"
           >
             {#each response.respondents as respondent}
               <p class="badge badge-sm bg-base-100/20">{respondent ?? ""}</p>
@@ -484,7 +475,7 @@
     {/if}
   </div>
   {#if editable}
-    <div class="join self-end">
+    <div class="join self-end mb-2">
       <button
         onclick="{() => removeQuestion(question)}"
         data-tip="Remove question and all responses"
@@ -507,7 +498,7 @@
 
 {#if editable}
   <div
-    class="flex justify-between p-4 bg-neutral border rounded-box shadow-lg sticky top-4 left-0 right-0 z-[2] w-[900px]"
+    class="flex justify-between p-4 bg-neutral border rounded-box shadow-lg sticky top-4 left-0 right-0 z-[2]"
   >
     <button
       class="btn btn-sm btn-outline flex-none"
@@ -631,6 +622,7 @@
   </ConfirmDialog>
 {/if}
 <OrderableList
+  class="w-full"
   render="{group}"
   enabled="{editable}"
   items="{clone(proposed ?? [])}"

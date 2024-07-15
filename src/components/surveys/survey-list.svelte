@@ -187,8 +187,10 @@
   </div>
 </div>
 
-<div class="p-4 w-full flex flex-col gap-4 items-center">
-  <QuestionList editable="{true}" />
+<div class="flex-1 p-4 overflow-auto">
+  <section class="flex flex-col m-auto gap-6 w-full max-w-[1000px]">
+    <QuestionList editable="{true}" />
+  </section>
 </div>
 
 <dialog

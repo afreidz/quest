@@ -2,8 +2,10 @@
   import { onMount } from "svelte";
   import store from "@/stores/global.svelte";
   import Scores from "@/components/systems/scores.svelte";
+  import Customize from "@/components/app/customize.svelte";
   import RevisionList from "@/components/systems/revision-list.svelte";
   import QuestionList from "@/components/surveys/question-list.svelte";
+  import ChecklistRadar from "@/components/surveys/checklist-radar.svelte";
   import RespondentList from "@/components/systems/respondent-list.svelte";
 
   type Props = {
@@ -25,12 +27,18 @@
 </script>
 
 <RevisionList />
-<div class="flex-1 p-4 flex flex-col items-center gap-6 overflow-auto">
-  <QuestionList survey="{store.revisions.active?.survey}" detailed />
+<div class="flex-1 p-4 overflow-auto">
+  <section class="flex flex-col m-auto gap-6 w-full max-w-[1000px]">
+    <RespondentList />
+    <QuestionList survey="{store.revisions.active?.survey}" detailed />
+  </section>
 </div>
 {#if store.revisions.all.length}
   <div class="bg-neutral flex flex-col max-w-md border-l w-full flex-1">
+    <ChecklistRadar />
     <Scores />
-    <RespondentList />
+    <div class="px-4">
+      <Customize />
+    </div>
   </div>
 {/if}

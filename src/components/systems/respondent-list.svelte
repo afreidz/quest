@@ -72,7 +72,9 @@
   }
 </script>
 
-<div class="min-w-80 bg-neutral flex flex-col border-neutral-200 border-t">
+<div
+  class="bg-neutral flex flex-col border-neutral-200 border rounded-box shadow-sm overflow-clip"
+>
   <h2
     class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
   >
@@ -90,15 +92,12 @@
       </button>
     </div>
   </h2>
-  <div
-    class:skeleton="{loading}"
-    class="bg-neutral rounded-none flex-1 overflow-auto"
-  >
+  <div class:skeleton="{loading}" class="bg-neutral flex-1">
     {#if store.revisions.active}
       {#each store.revisions.active.respondents as respondent}
         <a
           href="{`/respondents/${respondent.id}`}"
-          class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 border-t-0 flex items-center"
+          class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-0 border-b last:border-b-0 last:rounded-bl-box last:rounded-br-box flex items-center"
         >
           <Avatar {respondent} />
           <span class="flex-1">{respondent.email}</span>

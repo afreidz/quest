@@ -193,16 +193,16 @@
   let {
     score,
     gap = 100,
-    comparison,
     vbh = 5000,
     vbw = 10000,
     radius = 4500,
     thickness = 800,
     class: className,
-    benchmark = false,
     svg = $bindable(),
     highlightSubtitle,
     container = $bindable(),
+    comparison = $bindable(),
+    benchmark = $bindable(false),
   }: Props = $props();
 </script>
 

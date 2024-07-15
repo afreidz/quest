@@ -25,10 +25,17 @@ class QuestGlobalStore {
 
   _revisions: EntityState<
     Awaited<ReturnType<typeof actions.revision.getBySystemId>>[number]
-  > = $state({
+  > & {
+    includeBenchmark: boolean;
+    compared:
+      | Awaited<ReturnType<typeof actions.revision.getBySystemId>>[number]
+      | null;
+  } = $state({
     all: [],
     active: null,
     unsaved: false,
+    compared: null,
+    includeBenchmark: true,
   });
 
   _surveys: EntityState<
@@ -77,7 +84,7 @@ class QuestGlobalStore {
     this._clients.active = newClient;
   }
 
-  async setActiveSystem(system: typeof this.systems.active) {
+  setActiveSystem(system: typeof this.systems.active) {
     if (this.systems.unsaved) return;
 
     if (!system) {
@@ -107,7 +114,7 @@ class QuestGlobalStore {
     this._systems.active = newSystem;
   }
 
-  async setActiveRevision(revision: typeof this.revisions.active) {
+  setActiveRevision(revision: typeof this.revisions.active) {
     if (this.revisions.unsaved) return;
 
     if (!revision) {
@@ -115,7 +122,20 @@ class QuestGlobalStore {
       return;
     }
 
+    this._revisions.compared = null;
     this._revisions.active = revision;
+  }
+
+  setComparedRevision(revision: typeof this.revisions.active) {
+    if (!revision) {
+      this._revisions.compared = null;
+      return;
+    }
+    this._revisions.compared = revision;
+  }
+
+  setIncludeBenchmarkInRevision(v: boolean) {
+    this._revisions.includeBenchmark = v;
   }
 
   async refreshAllRevisions(id?: string) {
@@ -138,7 +158,7 @@ class QuestGlobalStore {
     this._revisions.active = newRevision;
   }
 
-  async setActiveSurvey(survey: typeof this.surveys.active) {
+  setActiveSurvey(survey: typeof this.surveys.active) {
     if (this.surveys.unsaved) return;
 
     if (!survey) {
