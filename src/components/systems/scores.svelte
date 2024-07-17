@@ -5,13 +5,34 @@
   import { calculateAverageSUSScore } from "@/utilities/score";
   import type { Props as GaugeProps } from "@/components/app/gauge.svelte";
 
+  type Props = {
+    respondent?: string;
+  };
+
+  let { respondent }: Props = $props();
+
+  let respondents = $derived.by(() => {
+    if (!respondent) return store.revisions.active?.respondents ?? [];
+    const match = store.revisions.active?.respondents.find(
+      (r) => r.id === respondent,
+    );
+    if (!match) return [];
+    return [match];
+  });
+
+  let comparedRespondents = $derived.by(() => {
+    if (!respondent) return store.revisions.compared?.respondents ?? [];
+    const match = store.revisions.compared?.respondents.find(
+      (r) => r.id === respondent,
+    );
+    if (!match) return [];
+    return [match];
+  });
+
   const average: number | null = $derived.by(() => {
     if (!store.revisions.active?.survey?.id) return null;
 
-    return calculateAverageSUSScore(
-      store.revisions.active.respondents,
-      store.revisions.active.survey,
-    );
+    return calculateAverageSUSScore(respondents, store.revisions.active.survey);
   });
 
   const score: GaugeProps["score"] | undefined = $derived.by(() => {
@@ -26,7 +47,7 @@
     if (!store.revisions.compared) return undefined;
     const value =
       calculateAverageSUSScore(
-        store.revisions.compared.respondents,
+        comparedRespondents,
         store.revisions.compared.survey,
       ) ?? 0;
     return {
