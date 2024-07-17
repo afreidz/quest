@@ -34,8 +34,8 @@
   "devDependencies": {
     "@types/chart.js": "^2.9.41",
     "daisyui": "^4.11.1",
-    "prettier": "^3.3.2",
-    "prettier-plugin-svelte": "^3.2.4",
+    "prettier": "^3.3.3",
+    "prettier-plugin-svelte": "^3.2.6",
     "prisma": "^5.15.0",
     "typescript": "^5.5.2"
   },

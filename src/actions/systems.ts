@@ -4,14 +4,6 @@ import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
 import { PaginationSchema } from "@/utilities/actions";
 
-const include = {
-  client: true,
-  revisions: true,
-  _count: {
-    select: { revisions: true },
-  },
-};
-
 const schema = z.object({
   clientId: z.string(),
   title: z.string().min(2).max(100),
@@ -24,7 +16,7 @@ export const getAll = defineAction({
       orderBy: { createdAt: "asc" },
       take: pagination?.take,
       skip: pagination?.skip,
-      include,
+      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
     });
   },
 });
@@ -38,7 +30,7 @@ export const create = defineAction({
         ...input,
         createdBy: user.email!,
       },
-      include,
+      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
     });
   },
 });
@@ -46,14 +38,20 @@ export const create = defineAction({
 export const getByClientId = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await orm.system.findMany({ where: { clientId: id }, include });
+    return await orm.system.findMany({
+      where: { clientId: id },
+      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
+    });
   },
 });
 
 export const getById = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await orm.system.findFirst({ where: { id }, include });
+    return await orm.system.findFirst({
+      where: { id },
+      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
+    });
   },
 });
 
@@ -65,8 +63,8 @@ export const updateById = defineAction({
   handler: async ({ id, data }) => {
     return await orm.system.update({
       data,
-      include,
       where: { id },
+      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
     });
   },
 });

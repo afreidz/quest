@@ -1,6 +1,7 @@
 <script lang="ts">
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
+  import messages from "@/stores/messages.svelte";
   import { preventDefault } from "@/utilities/events";
   import type { RevisionFromAll } from "@/actions/revisions";
   import Avatar from "@/components/respondents/avatar.svelte";
@@ -24,7 +25,12 @@
   $effect(() => {
     if (newEmail) {
       suggestionText = "Or select an existing respondent from the list";
-      actions.respondents.getBySearch(newEmail).then((r) => (suggestions = r));
+      actions.respondents
+        .getBySearch(newEmail)
+        .then((r) => (suggestions = r))
+        .catch((err) => {
+          messages.error(err.message, err.detail);
+        });
     } else if (store.revisions.active?.respondents.length) {
       suggestions = store.revisions.active.respondents;
       suggestionText = "Toggle existing respondents";
@@ -37,19 +43,27 @@
     if (!store.revisions.active) return;
 
     const existing = store.revisions.active.respondents.find(
-      (er) => er.id === r.id
+      (er) => er.id === r.id,
     );
 
     if (existing) {
-      await actions.respondents.removeFromRevisions({
-        id: r.id,
-        revisionIds: [store.revisions.active.id],
-      });
+      await actions.respondents
+        .removeFromRevisions({
+          id: r.id,
+          revisionIds: [store.revisions.active.id],
+        })
+        .catch((err) => {
+          messages.error(err.message, err.detail);
+        });
     } else {
-      await actions.respondents.addToRevisions({
-        id: r.id,
-        revisionIds: [store.revisions.active.id],
-      });
+      await actions.respondents
+        .addToRevisions({
+          id: r.id,
+          revisionIds: [store.revisions.active.id],
+        })
+        .catch((err) => {
+          messages.error(err.message, err.detail);
+        });
     }
     await store.refreshActiveRevision();
   }
@@ -58,10 +72,14 @@
     if (!store.revisions.active) return;
     loading = true;
 
-    await actions.respondents.create({
-      email: newEmail,
-      revisionId: store.revisions.active.id,
-    });
+    await actions.respondents
+      .create({
+        email: newEmail,
+        revisionId: store.revisions.active.id,
+      })
+      .catch((err) => {
+        messages.error(err.message, err.detail);
+      });
 
     await store.refreshActiveRevision();
 
@@ -85,18 +103,18 @@
     >
       <button
         class="btn btn-sm btn-ghost"
-        on:click="{() => (showNewDialog = true)}"
+        on:click={() => (showNewDialog = true)}
       >
         <iconify-icon class="text-xl" icon="mdi:plus-minus-variant"
         ></iconify-icon>
       </button>
     </div>
   </h2>
-  <div class:skeleton="{loading}" class="bg-neutral flex-1">
+  <div class:skeleton={loading} class="bg-neutral flex-1">
     {#if store.revisions.active}
       {#each store.revisions.active.respondents as respondent}
         <a
-          href="{`/respondents/${respondent.id}`}"
+          href={`/respondents/${respondent.id}`}
           class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-0 border-b last:border-b-0 last:rounded-bl-box last:rounded-br-box flex items-center"
         >
           <Avatar {respondent} />
@@ -109,8 +127,8 @@
 
 <dialog
   class="modal"
-  bind:this="{newDialog}"
-  on:close="{() => (showNewDialog = false)}"
+  bind:this={newDialog}
+  on:close={() => (showNewDialog = false)}
 >
   <div class="modal-box bg-neutral">
     <h3 class="font-bold text-lg flex items-center justify-between gap-3">
@@ -122,16 +140,16 @@
       </form>
     </h3>
     <form
-      onsubmit="{preventDefault(createNewRespondent)}"
+      onsubmit={preventDefault(createNewRespondent)}
       class="p-3 flex-none border-neutral-200 border-t flex"
     >
       <label class="join overflow-clip input-bordered border flex-1">
         <input
           required
           type="email"
-          bind:value="{newEmail}"
+          bind:value={newEmail}
           placeholder="Respondent email"
-          bind:this="{newRespondentInput}"
+          bind:this={newRespondentInput}
           class="input join-item flex-1 bg-base-100/10"
         />
         <button
@@ -148,7 +166,7 @@
       <ul class="mx-3">
         {#each suggestions as suggestion}
           {@const existing = store.revisions.active?.respondents.some(
-            (r) => r.id === suggestion.id
+            (r) => r.id === suggestion.id,
           )}
           <li class="form-control bg-base-100/10 mb-1 p-2 rounded">
             <label class="label cursor-pointer">
@@ -157,9 +175,9 @@
               >
               <input
                 type="checkbox"
-                checked="{existing}"
+                checked={existing}
                 class="checkbox checkbox-primary"
-                onchange="{preventDefault(() => toggleExisting(suggestion))}"
+                onchange={preventDefault(() => toggleExisting(suggestion))}
               />
             </label>
           </li>

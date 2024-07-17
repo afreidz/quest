@@ -15,7 +15,11 @@ const include = {
   },
   _count: { select: { revisions: true, responses: true } },
   revisions: {
-    include: { system: true },
+    include: {
+      system: { include: { client: true } },
+      survey: true,
+      checklist: true,
+    },
   },
   responses: {
     include: {
@@ -65,36 +69,32 @@ export const getBySearch = defineAction({
 export const create = defineAction({
   input: respondentSchema,
   handler: async (input, context) => {
-    const user = (await getSession(context.request))?.user as User;
-
-    const revision = await orm.revision.findFirst({
-      where: { id: input.revisionId },
-    });
-    delete input.revisionId;
-
-    const surveyConnections: { id: string }[] = [];
-    const revisionConnections: { id: string }[] = [];
-
-    if (revision) {
-      revisionConnections.push({ id: revision.id });
-      if (revision.surveyId) surveyConnections.push({ id: revision.surveyId });
-      if (revision.checklistId)
-        surveyConnections.push({ id: revision.checklistId });
-    }
-
-    return await orm.respondent.create({
-      data: {
-        ...input,
-        createdBy: user.email!,
-        revisions: {
-          connect: revisionConnections,
-        },
-        surveys: {
-          connect: surveyConnections,
-        },
-      },
-      include,
-    });
+    // const user = (await getSession(context.request))?.user as User;
+    // const revision = await orm.revision.findFirst({
+    //   where: { id: input.revisionId },
+    // });
+    // delete input.revisionId;
+    // const surveyConnections: { id: string }[] = [];
+    // const revisionConnections: { id: string }[] = [];
+    // if (revision) {
+    //   revisionConnections.push({ id: revision.id });
+    //   if (revision) surveyConnections.push({ id: revision.surveyId });
+    //   if (revision.checklistId)
+    //     surveyConnections.push({ id: revision.checklistId });
+    // }
+    // return await orm.respondent.create({
+    //   data: {
+    //     ...input,
+    //     createdBy: user.email!,
+    //     revisions: {
+    //       connect: revisionConnections,
+    //     },
+    //     surveys: {
+    //       connect: surveyConnections,
+    //     },
+    //   },
+    //   include,
+    // });
   },
 });
 

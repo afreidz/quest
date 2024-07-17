@@ -40,5 +40,24 @@ export const surveysAndCharts = {
   nearNegative: "#facc15",
   negative: "#FF5861",
   border: "rgba(182, 184, 185, 0.3)",
-  background: "rgba(102,171,182, 0.2)",
+  backgrounds: ["rgba(149,196,203, 0.5)", "rgba(0,0,0,0.1)"],
 };
+
+export function getBadgeColor(
+  num: number | null,
+  min: number | null,
+  max: number | null | undefined,
+  p: boolean
+) {
+  if (num === null || min === null || max === null || max === undefined)
+    return surveysAndCharts.neutral;
+  if (p && num === max) return surveysAndCharts.positive;
+  if (!p && num === max) return surveysAndCharts.negative;
+  if (p && num === min) return surveysAndCharts.negative;
+  if (!p && num === min) return surveysAndCharts.positive;
+  if (p && num === max - 1) return surveysAndCharts.nearPositive;
+  if (!p && num === max - 1) return surveysAndCharts.nearNegative;
+  if (p && num === min + 1) return surveysAndCharts.nearNegative;
+  if (!p && num === min + 1) return surveysAndCharts.nearPositive;
+  return surveysAndCharts.neutral;
+}

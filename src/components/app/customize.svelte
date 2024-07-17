@@ -13,7 +13,7 @@
   <strong>Customize Score:</strong>
   <div class="form-control">
     <label class="label cursor-pointer">
-      <span class="label-text">Include Benchmark</span>
+      <span class="label-text">Include Benchmark in SUS score</span>
       <input
         type="checkbox"
         bind:checked="{compareBenchmark}"

@@ -63,16 +63,16 @@ const checklistCurratedResponses =
       {
         position: 1,
         createdBy: "system@seed.com",
-        label: "Pass",
-        value: "pass",
+        label: "Passed",
+        value: "passed",
         numericalValue: 3,
         types: ["CHECKLIST"],
       },
       {
         position: 2,
         createdBy: "system@seed.com",
-        label: "delayed",
-        value: "Delayed",
+        label: "Delayed",
+        value: "delayed",
         numericalValue: 2,
         types: ["CHECKLIST"],
       },
@@ -87,8 +87,8 @@ const checklistCurratedResponses =
       {
         position: 4,
         createdBy: "system@seed.com",
-        label: "Fail",
-        value: "fail",
+        label: "Failed",
+        value: "failed",
         numericalValue: 0,
         types: ["CHECKLIST"],
       },
@@ -351,7 +351,7 @@ const proposedQuestions = await orm.$transaction([
   }),
 ]);
 
-const heroFinderChecklistGroups = await orm.$transaction([
+const heroFinderPrototypeChecklistGroups = await orm.$transaction([
   orm.questionGroup.create({
     data: {
       position: 2,
@@ -382,14 +382,45 @@ const heroFinderChecklistGroups = await orm.$transaction([
   }),
 ]);
 
-const heroFinderChecklistQuestions = await orm.$transaction([
+const heroFinderCurrentChecklistGroups = await orm.$transaction([
+  orm.questionGroup.create({
+    data: {
+      position: 2,
+      text: "Access",
+      createdBy: "system@seed.com",
+    },
+  }),
+  orm.questionGroup.create({
+    data: {
+      position: 1,
+      text: "Find by keyword",
+      createdBy: "system@seed.com",
+    },
+  }),
+  orm.questionGroup.create({
+    data: {
+      position: 3,
+      text: "Find by browse",
+      createdBy: "system@seed.com",
+    },
+  }),
+  orm.questionGroup.create({
+    data: {
+      position: 4,
+      text: "Send Help Request",
+      createdBy: "system@seed.com",
+    },
+  }),
+]);
+
+const heroFinderCurrentChecklistQuestions = await orm.$transaction([
   orm.question.create({
     data: {
       position: 1,
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: "Locate/Launch the HeroFinderPRO Application",
-      group: { connect: { id: heroFinderChecklistGroups[0].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[0].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -401,7 +432,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: "Locate the login button",
-      group: { connect: { id: heroFinderChecklistGroups[0].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[0].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -413,7 +444,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: "Login using email address and password",
-      group: { connect: { id: heroFinderChecklistGroups[0].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[0].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -425,7 +456,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: "Locate the keyword search",
-      group: { connect: { id: heroFinderChecklistGroups[1].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[1].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -437,7 +468,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: 'Locate Hero "Superman" with search',
-      group: { connect: { id: heroFinderChecklistGroups[1].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[1].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -449,7 +480,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: 'Filter all heros by "cape" with search',
-      group: { connect: { id: heroFinderChecklistGroups[1].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[1].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -461,7 +492,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: 'Locate the "Caped" category link',
-      group: { connect: { id: heroFinderChecklistGroups[2].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[2].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -473,7 +504,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: 'Locate "Superman" and navigate to the details page',
-      group: { connect: { id: heroFinderChecklistGroups[2].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[2].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -485,7 +516,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: 'Locate "Superman" and navigate to the details page',
-      group: { connect: { id: heroFinderChecklistGroups[3].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[3].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -497,7 +528,7 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: 'Find the status of your "Superman" a request',
-      group: { connect: { id: heroFinderChecklistGroups[3].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[3].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -509,7 +540,142 @@ const heroFinderChecklistQuestions = await orm.$transaction([
       type: "CHECKLIST",
       createdBy: "system@seed.com",
       text: 'Send "Superman" a request for help',
-      group: { connect: { id: heroFinderChecklistGroups[3].id } },
+      group: { connect: { id: heroFinderCurrentChecklistGroups[3].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+]);
+
+const heroFinderPrototypeChecklistQuestions = await orm.$transaction([
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Locate/Launch the HeroFinderPRO Application",
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[0].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Locate the login button",
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[0].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 3,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Login using email address and password",
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[0].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: "Locate the keyword search",
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[1].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate Hero "Superman" with search',
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[1].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 3,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Filter all heros by "cape" with search',
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[1].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate the "Caped" category link',
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[2].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate "Superman" and navigate to the details page',
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[2].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 1,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Locate "Superman" and navigate to the details page',
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[3].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 2,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Find the status of your "Superman" a request',
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[3].id } },
+      responseOptions: {
+        connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
+      },
+    },
+  }),
+  orm.question.create({
+    data: {
+      position: 3,
+      type: "CHECKLIST",
+      createdBy: "system@seed.com",
+      text: 'Send "Superman" a request for help',
+      group: { connect: { id: heroFinderPrototypeChecklistGroups[3].id } },
       responseOptions: {
         connect: checklistCurratedResponses.map((r) => ({ id: r.id })),
       },
@@ -566,13 +732,24 @@ const heroFinderPrototypeSurvey = await orm.survey.create({
   },
 });
 
-const heroFinderChecklist = await orm.survey.create({
+const heroFinderPrototypeChecklist = await orm.survey.create({
   data: {
     type: "CHECKLIST",
     createdBy: "system@seed.com",
     revisionAsChecklist: { connect: { id: prototypeRevision.id } },
     questions: {
-      connect: heroFinderChecklistQuestions.map((q) => ({ id: q.id })),
+      connect: heroFinderPrototypeChecklistQuestions.map((q) => ({ id: q.id })),
+    },
+  },
+});
+
+const heroFinderCurrentChecklist = await orm.survey.create({
+  data: {
+    type: "CHECKLIST",
+    createdBy: "system@seed.com",
+    revisionAsChecklist: { connect: { id: currentStateRevision.id } },
+    questions: {
+      connect: heroFinderCurrentChecklistQuestions.map((q) => ({ id: q.id })),
     },
   },
 });
@@ -588,7 +765,8 @@ const tonyStark = await orm.respondent.create({
       connect: [
         { id: heroFinderCurrentStateSurvey.id },
         { id: heroFinderPrototypeSurvey.id },
-        { id: heroFinderChecklist.id },
+        { id: heroFinderCurrentChecklist.id },
+        { id: heroFinderPrototypeChecklist.id },
       ],
     },
   },
@@ -605,7 +783,8 @@ const bruceBanner = await orm.respondent.create({
       connect: [
         { id: heroFinderCurrentStateSurvey.id },
         { id: heroFinderPrototypeSurvey.id },
-        { id: heroFinderChecklist.id },
+        { id: heroFinderCurrentChecklist.id },
+        { id: heroFinderPrototypeChecklist.id },
       ],
     },
   },
@@ -985,6 +1164,231 @@ await orm.$transaction([
       responseId: susCurratedResponses.find(
         (r) => r.value === "strongly_disagree"
       ).id,
+    },
+  }),
+]);
+
+await orm.$transaction([
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[0].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[1].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[2].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "prompted")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[3].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[4].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "delayed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[5].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "delayed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[6].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "delayed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[7].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[8].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "failed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[9].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderPrototypeChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderPrototypeChecklistQuestions[10].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "failed")
+        .id,
+    },
+  }),
+]);
+
+await orm.$transaction([
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[0].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[1].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[2].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "failed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[3].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "passed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[4].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "failed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[5].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "delayed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[6].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "delayed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[7].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "delayed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[8].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "failed")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[9].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "prompted")
+        .id,
+    },
+  }),
+  orm.response.create({
+    data: {
+      surveyId: heroFinderCurrentChecklist.id,
+      createdBy: "system@seed.com",
+      respondentId: tonyStark.id,
+      questionId: heroFinderCurrentChecklistQuestions[10].id,
+      responseId: checklistCurratedResponses.find((r) => r.value === "na").id,
     },
   }),
 ]);

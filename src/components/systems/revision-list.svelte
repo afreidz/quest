@@ -4,79 +4,78 @@
   import { SurveyType } from "@hsalux/quest-db";
   import messages from "@/stores/messages.svelte";
   import { preventDefault } from "@/utilities/events";
-  import ConfirmDialog from "@/components/app/confirm-dialog.svelte";
+  import Actions from "@/components/app/actions.svelte";
+  import ConfirmForm from "@/components/app/confirm-form.svelte";
+
+  let loading = $state(false);
+  let showConfirmDelete = $state(false);
+
+  let editedTitle = $state("");
+  let showEdit = $state(false);
 
   let newName = $state("");
-  let loading = $state(false);
-  let showNewDialog = $state(false);
-  let newDialog: HTMLDialogElement | null = $state(null);
+  let showNewRevision = $state(false);
   let newSurveyInput: HTMLSelectElement | null = $state(null);
   let surveyType = $state<keyof typeof SurveyType | undefined>();
 
-  let updatedTitle = $state("");
-  let showEditDialog = $state(false);
-  let editInput: HTMLInputElement | null = $state(null);
-  let editDialog: HTMLDialogElement | null = $state(null);
-
-  let showConfirmDelete = $state(false);
-  let confirmDeleteDialog: HTMLDialogElement | null = $state(null);
-
   $effect(() => {
-    if (showNewDialog && newDialog) newDialog.showModal();
-  });
-
-  $effect(() => {
-    if (showNewDialog && newSurveyInput) newSurveyInput.focus();
+    if (store.systems.active?.title && !editedTitle) {
+      editedTitle = store.systems.active.title;
+    }
   });
 
   $effect(() => {
     if (!store.revisions.all.length) return;
     const revision = store.revisions.all.find((r) =>
-      window.location.hash.includes(r.id)
+      window.location.hash.includes(r.id),
     );
     store.setActiveRevision(revision || store.revisions.all[0]);
     window.location.hash = "";
   });
 
-  $effect(() => {
-    if (store.systems.active?.title && !updatedTitle)
-      updatedTitle = store.systems.active.title;
-  });
-
-  $effect(() => {
-    if (editDialog && showEditDialog) editDialog.showModal();
-  });
-
-  $effect(() => {
-    if (showEditDialog && editInput) editInput.focus();
-  });
-
-  async function handleDeleteSystem() {
+  async function deleteSystem(returnValue?: string) {
     showConfirmDelete = false;
 
-    if (confirmDeleteDialog?.returnValue !== store.systems.active?.title)
-      return;
+    if (!returnValue || returnValue !== store.systems.active?.title) return;
     if (!store.systems.active) return;
 
-    await actions.system.deleteById(store.systems.active.id);
+    loading = true;
+    const resp = await actions.system
+      .deleteById(store.systems.active.id)
+      .catch((err) => {
+        messages.error(err.message, err.detail);
+        return null;
+      });
+    loading = false;
+
+    if (!resp) return;
     window.history.back();
   }
 
   async function updateSystem() {
-    editDialog?.close();
-    if (!store.systems.active) return;
+    showEdit = false;
 
-    const resp = await actions.system.updateById({
-      id: store.systems.active.id,
-      data: {
-        ...store.systems.active,
-        title: updatedTitle,
-      },
-    });
+    if (!store.systems.active || !editedTitle) return;
 
+    loading = true;
+    const resp = await actions.system
+      .updateById({
+        id: store.systems.active.id,
+        data: {
+          ...store.systems.active,
+          title: editedTitle,
+        },
+      })
+      .catch((err) => {
+        messages.error(err.message, err.detail);
+      });
     await store.refreshActiveSystem();
-    console.log(store.systems.active);
-    messages.success(`Client updated`, JSON.stringify(resp, null, 2));
+
+    loading = false;
+    editedTitle = store.systems.active.title;
+
+    if (!resp) return;
+    messages.success(`System updated`, JSON.stringify(resp, null, 2));
   }
 
   function navigateToRevision(r: typeof store.revisions.active) {
@@ -86,47 +85,52 @@
   }
 
   async function createNewRevision() {
+    showNewRevision = false;
     if (!store.systems.active) return;
 
     loading = true;
-
-    await actions.revision.create({
-      surveyType,
-      title: newName,
-      systemId: store.systems.active.id,
-    });
-
+    const resp = await actions.revision
+      .create({
+        surveyType,
+        title: newName,
+        systemId: store.systems.active.id,
+      })
+      .catch((err) => {
+        messages.error(err.message, err.detail);
+      });
     await store.refreshAllRevisions();
 
-    showNewDialog = false;
-    newDialog?.close();
-    loading = false;
     newName = "";
+    loading = false;
+    surveyType = undefined;
+
+    if (!resp) return;
+    messages.success(`Revision Added`, JSON.stringify(resp, null, 2));
   }
 </script>
 
 {#if store.systems.active}
   <div
-    class="min-w-80 max-w-80 bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
+    class="min-w-80 max-w-[400px] w-full bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
   >
     <h2
       class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
     >
       <span>{store.systems.active.title} Revisions</span>
-      <div
-        class="tooltip tooltip-left tooltip-primary"
-        data-tip="Add a revision for {store.systems.active.title}"
-      >
-        <button
-          on:click="{() => (showNewDialog = true)}"
-          class="btn btn-sm btn-ghost"
-        >
-          <iconify-icon class="text-xl" icon="ic:baseline-plus"></iconify-icon>
-        </button>
-      </div>
+      <Actions
+        deleteTip="Delete System"
+        editTip="Edit System Name"
+        addTip="Add Revision to System"
+        addForm={newRevisionForm}
+        editForm={updateSystemForm}
+        deleteForm={deleteSystemForm}
+        bind:editShown={showEdit}
+        bind:addShown={showNewRevision}
+        bind:deleteShown={showConfirmDelete}
+      />
     </h2>
     <div
-      class:skeleton="{loading}"
+      class:skeleton={loading}
       class="bg-neutral rounded-none flex-1 overflow-auto"
     >
       {#if !loading}
@@ -137,14 +141,14 @@
         {:else}
           {#each store.revisions.all ?? [] as revision}
             <div
-              class:highlight="{store.revisions.active?.id === revision.id}"
+              class:highlight={store.revisions.active?.id === revision.id}
               class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left pl-0 border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
             >
               <a
                 href="#{revision.id}"
-                class:tooltip="{store.revisions.unsaved}"
-                on:click="{preventDefault(() => navigateToRevision(revision))}"
-                data-tip="{'You have unsaved changes to the current revision!'}"
+                class:tooltip={store.revisions.unsaved}
+                on:click={preventDefault(() => navigateToRevision(revision))}
+                data-tip={"You have unsaved changes to the current revision!"}
                 class="flex-1 h-full flex items-center pl-4">{revision.title}</a
               >
             </div>
@@ -152,121 +156,75 @@
         {/if}
       {/if}
     </div>
-    <footer class="bg-neutral p-4 border-t flex items-center justify-between">
-      <span class="text-lg font-semibold">Actions:</span>
-      <div class="join">
-        <button
-          data-tip="Edit system title"
-          onclick="{() => (showEditDialog = true)}"
-          class="btn btn-outline btn-sm join-item tooltip tooltip-left tooltip-primary"
-        >
-          <iconify-icon icon="mdi:edit-outline" class="pointer-events-none"
-          ></iconify-icon>
-        </button>
-        <button
-          data-tip="Delete system"
-          onclick="{() => (showConfirmDelete = true)}"
-          class="btn btn-outline btn-sm join-item tooltip tooltip-left tooltip-primary"
-        >
-          <iconify-icon icon="mdi:trash-outline" class="pointer-events-none"
-          ></iconify-icon>
-        </button>
-      </div>
-    </footer>
   </div>
 {/if}
 
-<dialog
-  class="modal"
-  bind:this="{newDialog}"
-  on:close="{() => (showNewDialog = false)}"
->
-  <div class="modal-box bg-neutral">
-    <h3 class="font-bold text-lg flex justify-between items-center gap-3">
-      New revision for {store.systems.active?.title}
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost mb-3">✕</button>
-      </form>
-    </h3>
-    <form
-      on:submit|preventDefault="{createNewRevision}"
-      class="p-3 flex-none border-neutral-200 border-t flex flex-col gap-2"
-    >
-      <select
-        bind:value="{surveyType}"
-        bind:this="{newSurveyInput}"
-        class="select select-bordered bg-base-100/10 w-full"
+{#snippet updateSystemForm()}
+  <form
+    onsubmit={preventDefault(updateSystem)}
+    class="p-3 flex-none border-neutral-200 border-t flex"
+  >
+    <label class="join overflow-clip input-bordered border flex-1">
+      <input
+        required
+        bind:value={editedTitle}
+        placeholder={store.systems.active?.title}
+        class="input font-normal join-item flex-1 bg-base-100/10"
+      />
+      <button
+        type="submit"
+        class="join-item btn btn-primary !rounded-none shadow-none flex-none"
+        >Update</button
       >
-        <option disabled selected>What type of revision is this?</option>
-        {#each Object.keys(SurveyType).filter((k) => !k.includes("CHECKLIST")) as type}
-          <option value="{type}"
-            >{type.includes("CURRENT")
-              ? "Current State Survey Type"
-              : "Proposed State Survey Type"}</option
-          >
-        {/each}
-      </select>
-      <label class="join overflow-clip input-bordered border flex-1">
-        <input
-          required
-          bind:value="{newName}"
-          placeholder="Revision title"
-          class="input join-item flex-1 bg-base-100/10"
-        />
-        <button
-          type="submit"
-          class="join-item btn btn-primary !rounded-none shadow-none flex-none"
-          >Add revision</button
-        >
-      </label>
-    </form>
-  </div>
-</dialog>
+    </label>
+  </form>
+{/snippet}
 
-<ConfirmDialog
-  open="{!!showConfirmDelete}"
-  onclose="{handleDeleteSystem}"
-  bind:elm="{confirmDeleteDialog}"
-  confirmText="{store.systems.active?.title}"
->
-  Are you sure you want to delete this system? You will lose all data associated
-  with the system and this is not reversible!
-  <p>Please type "{store.systems.active?.title}" to confirm</p>
-</ConfirmDialog>
+{#snippet deleteSystemForm()}
+  <ConfirmForm
+    confirmText={store.systems.active?.title}
+    onsubmit={deleteSystem}
+  >
+    Are you sure you want to delete this system? You will lose all data
+    associated with the system and this is not reversible!
+    <p>Please type "{store.systems.active?.title}" to confirm</p>
+  </ConfirmForm>
+{/snippet}
 
-<dialog
-  class="modal"
-  bind:this="{editDialog}"
-  on:close="{() => (showEditDialog = false)}"
->
-  <div class="modal-box bg-neutral">
-    <h3 class="font-bold text-lg flex items-center justify-between gap-3">
-      Update system title
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost mb-3">✕</button>
-      </form>
-    </h3>
-    <form
-      onsubmit="{preventDefault(updateSystem)}"
-      class="p-3 flex-none border-neutral-200 border-t flex"
+{#snippet newRevisionForm()}
+  <form
+    onsubmit={preventDefault(createNewRevision)}
+    class="p-3 flex-none border-neutral-200 border-t flex flex-col gap-2 font-normal"
+  >
+    <select
+      bind:value={surveyType}
+      bind:this={newSurveyInput}
+      class="select select-bordered bg-base-100/10 w-full"
     >
-      <label class="join overflow-clip input-bordered border flex-1">
-        <input
-          required
-          bind:this="{editInput}"
-          bind:value="{updatedTitle}"
-          placeholder="{store.systems.active?.title}"
-          class="input join-item flex-1 bg-base-100/10"
-        />
-        <button
-          type="submit"
-          class="join-item btn btn-primary !rounded-none shadow-none flex-none"
-          >Update Client Name</button
+      <option disabled selected>What type of revision is this?</option>
+      {#each Object.keys(SurveyType).filter((k) => !k.includes("CHECKLIST")) as type}
+        <option value={type}
+          >{type.includes("CURRENT")
+            ? "Current State Survey Type"
+            : "Proposed State Survey Type"}</option
         >
-      </label>
-    </form>
-  </div>
-</dialog>
+      {/each}
+    </select>
+    <label class="join overflow-clip input-bordered border flex-1">
+      <input
+        required
+        bind:value={newName}
+        placeholder="Revision title"
+        class="input join-item flex-1 bg-base-100/10"
+      />
+      <button
+        type="submit"
+        class="join-item btn btn-primary !rounded-none shadow-none flex-none"
+        >Add revision</button
+      >
+    </label>
+  </form>
+{/snippet}
 
 <style lang="postcss">
   .highlight {

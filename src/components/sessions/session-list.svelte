@@ -1,5 +1,5 @@
 <script lang="ts">
-  import sessions from "@/stores/sessions.svelte";
+  import store from "@/stores/global.svelte";
   import { preventDefault } from "@/utilities/events";
 
   let loading = $state(false);
@@ -50,11 +50,11 @@
     </div> -->
   </form>
   <div
-    class:skeleton="{loading}"
+    class:skeleton={loading}
     class="bg-neutral rounded-none flex-1 overflow-auto"
   >
     {#if !loading}
-      {#each sessions.all as session}
+      <!-- {#each sessions.all as session}
         <a
           href="{`#${session.id}`}"
           data-tip="{'You have unsaved changes to the current session!'}"
@@ -78,7 +78,7 @@
             </div>
           </div>
         </a>
-      {/each}
+      {/each} -->
     {/if}
   </div>
 </div>

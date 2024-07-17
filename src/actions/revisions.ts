@@ -69,9 +69,9 @@ const include = {
 
 const revisionSchema = z.object({
   systemId: z.string(),
-  surveyId: z.string().optional(),
   title: z.string().min(3).max(100),
-  checklistId: z.string().optional(),
+  surveyId: z.string().optional().nullable(),
+  checklistId: z.string().optional().nullable(),
   surveyType: z.nativeEnum(SurveyType).optional(),
 });
 
@@ -137,6 +137,7 @@ export const getBySystemId = defineAction({
   input: z.string(),
   handler: async (id) => {
     return await orm.revision.findMany({
+      orderBy: { createdAt: "asc" },
       where: { systemId: id },
       include,
     });

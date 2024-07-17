@@ -43,11 +43,8 @@ model Revision {
   systemId String
   system   System @relation(fields: [systemId], references: [id], onDelete: Cascade)
 
-  surveyId String? @unique
-  survey   Survey? @relation("RevisionSurvey", fields: [surveyId], references: [id])
-
-  checklistId String? @unique
-  checklist   Survey? @relation("RevisionChecklist", fields: [checklistId], references: [id])
+  survey    Survey? @relation("RevisionSurvey")
+  checklist Survey? @relation("RevisionChecklist")
 
   sessions    Session[]
   respondents Respondent[]
@@ -92,8 +89,11 @@ model Survey {
   responses   Response[]
   respondents Respondent[]
 
-  revisionAsSurvey    Revision? @relation("RevisionSurvey")
-  revisionAsChecklist Revision? @relation("RevisionChecklist")
+  surveyRevisionId String?   @unique
+  revisionAsSurvey Revision? @relation("RevisionSurvey", fields: [surveyRevisionId], references: [id], onDelete: Cascade)
+
+  checklistRevisionId String?   @unique
+  revisionAsChecklist Revision? @relation("RevisionChecklist", fields: [checklistRevisionId], references: [id], onDelete: Cascade)
 }
 
 model Question {
