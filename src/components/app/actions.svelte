@@ -13,6 +13,7 @@
     addTip?: string;
     editTip?: string;
     deleteTip?: string;
+    class?: string;
   };
 
   let addDialog: HTMLDialogElement | null = $state(null);
@@ -22,7 +23,10 @@
   $effect(() => {
     if (addShown && addDialog) {
       addDialog.showModal();
-      findFirstFocusableElement(addDialog, [".close-button"])?.focus();
+      findFirstFocusableElement(addDialog, [
+        ".close-button",
+        ".skip-focus",
+      ])?.focus();
     } else if (!addShown && addDialog) {
       addDialog.close();
     }
@@ -31,7 +35,10 @@
   $effect(() => {
     if (editShown && editDialog) {
       editDialog.showModal();
-      findFirstFocusableElement(editDialog, [".close-button"])?.focus();
+      findFirstFocusableElement(editDialog, [
+        ".close-button",
+        ".skip-focus",
+      ])?.focus();
     } else if (!editShown && editDialog) {
       editDialog.close();
     }
@@ -40,7 +47,10 @@
   $effect(() => {
     if (deleteShown && deleteDialog) {
       deleteDialog.showModal();
-      findFirstFocusableElement(deleteDialog, [".close-button"])?.focus();
+      findFirstFocusableElement(deleteDialog, [
+        ".close-button",
+        ".skip-focus",
+      ])?.focus();
     } else if (!deleteShown && deleteDialog) {
       deleteDialog.close();
     }
@@ -54,6 +64,7 @@
     addTip = "Add",
     editTip = "Edit",
     deleteTip = "Delete",
+    class: classList = "",
     addShown = $bindable(false),
     editShown = $bindable(false),
     deleteShown = $bindable(false),
@@ -104,7 +115,7 @@
     class="modal"
     on:close={() => (deleteShown = false)}
   >
-    <div class="modal-box bg-neutral">
+    <div class="modal-box bg-neutral {classList}">
       <h3 class="font-bold text-lg flex items-center justify-between gap-3">
         {deleteTip}
         <form method="dialog">
@@ -124,7 +135,7 @@
     class="modal"
     on:close={() => (editShown = false)}
   >
-    <div class="modal-box bg-neutral">
+    <div class="modal-box bg-neutral {classList}">
       <h3 class="font-bold text-lg flex items-center justify-between gap-3">
         {editTip}
         <form method="dialog">
@@ -144,7 +155,7 @@
     class="modal"
     on:close={() => (addShown = false)}
   >
-    <div class="modal-box bg-neutral">
+    <div class="modal-box bg-neutral {classList}">
       <h3 class="font-bold text-lg flex items-center justify-between gap-3">
         {addTip}
         <form method="dialog">

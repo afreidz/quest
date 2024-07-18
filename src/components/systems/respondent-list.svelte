@@ -4,59 +4,50 @@
   import messages from "@/stores/messages.svelte";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
-  import type { RevisionFromAll } from "@/actions/revisions";
+  import Scores from "@/components/systems/scores.svelte";
   import Avatar from "@/components/respondents/avatar.svelte";
-  import ChecklistRadar from "../surveys/checklist-radar.svelte";
-  import Scores from "./scores.svelte";
+  import type { RespondentSchema } from "@/actions/respondents";
+  import ChecklistRadar from "@/components/surveys/checklist-radar.svelte";
 
-  let newEmail = $state("");
   let loading = $state(false);
   let showNew = $state(false);
   let suggestionText = $state("");
-  let suggestions = $state<RevisionFromAll["respondents"]>([]);
 
-  // $effect(() => {
-  //   if (newEmail) {
-  //     suggestionText = "Or select an existing respondent from the list";
-  //     actions.respondents
-  //       .getBySearch(newEmail)
-  //       .then((r) => (suggestions = r))
-  //       .catch((err) => {
-  //         messages.error(err.message, err.detail);
-  //       });
-  //   } else if (store.revisions.active?.respondents.length) {
-  //     suggestions = store.revisions.active.respondents;
-  //     suggestionText = "Toggle existing respondents";
-  //   } else {
-  //     suggestions = [];
-  //   }
-  // });
+  let respondents = $derived.by(async () => {
+    return showNew
+      ? suggestionText
+        ? actions.respondents.getBySearch(suggestionText)
+        : actions.respondents.getAll(undefined)
+      : [];
+  });
 
-  async function toggleExisting(r: (typeof suggestions)[number]) {
-    // if (!store.revisions.active) return;
-    // const existing = store.revisions.active.respondents.find(
-    //   (er) => er.id === r.id,
-    // );
-    // if (existing) {
-    //   await actions.respondents
-    //     .removeFromRevisions({
-    //       id: r.id,
-    //       revisionIds: [store.revisions.active.id],
-    //     })
-    //     .catch((err) => {
-    //       messages.error(err.message, err.detail);
-    //     });
-    // } else {
-    //   await actions.respondents
-    //     .addToRevisions({
-    //       id: r.id,
-    //       revisionIds: [store.revisions.active.id],
-    //     })
-    //     .catch((err) => {
-    //       messages.error(err.message, err.detail);
-    //     });
-    // }
-    // await store.refreshActiveRevision();
+  let newRespondent: Partial<RespondentSchema> = $state({});
+
+  async function toggleExisting(r: Awaited<typeof respondents>[number]) {
+    if (!store.revisions.active) return;
+    const existing = store.revisions.active.respondents.find(
+      (er) => er.id === r.id,
+    );
+    if (existing) {
+      await actions.respondents
+        .removeFromRevisions({
+          id: r.id,
+          revisionIds: [store.revisions.active.id],
+        })
+        .catch((err) => {
+          messages.error(err.message, err.detail);
+        });
+    } else {
+      await actions.respondents
+        .addToRevisions({
+          id: r.id,
+          revisionIds: [store.revisions.active.id],
+        })
+        .catch((err) => {
+          messages.error(err.message, err.detail);
+        });
+    }
+    await store.refreshActiveRevision();
   }
 
   async function createNewRespondent() {
@@ -66,21 +57,26 @@
     loading = true;
     const resp = await actions.respondents
       .create({
-        email: newEmail,
+        ...newRespondent,
+        email: newRespondent.email!,
         revisionId: store.revisions.active.id,
       })
       .catch((err) => {
+        console.log(err);
         messages.error(err.message, err.detail);
         return null;
       });
 
     loading = false;
-    newEmail = "";
+    newRespondent = {};
 
     if (!resp) return;
 
     await store.refreshActiveRevision();
-    messages.success("Respondent has been created");
+    messages.success(
+      "Respondent has been created",
+      JSON.stringify(resp, null, 2),
+    );
   }
 </script>
 
@@ -95,6 +91,7 @@
       addTip="Add respondent to revision"
       addForm={newRespondentForm}
       bind:addShown={showNew}
+      class="max-w-[65vw] min-w-[800px] w-full max-h-[95vh] min-h-[800px] h-full flex flex-col"
     />
   </h2>
   <div class:skeleton={loading} class="bg-neutral flex-1 has-[:checked]:pb-4">
@@ -111,8 +108,17 @@
           <div
             class="collapse-content rounded-box bg-base-100/10 mx-3 flex flex-col"
           >
-            <div class="flex justify-end mt-4">
+            <div class="flex justify-center mt-4">
               <ul class="join">
+                <li class="btn btn-outline btn-sm join-item">
+                  <a
+                    href="#"
+                    data-tip="View respondent details"
+                    class="block tooltip-left tooltip tooltip-primary"
+                  >
+                    <iconify-icon icon="mdi:account-details"></iconify-icon>
+                  </a>
+                </li>
                 <li class="btn btn-outline btn-sm join-item">
                   <a
                     href="#"
@@ -168,49 +174,126 @@
 {#snippet newRespondentForm()}
   <form
     onsubmit={preventDefault(createNewRespondent)}
-    class="p-3 flex-none border-neutral-200 border-t flex"
+    class="flex-1 bg-base-100/10 border rounded-box flex font-normal overflow-clip"
   >
-    <label class="join overflow-clip input-bordered border flex-1">
-      <input
-        required
-        type="email"
-        bind:value={newEmail}
-        placeholder="Respondent email"
-        class="input join-item flex-1 bg-base-100/10"
-      />
-      <button
-        type="submit"
-        class="join-item btn btn-primary !rounded-none shadow-none flex-none"
-        >Add Respondent</button
+    <div
+      class:skeleton={loading}
+      class="bg-neutral rounded-none flex-1 max-w-[33%] min-w-[320px] border-r h-full overflow-auto flex flex-col"
+    >
+      <h2
+        class="p-3 flex-none border-neutral-200 border-b text-base font-bold flex justify-between items-center"
       >
-    </label>
+        <span>Add Existing Respondent</span>
+      </h2>
+      <div class="p-3 flex-none border-neutral-200 border-b">
+        <label
+          class="input input-bordered input-sm bg-base-100/10 flex items-center gap-2"
+        >
+          <input
+            type="text"
+            placeholder="Search"
+            class="grow skip-focus"
+            bind:value={suggestionText}
+          />
+          <iconify-icon class="text-xl" icon="material-symbols:search"
+          ></iconify-icon>
+        </label>
+      </div>
+      <div class="flex-1 overflow-auto">
+        {#if !loading}
+          {#await respondents then respondents}
+            {#each respondents as respondent}
+              <label
+                class:highlight={store.clients.active?.id === respondent.id}
+                class="skip-focus btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
+              >
+                <span class="flex-1">{respondent.name ?? respondent.email}</span
+                >
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-primary skip-focus"
+                  onchange={() => toggleExisting(respondent)}
+                  checked={store.revisions.active?.respondents.some(
+                    (r) => r.id === respondent.id,
+                  )}
+                />
+              </label>
+            {/each}
+          {/await}
+        {/if}
+      </div>
+      <footer class="flex justify-end p-3">
+        <button
+          onclick={preventDefault(() => (showNew = false))}
+          class="btn btn-primary skip-focus">Done</button
+        >
+      </footer>
+    </div>
+    <div class="p-3 px-4 flex flex-col flex-1 gap-3">
+      <header class="text-base font-semibold flex justify-between opacity-50">
+        Creata a New Respondent and Add To Revision
+      </header>
+      <section class="flex gap-8 w-full flex-none p-1">
+        <label class="form-control flex-1">
+          <div class="label">
+            <span class="label-text">Email</span>
+            <span class="label-text-alt italic">Required</span>
+          </div>
+          <input
+            required
+            type="email"
+            bind:value={newRespondent.email}
+            class="input input-bordered bg-neutral w-full"
+          />
+        </label>
+        <div class="flex-1"></div>
+      </section>
+      <hr class="divide-x mt-6 border-dotted" />
+      <div class="flex flex-1 gap-8">
+        <section class="flex flex-col gap-2 flex-1 p-1">
+          <label class="form-control flex-none">
+            <div class="label">
+              <span class="label-text">Name</span>
+              <span class="label-text-alt italic">Optional</span>
+            </div>
+            <input
+              type="text"
+              bind:value={newRespondent.name}
+              class="input input-bordered bg-neutral w-full"
+            />
+          </label>
+          <label class="form-control flex-none">
+            <div class="label">
+              <span class="label-text">Title</span>
+              <span class="label-text-alt italic">Optional</span>
+            </div>
+            <input
+              type="text"
+              bind:value={newRespondent.title}
+              class="input input-bordered bg-neutral w-full"
+            />
+          </label>
+        </section>
+        <label class="form-control flex-1">
+          <div class="label">
+            <span class="label-text">Job Description/Bio</span>
+            <span class="label-text-alt italic">Optional</span>
+          </div>
+          <textarea
+            bind:value={newRespondent.profile}
+            class="textarea textarea-bordered bg-neutral h-36"
+          ></textarea>
+        </label>
+      </div>
+      <footer class="flex-none flex justify-end gap-4 p-1">
+        <button
+          class="btn btn-ghost"
+          onclick={preventDefault(() => (showNew = false))}
+        >
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Add Respondent</button>
+      </footer>
+    </div>
   </form>
 {/snippet}
-
-<!-- {#if suggestions.length}
-      <div class="text-center mb-2 text-sm">
-        {suggestionText}
-      </div>
-      <ul class="mx-3">
-        {#each suggestions as suggestion}
-          {@const existing = store.revisions.active?.respondents.some(
-            (r) => r.id === suggestion.id,
-          )}
-          <li class="form-control bg-base-100/10 mb-1 p-2 rounded">
-            <label class="label cursor-pointer">
-              <span class="label-text"
-                >{suggestion.name ?? suggestion.email}</span
-              >
-              <input
-                type="checkbox"
-                checked={existing}
-                class="checkbox checkbox-primary"
-                onchange={preventDefault(() => toggleExisting(suggestion))}
-              />
-            </label>
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </div>
-</dialog> -->

@@ -69,32 +69,37 @@ export const getBySearch = defineAction({
 export const create = defineAction({
   input: respondentSchema,
   handler: async (input, context) => {
-    // const user = (await getSession(context.request))?.user as User;
-    // const revision = await orm.revision.findFirst({
-    //   where: { id: input.revisionId },
-    // });
-    // delete input.revisionId;
-    // const surveyConnections: { id: string }[] = [];
-    // const revisionConnections: { id: string }[] = [];
-    // if (revision) {
-    //   revisionConnections.push({ id: revision.id });
-    //   if (revision) surveyConnections.push({ id: revision.surveyId });
-    //   if (revision.checklistId)
-    //     surveyConnections.push({ id: revision.checklistId });
-    // }
-    // return await orm.respondent.create({
-    //   data: {
-    //     ...input,
-    //     createdBy: user.email!,
-    //     revisions: {
-    //       connect: revisionConnections,
-    //     },
-    //     surveys: {
-    //       connect: surveyConnections,
-    //     },
-    //   },
-    //   include,
-    // });
+    const user = (await getSession(context.request))?.user as User;
+
+    const revision = await orm.revision.findFirst({
+      where: { id: input.revisionId },
+      include: { survey: true, checklist: true },
+    });
+    const surveyConnections: { id: string }[] = [];
+    const revisionConnections: { id: string }[] = [];
+
+    if (revision) {
+      revisionConnections.push({ id: revision.id });
+      if (revision.survey) surveyConnections.push({ id: revision.survey.id });
+      if (revision.checklist)
+        surveyConnections.push({ id: revision.checklist.id });
+    }
+
+    input.revisionId = undefined;
+
+    return await orm.respondent.create({
+      data: {
+        ...input,
+        createdBy: user.email!,
+        revisions: {
+          connect: revisionConnections,
+        },
+        surveys: {
+          connect: surveyConnections,
+        },
+      },
+      include,
+    });
   },
 });
 
@@ -219,5 +224,6 @@ export const deleteById = defineAction({
   },
 });
 
+export type RespondentSchema = z.infer<typeof respondentSchema>;
 export type Respondents = Awaited<ReturnType<typeof getAll>>;
 export type RespondentFromAll = Respondents[number];

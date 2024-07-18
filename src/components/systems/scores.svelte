@@ -9,24 +9,23 @@
     respondent?: string;
   };
 
-  let { respondent }: Props = $props();
+  let { respondent: respondentId }: Props = $props();
+
+  let respondent = $derived(
+    store.revisions.active?.respondents.find((r) => r.id === respondentId),
+  );
+  let comparedRespondent = $derived(
+    store.revisions.compared?.respondents.find((r) => r.id === respondentId),
+  );
 
   let respondents = $derived.by(() => {
     if (!respondent) return store.revisions.active?.respondents ?? [];
-    const match = store.revisions.active?.respondents.find(
-      (r) => r.id === respondent,
-    );
-    if (!match) return [];
-    return [match];
+    return [respondent];
   });
 
   let comparedRespondents = $derived.by(() => {
-    if (!respondent) return store.revisions.compared?.respondents ?? [];
-    const match = store.revisions.compared?.respondents.find(
-      (r) => r.id === respondent,
-    );
-    if (!match) return [];
-    return [match];
+    if (!comparedRespondent) return store.revisions.compared?.respondents ?? [];
+    return [comparedRespondent];
   });
 
   const average: number | null = $derived.by(() => {
@@ -67,7 +66,10 @@
 
 <div class="flex-1 group">
   <CardHeader icon="mdi:speedometer" class="border-t group-first:border-t-0">
-    <span>SUS Score</span>
+    <span
+      >SUS Score {#if respondent}
+        for {respondent.name ?? respondent.email}{/if}</span
+    >
   </CardHeader>
   <div class="p-4">
     {#if store.revisions.active && score}

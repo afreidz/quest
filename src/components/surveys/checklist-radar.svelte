@@ -144,7 +144,7 @@
   <CardHeader icon="mdi:radar" class="border-t group-first:border-t-0">
     <span
       >Checklist results {#if respondent}
-        for {respondent.email}{/if}
+        for {respondent.name ?? respondent.email}{/if}
     </span>
   </CardHeader>
   <div class="p-4 flex flex-col items-center">
