@@ -43,7 +43,7 @@ export default {
       type: "error",
       timer: setTimeout(() => this.dismiss(id), MESSAGE_DISMISS_TIME),
     });
-    return new Error(message);
+    console.error(message, detail);
   },
   dismiss(id: string) {
     messages = messages.filter((m) => m.id !== id);

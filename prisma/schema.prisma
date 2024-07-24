@@ -168,7 +168,13 @@ model Session {
   createdAt DateTime @default(now())
   createdBy String
 
+  scheduled DateTime
+  started   DateTime?
+  completed DateTime?
+
+  moderator         String
   videoURL          String?
+  callId            String? @unique
   serverRecordingId String? @unique
 
   respondentId String

@@ -144,6 +144,21 @@ export const getBySystemId = defineAction({
   },
 });
 
+export const getByRespondentId = defineAction({
+  input: z.string(),
+  handler: async (id) => {
+    return await orm.revision.findMany({
+      orderBy: { createdAt: "asc" },
+      where: {
+        respondents: {
+          some: { id },
+        },
+      },
+      include,
+    });
+  },
+});
+
 export const updateById = defineAction({
   input: z.object({
     id: z.string(),

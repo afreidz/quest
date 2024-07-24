@@ -231,7 +231,7 @@
     </div>
     <div class="p-3 px-4 flex flex-col flex-1 gap-3">
       <header class="text-base font-semibold flex justify-between opacity-50">
-        Creata a New Respondent and Add To Revision
+        Create a New Respondent and Add To Revision
       </header>
       <section class="flex gap-8 w-full flex-none p-1">
         <label class="form-control flex-1">

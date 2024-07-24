@@ -17,8 +17,8 @@
 
   onMount(async () => {
     await store.refreshAllClients();
-    if (!store.clients.active && store.clients.all.length)
-      store.setActiveClient(store.clients.all[0]);
+    // if (!store.clients.active && store.clients.all.length)
+    //   store.setActiveClient(store.clients.all[0]);
   });
 
   let filteredClients = $derived.by(() => {
@@ -37,12 +37,14 @@
         (c) => c.id === window.location.hash.replace("#", ""),
       );
       if (client) store.setActiveClient(client);
+    } else {
+      store.setActiveClient(null);
     }
   });
 
   $effect(() => {
     if (store.clients.active)
-      window.history.replaceState({}, "", `#${store.clients.active.id}`);
+      window.history.pushState({}, "", `#${store.clients.active.id}`);
   });
 
   $effect(() => {

@@ -1,8 +1,12 @@
 ---
+import Hero from "@/components/app/hero.svelte";
 import PrivateLayout from "@/layouts/private.astro";
 import ClientList from "@/components/clients/client-list.svelte";
 ---
 
 <PrivateLayout class="flex flex-1">
   <ClientList client:only="svelte" />
+  <div class="flex-1 flex flex-col justify-center items-center">
+    <Hero />
+  </div>
 </PrivateLayout>

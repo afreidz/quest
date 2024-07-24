@@ -3,7 +3,7 @@
 </script>
 
 <heading class="flex items-center gap-4 ps-4 pe-4">
-  <a href="/">
+  <a href="/clients">
     <svg
       class="w-10 h-10"
       viewBox="0 0 39 39"
@@ -33,7 +33,7 @@
       </defs>
     </svg>
   </a>
-  <a href="/">
+  <a href="/clients">
     <h1
       class="bg-clip-text ml-4 text-transparent bg-gradient-to-b from-primary to-secondary text-center font-logo font-black text-3xl"
     >

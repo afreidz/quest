@@ -1,5 +1,5 @@
 import { getSession } from "auth-astro/server";
-import { defineMiddleware } from "astro:middleware";
+import { defineMiddleware, sequence } from "astro:middleware";
 
 const AUTHLESS_ROUTES = [
   "/404",
@@ -8,20 +8,25 @@ const AUTHLESS_ROUTES = [
   "/api/auth",
   "/auth/login",
   "/_actions/public",
+  "/sessions/participate",
 ];
 
-export const onRequest = defineMiddleware(async (context, next) => {
+export const auth = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
 
-  if (AUTHLESS_ROUTES.some((r) => url.pathname.startsWith(r))) return next();
+  if (AUTHLESS_ROUTES.some((r) => url.pathname.startsWith(r))) {
+    return next();
+  }
 
   const session = await getSession(context.request);
 
   if (!session?.user) {
-    return new Response(JSON.stringify({ message: "unauthorized" }), {
-      status: 401,
-    });
+    const redirect = new URL(url.origin);
+    redirect.pathname = "/auth/login";
+    return Response.redirect(redirect.href);
   }
 
   return next();
 });
+
+export const onRequest = sequence(auth);

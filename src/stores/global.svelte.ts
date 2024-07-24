@@ -7,6 +7,8 @@ type EntityState<T> = {
 };
 
 class QuestGlobalStore {
+  _me: Partial<Awaited<ReturnType<typeof actions.me.getSession>>> = $state({});
+
   _clients: EntityState<
     Awaited<ReturnType<typeof actions.client.getAll>>[number]
   > = $state({
@@ -46,6 +48,18 @@ class QuestGlobalStore {
     unsaved: false,
   });
 
+  _sessions: EntityState<
+    Awaited<ReturnType<typeof actions.sessions.getAll>>[number]
+  > = $state({
+    all: [],
+    active: null,
+    unsaved: false,
+  });
+
+  get me() {
+    return this._me;
+  }
+
   get clients(): EntityState<
     Awaited<ReturnType<typeof actions.client.getAll>>[number]
   > {
@@ -64,6 +78,20 @@ class QuestGlobalStore {
     return this._surveys;
   }
 
+  get sessions() {
+    return this._sessions;
+  }
+
+  async refreshMe() {
+    try {
+      const me = await actions.me.getSession();
+      this._me = me;
+    } catch (err) {
+      console.log(err);
+      this._me = null;
+    }
+  }
+
   setActiveClient(client: typeof this.clients.active) {
     if (this._clients.unsaved) return;
     this._clients.active = client;
@@ -79,7 +107,7 @@ class QuestGlobalStore {
     if (!this.clients.active) return;
     const newClient = await actions.client.getById(this.clients.active.id);
     this._clients.all = this.clients.all.map((s) =>
-      s.id === newClient?.id ? newClient : s
+      s.id === newClient?.id ? newClient : s,
     );
     this._clients.active = newClient;
   }
@@ -109,7 +137,7 @@ class QuestGlobalStore {
     const newSystem = await actions.system.getById(this.systems.active.id);
     console.log("New system", newSystem);
     this._systems.all = this.systems.all.map((s) =>
-      s.id === newSystem?.id ? newSystem : s
+      s.id === newSystem?.id ? newSystem : s,
     );
     this._systems.active = newSystem;
   }
@@ -150,10 +178,10 @@ class QuestGlobalStore {
   async refreshActiveRevision() {
     if (!this.revisions.active) return;
     const newRevision = await actions.revision.getById(
-      this.revisions.active.id
+      this.revisions.active.id,
     );
     this._revisions.all = this.revisions.all.map((s) =>
-      s.id === newRevision?.id ? newRevision : s
+      s.id === newRevision?.id ? newRevision : s,
     );
     this._revisions.active = newRevision;
   }
@@ -177,9 +205,33 @@ class QuestGlobalStore {
     if (!this.surveys.active) return;
     const newSurvey = await actions.surveys.getById(this.surveys.active.id);
     this._surveys.all = this.surveys.all.map((s) =>
-      s.id === newSurvey?.id ? newSurvey : s
+      s.id === newSurvey?.id ? newSurvey : s,
     );
     this._surveys.active = newSurvey;
+  }
+
+  async refreshAllSessions() {
+    this._sessions.all = await actions.sessions.getAll(undefined);
+  }
+
+  setActiveSession(session: typeof this.sessions.active) {
+    if (this.sessions.unsaved) return;
+
+    if (!session) {
+      this._sessions.active = null;
+      return;
+    }
+
+    this._sessions.active = session;
+  }
+
+  async refreshActiveSession() {
+    if (!this.sessions.active) return;
+    const newSession = await actions.sessions.getById(this.sessions.active.id);
+    this._sessions.all = this.sessions.all.map((s) =>
+      s.id === newSession?.id ? newSession : s,
+    );
+    this._sessions.active = newSession;
   }
 }
 
