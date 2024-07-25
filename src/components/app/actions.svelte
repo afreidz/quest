@@ -111,9 +111,9 @@
 
 {#if deleteForm}
   <dialog
-    bind:this={deleteDialog}
-    class="modal"
-    on:close={() => (deleteShown = false)}
+  class="modal"
+  bind:this={deleteDialog}
+    onclose={() => (deleteShown = false)}
   >
     <div class="modal-box bg-neutral {classList}">
       <h3 class="font-bold text-lg flex items-center justify-between gap-3">
@@ -131,9 +131,9 @@
 
 {#if editForm}
   <dialog
-    bind:this={editDialog}
-    class="modal"
-    on:close={() => (editShown = false)}
+  class="modal"
+  bind:this={editDialog}
+    onclose={() => (editShown = false)}
   >
     <div class="modal-box bg-neutral {classList}">
       <h3 class="font-bold text-lg flex items-center justify-between gap-3">
@@ -151,9 +151,9 @@
 
 {#if addForm}
   <dialog
-    bind:this={addDialog}
-    class="modal"
-    on:close={() => (addShown = false)}
+  class="modal"
+  bind:this={addDialog}
+    onclose={() => (addShown = false)}
   >
     <div class="modal-box bg-neutral {classList}">
       <h3 class="font-bold text-lg flex items-center justify-between gap-3">
