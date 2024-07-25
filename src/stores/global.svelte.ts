@@ -84,11 +84,12 @@ class QuestGlobalStore {
   }
 
   async refreshMe() {
-    const me = await actions.me.getSession().catch((err) => {
-      messages.error("Unable to get current user details", err.message);
-      return null;
-    });
-    this._me = me;
+    const me = await actions.me.getSession.safe({});
+
+    if (me.error)
+      messages.error("Unable to get current user details", me.error);
+
+    this._me = me?.data ?? null;
   }
 
   setActiveClient(client: typeof this.clients.active) {
@@ -99,31 +100,28 @@ class QuestGlobalStore {
   }
 
   async refreshAllClients() {
-    this._clients.all = await actions.client.getAll({}).catch((err) => {
-      messages.error("Unable to refresh clients", err.message);
-      return [];
-    });
+    const all = await actions.client.getAll.safe({});
+
+    if (all.error) messages.error("Unable to refresh clients", all.error);
+
+    this._clients.all = all.data || [];
   }
 
   async refreshActiveClient() {
     if (!this.clients.active) return;
 
-    const newClient = await actions.client
-      .getById(this.clients.active.id)
-      .catch((err) => {
-        messages.error("Unable to refresh active client", err.message);
-        return null;
-      });
+    const refreshed = await actions.client.getById.safe(this.clients.active.id);
 
-    if (!newClient) {
+    if (refreshed.error) {
+      messages.error("Unable to refresh active client", refreshed.error);
       this._clients.active = null;
       return;
     }
 
     this._clients.all = this.clients.all.map((s) =>
-      s.id === newClient?.id ? newClient : s,
+      s.id === refreshed.data?.id ? refreshed.data : s,
     );
-    this._clients.active = newClient;
+    this._clients.active = refreshed.data;
   }
 
   setActiveSystem(system: typeof this.systems.active) {
@@ -139,40 +137,33 @@ class QuestGlobalStore {
 
   async refreshAllSystems(id?: string) {
     if (!this.clients.active && !id) return;
-    this._systems.all = id
-      ? await actions.system.getByClientId(id).catch((err) => {
-          messages.error("Unable to refresh systems", err.message);
-          return [];
-        })
+
+    const all = id
+      ? await actions.system.getByClientId.safe(id)
       : this.clients.active
-        ? await actions.system
-            .getByClientId(this.clients.active.id)
-            .catch((err) => {
-              messages.error("Unable to refresh systems", err.message);
-              return [];
-            })
-        : [];
+        ? await actions.system.getByClientId.safe(this.clients.active.id)
+        : { data: [], error: null };
+
+    if (all.error) messages.error("Unable to refresh systems", all.error);
+
+    this._systems.all = all.data ?? [];
   }
 
   async refreshActiveSystem() {
     if (!this.systems.active) return;
 
-    const newSystem = await actions.system
-      .getById(this.systems.active.id)
-      .catch((err) => {
-        messages.error("Unable to refresh active system", err.message);
-        return null;
-      });
+    const refreshed = await actions.system.getById.safe(this.systems.active.id);
 
-    if (!newSystem) {
+    if (refreshed.error) {
+      messages.error("Unable to refresh active system", refreshed.error);
       this._systems.active = null;
       return;
     }
 
     this._systems.all = this.systems.all.map((s) =>
-      s.id === newSystem?.id ? newSystem : s,
+      s.id === refreshed.data?.id ? refreshed.data : s,
     );
-    this._systems.active = newSystem;
+    this._systems.active = refreshed.data;
   }
 
   setActiveRevision(revision: typeof this.revisions.active) {
@@ -201,40 +192,35 @@ class QuestGlobalStore {
 
   async refreshAllRevisions(id?: string) {
     if (!this.systems.active?.id && !id) return;
-    this._revisions.all = id
-      ? await actions.revision.getBySystemId(id).catch((err) => {
-          messages.error("Unable to refresh revisions", err.message);
-          return [];
-        })
+
+    const all = id
+      ? await actions.revision.getBySystemId.safe(id)
       : this.systems.active
-        ? await actions.revision
-            .getBySystemId(this.systems.active.id)
-            .catch((err) => {
-              messages.error("Unable to refresh revisions", err.message);
-              return [];
-            })
-        : [];
+        ? await actions.revision.getBySystemId.safe(this.systems.active.id)
+        : { data: [], error: null };
+
+    if (all.error) messages.error("Unable to refresh revisions", all.error);
+
+    this._revisions.all = all.data ?? [];
   }
 
   async refreshActiveRevision() {
     if (!this.revisions.active) return;
 
-    const newRevision = await actions.revision
-      .getById(this.revisions.active.id)
-      .catch((err) => {
-        messages.error("Unable to refresh active revision", err.message);
-        return null;
-      });
+    const refreshed = await actions.revision.getById.safe(
+      this.revisions.active.id,
+    );
 
-    if (!newRevision) {
-      this._revisions.active = null;
+    if (refreshed.error) {
+      messages.error("Unable to refresh active revision", refreshed.error);
+      this._systems.active = null;
       return;
     }
 
     this._revisions.all = this.revisions.all.map((s) =>
-      s.id === newRevision?.id ? newRevision : s,
+      s.id === refreshed.data?.id ? refreshed.data : s,
     );
-    this._revisions.active = newRevision;
+    this._revisions.active = refreshed.data;
   }
 
   setActiveSurvey(survey: typeof this.surveys.active) {
@@ -249,38 +235,38 @@ class QuestGlobalStore {
   }
 
   async refreshAllSurveys() {
-    this._surveys.all = await actions.surveys.getAll({}).catch((err) => {
-      messages.error("Unable to refresh surveys", err.message);
-      return [];
-    });
+    const all = await actions.surveys.getAll.safe({});
+
+    if (all.error) messages.error("Unable to refresh all surveys", all.error);
+
+    this._surveys.all = all.data ?? [];
   }
 
   async refreshActiveSurvey() {
     if (!this.surveys.active) return;
 
-    const newSurvey = await actions.surveys
-      .getById(this.surveys.active.id)
-      .catch((err) => {
-        messages.error("Unable to refresh active survey", err.message);
-        return null;
-      });
+    const refreshed = await actions.surveys.getById.safe(
+      this.surveys.active.id,
+    );
 
-    if (!newSurvey) {
+    if (refreshed.error) {
+      messages.error("Unable to refresh active survey", refreshed.error);
       this._surveys.active = null;
       return;
     }
 
     this._surveys.all = this.surveys.all.map((s) =>
-      s.id === newSurvey?.id ? newSurvey : s,
+      s.id === refreshed.data?.id ? refreshed.data : s,
     );
-    this._surveys.active = newSurvey;
+    this._surveys.active = refreshed.data;
   }
 
   async refreshAllSessions() {
-    this._sessions.all = await actions.sessions.getAll({}).catch((err) => {
-      messages.error("Unable to refresh sessions", err.message);
-      return [];
-    });
+    const all = await actions.sessions.getAll.safe({});
+
+    if (all.error) messages.error("Unable to refresh sessions");
+
+    this._sessions.all = all.data ?? [];
   }
 
   setActiveSession(session: typeof this.sessions.active) {
@@ -297,22 +283,20 @@ class QuestGlobalStore {
   async refreshActiveSession() {
     if (!this.sessions.active) return;
 
-    const newSession = await actions.sessions
-      .getById(this.sessions.active.id)
-      .catch((err) => {
-        messages.error("Unable to refresh systems", err.message);
-        return null;
-      });
+    const refreshed = await actions.sessions.getById.safe(
+      this.sessions.active.id,
+    );
 
-    if (!newSession) {
+    if (refreshed.error) {
+      messages.error("Unable to refresh active session", refreshed.error);
       this._sessions.active = null;
       return;
     }
 
     this._sessions.all = this.sessions.all.map((s) =>
-      s.id === newSession?.id ? newSession : s,
+      s.id === refreshed.data?.id ? refreshed.data : s,
     );
-    this._sessions.active = newSession;
+    this._sessions.active = refreshed.data;
   }
 }
 

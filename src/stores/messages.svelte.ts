@@ -34,8 +34,17 @@ export default {
       timer: setTimeout(() => this.dismiss(id), MESSAGE_DISMISS_TIME),
     });
   },
-  error(message: string, detail?: string) {
+  error(message: string, detailOrError?: string | Error) {
     let id = `message_${+new Date() + Math.random()}`;
+    let detail =
+      detailOrError instanceof Error ? detailOrError.message : detailOrError;
+
+    if (detailOrError instanceof Error) {
+      console.error(detail);
+    } else {
+      console.error(message, detail);
+    }
+
     messages.push({
       id,
       detail,
@@ -43,7 +52,6 @@ export default {
       type: "error",
       timer: setTimeout(() => this.dismiss(id), MESSAGE_DISMISS_TIME),
     });
-    console.error(message, detail);
   },
   dismiss(id: string) {
     messages = messages.filter((m) => m.id !== id);
