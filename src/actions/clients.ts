@@ -18,12 +18,14 @@ const schema = z.object({
 export const getAll = defineAction({
   input: PaginationSchema,
   handler: async (pagination) => {
+    console.log("ANDY", "getting all clients...");
+
     const clients = await orm.client
       .findMany({
         orderBy: { createdAt: "asc" },
-        take: pagination?.take,
-        skip: pagination?.skip,
-        include,
+        // take: pagination?.take,
+        // skip: pagination?.skip,
+        // include,
       })
       .catch((err) => {
         console.error(err);
