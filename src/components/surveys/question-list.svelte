@@ -568,7 +568,7 @@
   <dialog
     class="modal"
     bind:this={newGroupDialog}
-    on:close={() => {
+    onclose={() => {
       showNewGroupDialog = false;
       newGroupName = "";
     }}
@@ -604,7 +604,7 @@
   <dialog
     class="modal"
     bind:this={newQuestionDialog}
-    on:close={() => {
+    onclose={() => {
       showNewQuestionDialog = false;
       newQuestionGroup = null;
       newQuestionText = "";
@@ -641,7 +641,7 @@
   <dialog
     bind:this={confirmDialog}
     class="modal"
-    on:close={() => (showConfirmDialog = null)}
+    onclose={() => (showConfirmDialog = null)}
   >
     <div class="modal-box bg-neutral">
       <h3 class="font-bold text-lg flex items-center justify-between gap-3">

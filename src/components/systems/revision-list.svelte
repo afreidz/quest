@@ -147,7 +147,7 @@
               <a
                 href="#{revision.id}"
                 class:tooltip={store.revisions.unsaved}
-                on:click={preventDefault(() => navigateToRevision(revision))}
+                onclick={preventDefault(() => navigateToRevision(revision))}
                 data-tip={"You have unsaved changes to the current revision!"}
                 class="flex-1 h-full flex items-center pl-4">{revision.title}</a
               >

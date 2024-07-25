@@ -34,7 +34,7 @@
         class="p-2 shadow menu dropdown-content z-[1] bg-neutral rounded-box w-52"
       >
         <li>
-          <button on:click={handleSignOut}>Logout</button>
+          <button onclick={handleSignOut}>Logout</button>
         </li>
       </ul>
     </div>
