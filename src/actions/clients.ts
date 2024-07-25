@@ -18,8 +18,9 @@ const schema = z.object({
 export const getAll = defineAction({
   input: PaginationSchema,
   handler: async () => {
+    const clients: Awaited<ReturnType<(typeof orm.client)["findMany"]>> = [];
     console.log("HERE");
-    return [];
+    return clients;
   },
 });
 
