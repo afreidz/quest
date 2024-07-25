@@ -5,7 +5,9 @@ import Messages from "@/components/app/messages.svelte";
 <html lang="en" class="bg-base-100/10">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#FFFFFF" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>QUEST by Hitachi Solutions</title>
@@ -20,6 +22,11 @@ import Messages from "@/components/app/messages.svelte";
       }
       video {
         @apply max-w-none;
+      }
+      @font-face {
+        font-weight: 900;
+        font-family: "Galano Grotesque";
+        src: url("/fonts/galano-grotesque/GalanoGrotesqueBlack.otf");
       }
     </style>
     <slot />
