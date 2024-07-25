@@ -17,7 +17,7 @@
     return showNew
       ? suggestionText
         ? actions.respondents.getBySearch(suggestionText)
-        : actions.respondents.getAll(undefined)
+        : actions.respondents.getAll({})
       : [];
   });
 

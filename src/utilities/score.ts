@@ -16,7 +16,7 @@ type Surveys =
   | RespondentFromAll["surveys"][number];
 
 export async function calculatePracticeAverageSUSScore() {
-  const respondents = await actions.respondents.getAll(undefined);
+  const respondents = await actions.respondents.getAll({});
   const scores = respondents
     .map((r) => {
       const survey = r.surveys.find((s) => s.type === "SUS_PROPOSED");
@@ -29,10 +29,10 @@ export async function calculatePracticeAverageSUSScore() {
 
 export function calculateAverageSUSScore(
   respondents: SurveyRespondents,
-  survey: Surveys
+  survey: Surveys,
 ) {
   const scores = calculateSUSScoreFromRespondents(respondents, survey).filter(
-    Boolean
+    Boolean,
   ) as number[];
   if (!scores.length) return null;
   return scores.reduce((a, b) => a + b, 0) / scores.length || 0;
@@ -40,7 +40,7 @@ export function calculateAverageSUSScore(
 
 export function calculateSUSScoreFromRespondents(
   respondents: SurveyRespondents,
-  survey: Surveys
+  survey: Surveys,
 ) {
   const scores = respondents
     .map((r) => calculateSUSScoreFromRespondent(r, survey))
@@ -50,10 +50,10 @@ export function calculateSUSScoreFromRespondents(
 
 export function calculateSUSScoreFromRespondent(
   respondent: SurveyRespondents[number],
-  survey: Surveys
+  survey: Surveys,
 ) {
   const responses = respondent.responses.filter(
-    (r) => survey?.id === r.surveyId
+    (r) => survey?.id === r.surveyId,
   );
 
   if (responses.length !== survey?.questions.length || !responses.length)

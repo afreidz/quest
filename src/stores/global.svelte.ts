@@ -99,7 +99,7 @@ class QuestGlobalStore {
   }
 
   async refreshAllClients() {
-    this._clients.all = await actions.client.getAll(undefined).catch((err) => {
+    this._clients.all = await actions.client.getAll({}).catch((err) => {
       messages.error("Unable to refresh clients", err.message);
       return [];
     });
@@ -249,7 +249,7 @@ class QuestGlobalStore {
   }
 
   async refreshAllSurveys() {
-    this._surveys.all = await actions.surveys.getAll(undefined).catch((err) => {
+    this._surveys.all = await actions.surveys.getAll({}).catch((err) => {
       messages.error("Unable to refresh surveys", err.message);
       return [];
     });

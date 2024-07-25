@@ -53,7 +53,7 @@
           loading = false;
           return r;
         })
-      : actions.respondents.getAll(undefined).then((r) => {
+      : actions.respondents.getAll({}).then((r) => {
           loading = false;
           return r;
         });
