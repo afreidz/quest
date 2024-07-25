@@ -18,7 +18,7 @@ const schema = z.object({
 export const getAll = defineAction({
   input: PaginationSchema,
   handler: async (pagination) => {
-    return await orm.client
+    const clients = await orm.client
       .findMany({
         orderBy: { createdAt: "asc" },
         take: pagination?.take,
@@ -29,6 +29,10 @@ export const getAll = defineAction({
         console.error(err);
         return [];
       });
+
+    console.log("ANDY", clients);
+
+    return clients;
   },
 });
 
