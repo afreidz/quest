@@ -3,12 +3,17 @@
   import type { SessionFromAll } from "@/actions/sessions";
   import LocalMedia from "@/components/sessions/local-media.svelte";
   import RemoteMedia from "@/components/sessions/remote-media.svelte";
+  import { onMount } from "svelte";
 
   type Props = {
     session: SessionFromAll;
   };
 
   let { session }: Props = $props();
+
+  onMount(async () => {
+    await sessionState.setHost(true);
+  });
 
   $effect(() => {
     sessionState.setId(session.roomComsId);

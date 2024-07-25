@@ -264,12 +264,12 @@
           ></div>
         </div>
       {:else if pipCameras}
-        <!-- svelte-ignore a11y-media-has-caption -->
+        <!-- svelte-ignore a11y_media_has_caption -->
         <video
-          bind:this={cameraVideoElement}
           autoplay
+          bind:this={cameraVideoElement}
           class="absolute z-[0] w-0 h-0"
-        />
+        ></video>
       {/if}
       {#if !sessionState.connected && flip}
         <ul

@@ -5,16 +5,13 @@ import { CommunicationIdentityClient } from "@azure/communication-identity";
 const key = import.meta.env.AZURE_COMS_KEY;
 const endpoint = import.meta.env.AZURE_COMS_ENDPOINT;
 
-const getCommsToken = defineAction({
+const credential = new AzureKeyCredential(key);
+const idClient = new CommunicationIdentityClient(endpoint, credential);
+
+export const getComsToken = defineAction({
   input: z.string().optional(),
   handler: async (user) => {
-    const credential = new AzureKeyCredential(key);
-    const client = new CommunicationIdentityClient(endpoint, credential);
-
-    if (user) return client.getToken({ communicationUserId: user }, ["voip"]);
-
-    return await client.createUserAndToken(["voip"]);
+    if (user) return idClient.getToken({ communicationUserId: user }, ["voip"]);
+    return await idClient.createUserAndToken(["voip"]);
   },
 });
-
-export default getCommsToken;

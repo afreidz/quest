@@ -1,5 +1,5 @@
-import coms from "./coms";
 import * as me from "./me";
+import * as coms from "./coms";
 import * as clients from "./clients";
 import * as systems from "./systems";
 import * as surveys from "./surveys";
@@ -9,7 +9,7 @@ import * as respondents from "./respondents";
 
 export const server = {
   public: {
-    getComsToken: coms,
+    getComsToken: coms.getComsToken,
   },
   me: {
     ...me,

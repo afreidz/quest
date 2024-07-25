@@ -11,7 +11,7 @@ datasource db {
 
 model Client {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   name String @unique
@@ -21,7 +21,7 @@ model Client {
 
 model System {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   title String
@@ -36,7 +36,7 @@ model System {
 model Revision {
   id        String   @id @default(uuid())
   createdBy String
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   title String
 
@@ -54,7 +54,7 @@ model Revision {
 
 model Respondent {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
   comsId    String?
 
@@ -81,7 +81,7 @@ enum SurveyType {
 
 model Survey {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   type SurveyType
@@ -99,7 +99,7 @@ model Survey {
 
 model Question {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   position Int?
@@ -117,7 +117,7 @@ model Question {
 
 model QuestionGroup {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   position Int?
@@ -129,7 +129,7 @@ model QuestionGroup {
 
 model CurratedResponse {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   position       Int?
@@ -144,7 +144,7 @@ model CurratedResponse {
 
 model Response {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   freeformResponse String?
@@ -166,12 +166,12 @@ model Response {
 
 model Session {
   id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
-  scheduled DateTime
-  started   DateTime?
-  completed DateTime?
+  scheduled DateTime  @db.Timestamptz(3)
+  started   DateTime? @db.Timestamptz(3)
+  completed DateTime? @db.Timestamptz(3)
 
   moderator         String
   moderatorComsId   String
@@ -196,7 +196,7 @@ model Session {
 
 model KeyMoment {
   id        String   @id @default(uuid())
-  time      DateTime @default(now())
+  time      DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
   text String
@@ -207,7 +207,7 @@ model KeyMoment {
 
 model TranscriptionSegment {
   id   String   @id @default(uuid())
-  time DateTime @default(now())
+  time DateTime @default(now()) @db.Timestamptz(3)
 
   text      String
   moderator Boolean?

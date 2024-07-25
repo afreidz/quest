@@ -18,6 +18,7 @@ import { AzureCommunicationTokenCredential } from "@azure/communication-common";
 const TIMEOUT = 30000;
 
 class QuestSessionStore {
+  private _host? = $state(false);
   private _call?: Call = $state();
   private _permission = $state(false);
   private agent?: CallAgent = $state();
@@ -86,6 +87,22 @@ class QuestSessionStore {
 
   get permission() {
     return this._permission;
+  }
+
+  get host() {
+    return this._host;
+  }
+
+  async setHost(v: boolean) {
+    const user = await actions.me.getSession.safe();
+
+    if (!v) {
+      this._host = false;
+    } else if (user.error) {
+      messages.error("Unable to set host without a valid session", user.error);
+    } else {
+      this._host = v;
+    }
   }
 
   setId(id: string | undefined | null) {
@@ -189,6 +206,8 @@ class QuestSessionStore {
       });
 
     if (!this.agent) return;
+
+    if (this.host) await actions.sessions.bumpDuration.safe(this.id);
 
     const call = this.agent.join({ roomId: this.id });
     this._call = call;

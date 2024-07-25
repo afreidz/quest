@@ -22,7 +22,7 @@ const SessionCreateSchema = z.object({
   revision: z.string(),
   respondent: z.string(),
   moderator: z.string(),
-  scheduled: z.string().transform((str) => new Date(str)),
+  scheduled: z.string().transform((str) => new Date(str).toISOString()),
 });
 
 const SessionUpdateSchema = z.object({
@@ -91,7 +91,7 @@ export const create = defineAction({
       respondentComsId = user.communicationUserId;
     }
 
-    const d = new Date(sessionData.scheduled.toUTCString());
+    const d = new Date(sessionData.scheduled);
     const roomOpen = new Date(+d - SESSION_START_BUFFER);
     const roomClose = new Date(+roomOpen + SESSION_END_BUFFER);
 
@@ -127,9 +127,9 @@ export const create = defineAction({
         createdBy: creator.email!,
         moderator: sessionData.moderator,
         revisionId: sessionData.revision,
+        scheduled: sessionData.scheduled,
         respondentId: sessionData.respondent,
         moderatorComsId: moderator.communicationUserId,
-        scheduled: sessionData.scheduled.toISOString(),
       },
       include: {
         revision: {
@@ -256,6 +256,16 @@ export const updateById = defineAction({
         ...data,
       },
     });
+  },
+});
+
+export const bumpDuration = defineAction({
+  input: z.string(),
+  handler: async (roomId) => {
+    const validFrom = new Date();
+    const validUntil = new Date(+validFrom + SESSION_END_BUFFER);
+    await roomClient.updateRoom(roomId, { validFrom, validUntil });
+    return true;
   },
 });
 
