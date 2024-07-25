@@ -18,12 +18,17 @@ const schema = z.object({
 export const getAll = defineAction({
   input: PaginationSchema,
   handler: async (pagination) => {
-    return await orm.client.findMany({
-      orderBy: { createdAt: "asc" },
-      take: pagination?.take,
-      skip: pagination?.skip,
-      include,
-    });
+    return await orm.client
+      .findMany({
+        orderBy: { createdAt: "asc" },
+        take: pagination?.take,
+        skip: pagination?.skip,
+        include,
+      })
+      .catch((err) => {
+        console.error(err);
+        return [];
+      });
   },
 });
 
@@ -31,20 +36,30 @@ export const create = defineAction({
   input: schema,
   handler: async (input, context) => {
     const user = (await getSession(context.request))?.user as User;
-    return await orm.client.create({
-      data: {
-        name: input.name,
-        createdBy: user.email!,
-      },
-      include,
-    });
+    return await orm.client
+      .create({
+        data: {
+          name: input.name,
+          createdBy: user.email!,
+        },
+        include,
+      })
+      .catch((err) => {
+        console.error(err);
+        return null;
+      });
   },
 });
 
 export const getById = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await orm.client.findUnique({ where: { id }, include });
+    return await orm.client
+      .findUnique({ where: { id }, include })
+      .catch((err) => {
+        console.error(err);
+        return null;
+      });
   },
 });
 
@@ -54,18 +69,26 @@ export const updateById = defineAction({
     data: schema,
   }),
   handler: async ({ id, data }) => {
-    return await orm.client.update({
-      data,
-      include,
-      where: { id },
-    });
+    return await orm.client
+      .update({
+        data,
+        include,
+        where: { id },
+      })
+      .catch((err) => {
+        console.error(err);
+        return null;
+      });
   },
 });
 
 export const deleteById = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await orm.client.delete({ where: { id } });
+    return await orm.client.delete({ where: { id } }).catch((err) => {
+      console.error(err);
+      return null;
+    });
   },
 });
 
