@@ -3,6 +3,7 @@ import {
   LocalVideoStream,
   VideoStreamRenderer,
   type Call,
+  type CallAgent,
   type AudioDeviceInfo,
   type VideoDeviceInfo,
   type RemoteParticipant,
@@ -19,6 +20,7 @@ const TIMEOUT = 30000;
 class QuestSessionStore {
   private _call?: Call = $state();
   private _permission = $state(false);
+  private agent?: CallAgent = $state();
   private _id?: string | null = $state();
   private client = $state(new CallClient());
   private _connected?: boolean = $state(false);
@@ -34,6 +36,7 @@ class QuestSessionStore {
 
   private _local: {
     name?: string;
+    id?: string | null;
     audio?: AudioDeviceInfo;
     video?: VideoDeviceInfo;
     stream?: LocalVideoStream;
@@ -43,6 +46,7 @@ class QuestSessionStore {
 
   private _remote: {
     name?: string;
+    id?: string | null;
     stream?: RemoteVideoStream;
     screen?: VideoStreamRendererView;
     camera?: VideoStreamRendererView;
@@ -76,10 +80,6 @@ class QuestSessionStore {
     return this._id;
   }
 
-  set id(id: string | undefined | null) {
-    this._id = id;
-  }
-
   get call() {
     return this._call;
   }
@@ -88,8 +88,20 @@ class QuestSessionStore {
     return this._permission;
   }
 
+  setId(id: string | undefined | null) {
+    this._id = id;
+  }
+
+  setLocalId(i: string | undefined | null) {
+    this._local.id = i;
+  }
+
   setLocalName(n: string | undefined) {
     this._local.name = n;
+  }
+
+  setRemoteId(i: string | undefined | null) {
+    this._remote.id = i;
   }
 
   setRemoteName(n: string) {
@@ -158,21 +170,27 @@ class QuestSessionStore {
     console.log("Connecting to call:", this.id);
 
     this.client = new CallClient();
-    const { token } = await actions.public.getComsToken();
+
+    const { token } = await actions.public.getComsToken(
+      this.local.id ?? undefined,
+    );
+
     const credential = new AzureCommunicationTokenCredential(token);
 
-    const agent = await this.client
+    if (this.agent) this.agent.dispose();
+
+    this.agent = await this.client
       .createCallAgent(credential, {
         displayName: this.local.name,
       })
       .catch((err) => {
         messages.error("Unable to intialize call agent", err.message);
-        return null;
+        return undefined;
       });
 
-    if (!agent) return;
+    if (!this.agent) return;
 
-    const call = agent.join({ groupId: this.id });
+    const call = this.agent.join({ roomId: this.id });
     this._call = call;
     // this.startScreenShare = call.startScreenSharing;
 

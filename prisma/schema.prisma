@@ -56,6 +56,7 @@ model Respondent {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   createdBy String
+  comsId    String?
 
   email    String
   imageURL String?
@@ -173,8 +174,9 @@ model Session {
   completed DateTime?
 
   moderator         String
+  moderatorComsId   String
   videoURL          String?
-  callId            String? @unique
+  roomComsId        String  @unique
   serverRecordingId String? @unique
 
   respondentId String

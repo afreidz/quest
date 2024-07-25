@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { v4 as uuid } from "uuid";
-  import { actions } from "astro:actions";
   import sessionState from "@/stores/session.svelte";
   import type { SessionFromAll } from "@/actions/sessions";
   import LocalMedia from "@/components/sessions/local-media.svelte";
@@ -13,15 +11,21 @@
   let { session }: Props = $props();
 
   $effect(() => {
-    const callId = uuid();
-    actions.sessions.updateById({ id: session.id, data: { callId } });
-    sessionState.id = callId;
+    sessionState.setId(session.roomComsId);
     sessionState.setLocalName(session.moderator);
+    sessionState.setLocalId(session.moderatorComsId);
+    sessionState.setRemoteId(session.respondent.comsId);
     sessionState.setRemoteName(
       session.respondent.name || session.respondent.email,
     );
   });
 </script>
+
+<svelte:window
+  onbeforeunload={async () => {
+    await sessionState.leave();
+  }}
+/>
 
 <div class="flex flex-col items-center justify-center m-6 gap-4">
   <div class="flex gap-4">

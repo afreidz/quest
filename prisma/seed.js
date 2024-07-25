@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const orm = new PrismaClient();
 
 await orm.$transaction([
+  orm.session.deleteMany(),
   orm.curratedResponse.deleteMany(),
   orm.questionGroup.deleteMany(),
   orm.respondent.deleteMany(),
@@ -1142,7 +1143,7 @@ await orm.$transaction([
       respondentId: tonyStark.id,
       questionId: proposedQuestions[7].id,
       responseId: susCurratedResponses.find(
-        (r) => r.value === "strongly_disagree"
+        (r) => r.value === "strongly_disagree",
       ).id,
     },
   }),
@@ -1162,7 +1163,7 @@ await orm.$transaction([
       respondentId: tonyStark.id,
       questionId: proposedQuestions[9].id,
       responseId: susCurratedResponses.find(
-        (r) => r.value === "strongly_disagree"
+        (r) => r.value === "strongly_disagree",
       ).id,
     },
   }),

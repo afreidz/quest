@@ -100,6 +100,7 @@
     showCreateSessionForm = false;
 
     loading = true;
+
     const resp = await actions.sessions
       .create({
         ...newSession,
@@ -121,7 +122,11 @@
     if (!resp) return;
 
     await store.refreshAllSessions();
-    messages.success("Client created", JSON.stringify(resp, null, 2));
+
+    messages.success(
+      `Session scheduled for ${displayFormatter.format(newSession.scheduled)} with ${resp.respondent.name || resp.respondent.email}`,
+      JSON.stringify(resp, null, 2),
+    );
   }
 </script>
 
@@ -182,11 +187,21 @@
 </div>
 
 <div class="flex-1 p-4 overflow-auto">
-  {#if store.sessions.active}
-    <a href={`/sessions/participate/${store.sessions.active.id}`}
-      >Go To Participate</a
-    >
-  {/if}
+  <div class="join">
+    {#if store.sessions.active}
+      <a
+        target="_blank"
+        class="btn btn-ghost join-item"
+        href={`/sessions/participate/${store.sessions.active.id}`}
+        >Open Participant Page</a
+      >
+      <a
+        target="_blank"
+        class="btn btn-ghost join-item"
+        href={`/sessions/host/${store.sessions.active.id}`}>Open Host Page</a
+      >
+    {/if}
+  </div>
 </div>
 
 {#snippet createSessionForm()}

@@ -67,7 +67,7 @@
 <div class="flex-1 group">
   <CardHeader icon="mdi:speedometer" class="border-t group-first:border-t-0">
     <span
-      >SUS Score {#if respondent}
+      >Survey Score {#if respondent}
         for {respondent.name ?? respondent.email}{/if}</span
     >
   </CardHeader>

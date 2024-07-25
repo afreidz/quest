@@ -2,7 +2,6 @@
   import sessionState from "@/stores/session.svelte";
   import type { SessionFromAll } from "@/actions/sessions";
   import Media from "@/components/sessions/local-media.svelte";
-  import { combineCameraStreams } from "@/utilities/video";
 
   type Props = {
     session: SessionFromAll;
@@ -13,13 +12,21 @@
 
   $effect(() => {
     if (!session.id) return;
-    sessionState.id = session.callId;
+    sessionState.setId(session.roomComsId);
     sessionState.setRemoteName(session.moderator);
+    sessionState.setRemoteId(session.moderatorComsId);
+    sessionState.setLocalId(session.respondent.comsId);
     sessionState.setLocalName(
       session.respondent.name || session.respondent.email,
     );
   });
 </script>
+
+<svelte:window
+  onbeforeunload={async () => {
+    await sessionState.leave();
+  }}
+/>
 
 <div class="flex-1 flex flex-col items-center justify-center m-6 gap-4">
   {#if sessionState.connected}

@@ -10,6 +10,7 @@
   import Editable from "@/components/app/editable.svelte";
   import type { RevisionFromAll } from "@/actions/revisions";
   import { findFirstFocusableElement } from "@/utilities/dom";
+  import CardHeader from "@/components/app/card-header.svelte";
   import ConfirmForm from "@/components/app/confirm-form.svelte";
   import OrderableList from "@/components/app/orderable-list.svelte";
 
@@ -60,6 +61,7 @@
 
   let showDetails: boolean = $state(true);
   let detailsExposed: boolean = $derived(detailed && showDetails);
+  let surveyType = $derived(survey?.type || store.surveys.active?.type);
 
   let editable = $derived(
     canEdit && store.surveys.active?.type === "CHECKLIST",
@@ -355,7 +357,12 @@
 {/snippet}
 
 {#snippet group(group: Groups[number])}
-  <div class="card-body p-6 relative">
+  <div
+    class="card-body p-6 {surveyType !== 'CHECKLIST' ? 'pt-0' : ''} relative"
+  >
+    {#if surveyType !== "CHECKLIST"}
+      <CardHeader class="-mx-6">Survey Questions</CardHeader>
+    {/if}
     {#if detailed && hasResponses && !editable && groups.findIndex((g) => group.id === g.id) === 0}
       {@render toggleRespondents(undefined)}
     {/if}
