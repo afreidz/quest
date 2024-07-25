@@ -86,9 +86,9 @@ class QuestGlobalStore {
   async refreshMe() {
     const me = await actions.me.getSession().catch((err) => {
       messages.error("Unable to get current user details", err.message);
-      return undefined;
+      return null;
     });
-    this._me = null;
+    this._me = me;
   }
 
   setActiveClient(client: typeof this.clients.active) {
@@ -277,12 +277,10 @@ class QuestGlobalStore {
   }
 
   async refreshAllSessions() {
-    this._sessions.all = await actions.sessions
-      .getAll(undefined)
-      .catch((err) => {
-        messages.error("Unable to refresh sessions", err.message);
-        return [];
-      });
+    this._sessions.all = await actions.sessions.getAll({}).catch((err) => {
+      messages.error("Unable to refresh sessions", err.message);
+      return [];
+    });
   }
 
   setActiveSession(session: typeof this.sessions.active) {
