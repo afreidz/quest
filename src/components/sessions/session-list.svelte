@@ -3,6 +3,7 @@
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
+  import { Temporal } from "@js-temporal/polyfill";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
   import type { NewSessionSchema } from "@/actions/sessions";
@@ -33,16 +34,19 @@
     minute: "numeric",
   });
 
+  const now = Temporal.Now.instant().epochMilliseconds;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   let loading = $state(false);
   let suggestionText = $state("");
   let showCreateSessionForm: boolean = $state(false);
-  let chosenTime: string = $state(timeFormatter.format(new Date()));
-  let chosenDate: string = $state(dateFormatter.format(new Date()));
-  let newSession: NewSessionSchema = $state({
+  let chosenTime: string = $state(timeFormatter.format(now));
+  let chosenDate: string = $state(dateFormatter.format(now));
+
+  let newSession: Omit<NewSessionSchema, "scheduled"> = $state({
     revision: "",
     moderator: "",
     respondent: "",
-    scheduled: new Date(),
   });
 
   let respondents = $derived.by(async () => {
@@ -81,30 +85,22 @@
       newSession.moderator = store.me.email;
   });
 
-  $effect(() => {
-    if (chosenDate) {
-      const [year, month, day] = chosenDate.split("-").map(Number);
-      newSession.scheduled.setDate(day);
-      newSession.scheduled.setFullYear(year);
-      newSession.scheduled.setMonth(month - 1);
-      newSession.scheduled.setHours(0, 0, 0, 0);
-    }
-    if (chosenTime) {
-      const [hours, minutes] = chosenTime.split(":").map(Number);
-      newSession.scheduled.setHours(hours);
-      newSession.scheduled.setMinutes(minutes);
-    }
-  });
-
   async function scheduleSession() {
     showCreateSessionForm = false;
 
     loading = true;
 
+    const scheduled = Temporal.PlainDateTime.from(
+      `${chosenDate}T${chosenTime}:00`,
+    )
+      .toZonedDateTime(timezone)
+      .toInstant()
+      .toString();
+
     const resp = await actions.sessions
       .create({
         ...newSession,
-        scheduled: newSession.scheduled.toISOString(),
+        scheduled,
       })
       .catch((err) => {
         console.log(err);
@@ -115,7 +111,6 @@
     newSession = {
       revision: "",
       respondent: "",
-      scheduled: new Date(),
       moderator: store.me?.email ?? "",
     };
 
@@ -123,8 +118,14 @@
 
     await store.refreshAllSessions();
 
+    const sessionDateTime = new Date(
+      Temporal.Instant.from(resp.scheduled as any).toZonedDateTimeISO(
+        timezone,
+      ).epochMilliseconds,
+    );
+
     messages.success(
-      `Session scheduled for ${displayFormatter.format(newSession.scheduled)} with ${resp.respondent.name || resp.respondent.email}`,
+      `Session scheduled for ${displayFormatter.format(sessionDateTime)} with ${resp.respondent.name || resp.respondent.email}`,
       JSON.stringify(resp, null, 2),
     );
   }
@@ -141,7 +142,7 @@
       addForm={createSessionForm}
       addTip="Schedule a New Session"
       bind:addShown={showCreateSessionForm}
-      class="max-w-[65vw] min-w-[800px] w-full max-h-[95vh] min-h-[800px] h-full flex flex-col"
+      class="max-w-[95vw] min-w-[800px] w-full max-h-[95vh] min-h-[800px] h-full flex flex-col"
     />
   </h2>
   <div
@@ -150,6 +151,9 @@
   >
     {#if !loading}
       {#each store.sessions.all as session}
+        {@const scheduled = Temporal.Instant.from(
+          session.scheduled.toString(),
+        ).toZonedDateTimeISO(timezone)}
         <button
           class:tooltip={store.sessions.unsaved}
           class:highlight={store.sessions.active?.id === session.id}
@@ -176,7 +180,9 @@
                   session.respondent.email}</strong
               >
               <small class="text-xs text-neutral-400"
-                >{displayFormatter.format(new Date(session.scheduled))}</small
+                >{displayFormatter.format(
+                  new Date(scheduled.epochMilliseconds),
+                )}</small
               >
             </div>
           </div>

@@ -3,6 +3,7 @@
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
+  import { Temporal } from "@js-temporal/polyfill";
   import { fileToDataUri } from "@/utilities/image";
   import { getBadgeColor } from "@/utilities/theme";
   import { preventDefault } from "@/utilities/events";
@@ -78,7 +79,9 @@
         name: groupName,
         image: questions?.[0].group?.imageURL ?? null,
         position: questions?.[0].group?.position ?? i + 1,
-        id: questions?.[0].group?.id ?? `group_${+new Date()}`,
+        id:
+          questions?.[0].group?.id ??
+          `group_${Temporal.Now.instant().epochMicroseconds}`,
         questions: orderByPosition(questions ?? []).map((question) => ({
           id: question.id,
           text: question.text,
@@ -183,7 +186,7 @@
       questions: [],
       name: newGroupName,
       position: proposed.length + 1,
-      id: `proposed_group_${+new Date()}`,
+      id: `proposed_group_${Temporal.Now.instant().epochMicroseconds}`,
     });
     newGroupDialog?.close();
   }
@@ -223,7 +226,7 @@
       positive: true,
       group: group.id,
       text: newQuestionText,
-      id: `proposed_question_${+new Date()}`,
+      id: `proposed_question_${Temporal.Now.instant().epochMicroseconds}`,
       position: group.questions.length + 1,
     };
 

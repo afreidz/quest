@@ -2,14 +2,13 @@ import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
+import { Temporal } from "@js-temporal/polyfill";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { PaginationSchema } from "@/utilities/actions";
 import { RoomsClient } from "@azure/communication-rooms";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
 
-const ONE_HOUR = 60000;
-const SESSION_START_BUFFER = ONE_HOUR;
-const SESSION_END_BUFFER = ONE_HOUR * 24;
+const ONEDAY = Temporal.Duration.from({ days: 1 });
 
 const key = import.meta.env.AZURE_COMS_KEY;
 const endpoint = import.meta.env.AZURE_COMS_ENDPOINT;
@@ -22,7 +21,10 @@ const SessionCreateSchema = z.object({
   revision: z.string(),
   respondent: z.string(),
   moderator: z.string(),
-  scheduled: z.string().transform((str) => new Date(str).toISOString()),
+  scheduled: z.string().transform((str) => {
+    console.log("ANDY OG STRING", str);
+    return Temporal.Instant.from(str);
+  }),
 });
 
 const SessionUpdateSchema = z.object({
@@ -32,15 +34,15 @@ const SessionUpdateSchema = z.object({
   recordingId: z.string().optional(),
   started: z
     .string()
-    .transform((str) => new Date(str))
+    .transform((str) => Temporal.Instant.from(str))
     .optional(),
   completed: z
     .string()
-    .transform((str) => new Date(str))
+    .transform((str) => Temporal.Instant.from(str))
     .optional(),
   scheduled: z
     .string()
-    .transform((str) => new Date(str))
+    .transform((str) => Temporal.Instant.from(str))
     .optional(),
 });
 
@@ -91,19 +93,23 @@ export const create = defineAction({
       respondentComsId = user.communicationUserId;
     }
 
-    const d = new Date(sessionData.scheduled);
-    const roomOpen = new Date(+d - SESSION_START_BUFFER);
-    const roomClose = new Date(+roomOpen + SESSION_END_BUFFER);
-
     const moderator = await idClient.createUser().catch((err) => {
       console.log(err);
       throw err;
     });
 
+    const scheduled = sessionData.scheduled.toZonedDateTimeISO("utc");
+
+    const roomOpen = Temporal.ZonedDateTime.from(scheduled).subtract(ONEDAY);
+    const roomClose = Temporal.ZonedDateTime.from(scheduled).add(ONEDAY);
+
+    const validFrom = new Date(roomOpen.epochMilliseconds);
+    const validUntil = new Date(roomClose.epochMilliseconds);
+
     const room = await roomClient
       .createRoom({
-        validFrom: roomOpen,
-        validUntil: roomClose,
+        validFrom,
+        validUntil,
         pstnDialOutEnabled: false,
         participants: [
           {
@@ -127,9 +133,9 @@ export const create = defineAction({
         createdBy: creator.email!,
         moderator: sessionData.moderator,
         revisionId: sessionData.revision,
-        scheduled: sessionData.scheduled,
         respondentId: sessionData.respondent,
         moderatorComsId: moderator.communicationUserId,
+        scheduled: new Date(scheduled.epochMilliseconds).toISOString(),
       },
       include: {
         revision: {
@@ -239,14 +245,18 @@ export const updateById = defineAction({
 
     if (!session) throw new Error(`Unable to find session "${id}"`);
 
-    if (data.scheduled) {
-      const d = new Date(data.scheduled.toUTCString());
-      const roomOpen = new Date(+d - SESSION_START_BUFFER);
-      const roomClose = new Date(+roomOpen + SESSION_END_BUFFER);
+    const scheduled = data.scheduled?.toZonedDateTimeISO("utc");
+
+    if (scheduled) {
+      const roomOpen = scheduled.subtract(ONEDAY);
+      const roomClose = roomOpen.add(ONEDAY);
+
+      const validFrom = new Date(roomOpen.epochMilliseconds);
+      const validUntil = new Date(roomClose.epochMilliseconds);
 
       await roomClient.updateRoom(session.roomComsId, {
-        validFrom: roomOpen,
-        validUntil: roomClose,
+        validFrom,
+        validUntil,
       });
     }
 
@@ -254,6 +264,9 @@ export const updateById = defineAction({
       where: { id },
       data: {
         ...data,
+        scheduled: scheduled?.toString(),
+        started: data.started?.toString(),
+        completed: data.completed?.toString(),
       },
     });
   },
@@ -262,8 +275,11 @@ export const updateById = defineAction({
 export const bumpDuration = defineAction({
   input: z.string(),
   handler: async (roomId) => {
-    const validFrom = new Date();
-    const validUntil = new Date(+validFrom + SESSION_END_BUFFER);
+    const roomOpen = Temporal.Now.instant().subtract(ONEDAY);
+    const roomClose = roomOpen.add(ONEDAY);
+
+    const validFrom = new Date(roomOpen.epochMilliseconds);
+    const validUntil = new Date(roomClose.epochMilliseconds);
     await roomClient.updateRoom(roomId, { validFrom, validUntil });
     return true;
   },

@@ -1,3 +1,5 @@
+import { Temporal } from "@js-temporal/polyfill";
+
 let messages: ApplicationMessage[] = $state([]);
 
 const MESSAGE_DISMISS_TIME = 5000;
@@ -15,7 +17,7 @@ export default {
     return messages;
   },
   info(message: string, detail?: string) {
-    let id = `message_${+new Date() + Math.random()}`;
+    let id = `message_${Temporal.Now.instant().epochMicroseconds}`;
     messages.push({
       id,
       detail,
@@ -25,7 +27,7 @@ export default {
     });
   },
   success(message: string, detail?: string) {
-    let id = `message_${+new Date() + Math.random()}`;
+    let id = `message_${Temporal.Now.instant().epochMicroseconds}`;
     messages.push({
       id,
       detail,
@@ -35,7 +37,7 @@ export default {
     });
   },
   error(message: string, detailOrError?: string | Error) {
-    let id = `message_${+new Date() + Math.random()}`;
+    let id = `message_${Temporal.Now.instant().epochMicroseconds}`;
     let detail =
       detailOrError instanceof Error ? detailOrError.message : detailOrError;
 
