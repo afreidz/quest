@@ -173,73 +173,18 @@ class QuestSessionStore {
   }
 
   async join() {
-    if (!this.id)
-      return messages.error(
-        "Unable to initialize the call",
-        "no call id available",
-      );
+    try {
+      console.log("Connecting to call:", this.id);
+      await this.connectToCall();
+      await this.callReady();
 
-    if (this.call && this.connected) {
-      await this.call.hangUp();
-      this.call.dispose();
-    }
+      console.log("Subscribing to participants");
+      await this.handleParticipants();
 
-    console.log("Connecting to call:", this.id);
-
-    this.client = new CallClient();
-
-    const { token } = await actions.public.getComsToken(
-      this.local.id ?? undefined,
-    );
-
-    const credential = new AzureCommunicationTokenCredential(token);
-
-    if (this.agent) this.agent.dispose();
-
-    this.agent = await this.client
-      .createCallAgent(credential, {
-        displayName: this.local.name,
-      })
-      .catch((err) => {
-        messages.error("Unable to intialize call agent", err.message);
-        return undefined;
-      });
-
-    if (!this.agent) return;
-
-    if (this.host) await actions.sessions.bumpDuration.safe(this.id);
-
-    const call = this.agent.join({ roomId: this.id });
-    this._call = call;
-    // this.startScreenShare = call.startScreenSharing;
-
-    await this.callReady();
-
-    const existingParticipant = call.remoteParticipants.find(
-      (p) => p.displayName === this.remote.name,
-    );
-
-    await this.handleRemoteVideoStreams(existingParticipant);
-
-    call.on("remoteParticipantsUpdated", async (e) => {
-      console.log("Participants updated", e);
-      const added = e.added.find((p) => p.displayName === this.remote.name);
-      const removed = e.removed.find((p) => p.displayName === this.remote.name);
-
-      if (removed) {
-        this._remote.stream = undefined;
-        this._remote.screen = undefined;
-        this._remote.camera = undefined;
-      } else {
-        await this.handleRemoteVideoStreams(added);
-      }
-    });
-
-    if (call && this.local.video) {
-      const local = new LocalVideoStream(this.local.video);
-      await call.startVideo(local).catch((err) => {
-        messages.error("Unable to connect video", err.message);
-      });
+      console.log("Starting local video if applicable");
+      await this.startLocalVideo();
+    } catch (err: any) {
+      messages.error("Unable to join call.", err.messaage);
     }
   }
 
@@ -253,6 +198,35 @@ class QuestSessionStore {
     // this._remote.camera = undefined;
     // this._remote.screen = undefined;
     // this._local.speakers = undefined;
+  }
+
+  private async connectToCall() {
+    if (!this.id) throw new Error(`Unable to connect without call id`);
+
+    if (this.call && this.connected) {
+      await this.call.hangUp();
+      this.call.dispose();
+    }
+
+    const client = new CallClient();
+    const { token } = await actions.public.getComsToken(this.local.id);
+    const credential = new AzureCommunicationTokenCredential(token);
+
+    if (this.agent) await this.agent.dispose();
+
+    const agent = await this.client.createCallAgent(credential, {
+      displayName: this.local.name,
+    });
+
+    if (this.host) await actions.sessions.setStartToNow.safe(this.id);
+
+    const call = agent.join({ roomId: this.id });
+
+    this._call = call;
+    this.agent = agent;
+    this.client = client;
+
+    return call;
   }
 
   private async callReady() {
@@ -284,6 +258,33 @@ class QuestSessionStore {
           r(true);
         }
       });
+    });
+  }
+
+  private async handleParticipants() {
+    if (!this.call)
+      throw new Error(
+        `Unable to manage participants without a call.  Call is: ${this.call}`,
+      );
+
+    const existingParticipant = this.call.remoteParticipants.find(
+      (p) => p.displayName === this.remote.name,
+    );
+
+    await this.handleRemoteVideoStreams(existingParticipant);
+
+    this.call.on("remoteParticipantsUpdated", async (e) => {
+      console.log("Participants updated", e);
+      const added = e.added.find((p) => p.displayName === this.remote.name);
+      const removed = e.removed.find((p) => p.displayName === this.remote.name);
+
+      if (removed) {
+        this._remote.stream = undefined;
+        this._remote.screen = undefined;
+        this._remote.camera = undefined;
+      } else {
+        await this.handleRemoteVideoStreams(added);
+      }
     });
   }
 
@@ -353,6 +354,15 @@ class QuestSessionStore {
       });
 
     return view;
+  }
+
+  private async startLocalVideo() {
+    if (this.call && this.local.video) {
+      const local = new LocalVideoStream(this.local.video);
+      await this.call.startVideo(local).catch((err) => {
+        messages.error("Unable to connect video", err.message);
+      });
+    }
   }
 
   private async renderLocalCamera(stream?: LocalVideoStream) {

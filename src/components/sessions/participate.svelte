@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { Temporal } from "@js-temporal/polyfill";
   import sessionState from "@/stores/session.svelte";
+  import { timezone, isBefore } from "@/utilities/time";
   import type { SessionFromAll } from "@/actions/sessions";
   import Media from "@/components/sessions/local-media.svelte";
+  import CardHeader from "@/components/app/card-header.svelte";
+  import Countdown from "@/components/sessions/countdown.svelte";
 
   type Props = {
     session: SessionFromAll;
@@ -9,6 +13,13 @@
 
   let { session }: Props = $props();
   let camera: HTMLVideoElement | undefined = $state();
+
+  const now = Temporal.Now.instant().toZonedDateTimeISO(timezone);
+  const start = $derived(
+    Temporal.Instant.from(session.scheduled.toISOString()).toZonedDateTimeISO(
+      timezone,
+    ),
+  );
 
   $effect(() => {
     if (!session.id) return;
@@ -28,9 +39,18 @@
   }}
 />
 
-<div class="flex-1 flex flex-col items-center justify-center m-6 gap-4">
+<div class="flex-1 flex flex-col items-center justify-center m-6 gap-10">
   {#if sessionState.connected}
     <div class="flex-1 flex flex-col items-center justify-center">Content</div>
+  {/if}
+
+  {#if isBefore(now, start)}
+    <div class="card rounded-box shadow-sm bg-neutral border min-w-96">
+      <CardHeader>Your session will begin in:</CardHeader>
+      <div class="card-body flex items-center">
+        <Countdown until={session.scheduled.toISOString()} />
+      </div>
+    </div>
   {/if}
 
   <Media pipCameras bind:cameraVideoElement={camera} />

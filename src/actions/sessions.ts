@@ -99,7 +99,6 @@ export const create = defineAction({
     });
 
     const scheduled = sessionData.scheduled.toZonedDateTimeISO("utc");
-
     const roomOpen = Temporal.ZonedDateTime.from(scheduled).subtract(ONEDAY);
     const roomClose = Temporal.ZonedDateTime.from(scheduled).add(ONEDAY);
 
@@ -175,7 +174,7 @@ export const getAll = defineAction({
 export const getById = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await orm.session.findFirst({
+    const session = await orm.session.findFirst({
       where: { id },
       include: {
         revision: {
@@ -188,6 +187,12 @@ export const getById = defineAction({
         respondent: true,
       },
     });
+
+    if (!session) return;
+
+    const room = await roomClient.getRoom(session.roomComsId);
+
+    return { ...session, room };
   },
 });
 
@@ -248,8 +253,8 @@ export const updateById = defineAction({
     const scheduled = data.scheduled?.toZonedDateTimeISO("utc");
 
     if (scheduled) {
-      const roomOpen = scheduled.subtract(ONEDAY);
-      const roomClose = roomOpen.add(ONEDAY);
+      const roomOpen = Temporal.ZonedDateTime.from(scheduled).subtract(ONEDAY);
+      const roomClose = Temporal.ZonedDateTime.from(scheduled).add(ONEDAY);
 
       const validFrom = new Date(roomOpen.epochMilliseconds);
       const validUntil = new Date(roomClose.epochMilliseconds);
@@ -264,23 +269,34 @@ export const updateById = defineAction({
       where: { id },
       data: {
         ...data,
-        scheduled: scheduled?.toString(),
         started: data.started?.toString(),
         completed: data.completed?.toString(),
+        scheduled: scheduled
+          ? new Date(scheduled.epochMilliseconds).toISOString()
+          : undefined,
       },
     });
   },
 });
 
-export const bumpDuration = defineAction({
+export const setStartToNow = defineAction({
   input: z.string(),
   handler: async (roomId) => {
-    const roomOpen = Temporal.Now.instant().subtract(ONEDAY);
-    const roomClose = roomOpen.add(ONEDAY);
+    const room = await roomClient.getRoom(roomId);
+    const validUntil = new Date(room.validUntil);
+    const validFrom = new Date();
 
-    const validFrom = new Date(roomOpen.epochMilliseconds);
-    const validUntil = new Date(roomClose.epochMilliseconds);
-    await roomClient.updateRoom(roomId, { validFrom, validUntil });
+    await roomClient
+      .updateRoom(roomId, { validFrom, validUntil })
+      .catch(console.error);
+
+    await orm.session.update({
+      where: { roomComsId: roomId },
+      data: {
+        scheduled: validFrom,
+      },
+    });
+
     return true;
   },
 });

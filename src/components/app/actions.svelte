@@ -3,17 +3,20 @@
   import { findFirstFocusableElement } from "@/utilities/dom";
 
   type Props = {
-    size?: "xs" | "sm";
-    addForm?: Snippet;
-    editForm?: Snippet;
-    deleteForm?: Snippet;
-    addShown?: boolean;
-    editShown?: boolean;
-    deleteShown?: boolean;
-    addTip?: string;
-    editTip?: string;
-    deleteTip?: string;
     class?: string;
+    addTip?: string;
+    addIcon?: string;
+    editTip?: string;
+    editIcon?: string;
+    addForm?: Snippet;
+    size?: "xs" | "sm";
+    editForm?: Snippet;
+    addShown?: boolean;
+    deleteTip?: string;
+    deleteIcon?: string;
+    editShown?: boolean;
+    deleteForm?: Snippet;
+    deleteShown?: boolean;
   };
 
   let addDialog: HTMLDialogElement | null = $state(null);
@@ -68,6 +71,9 @@
     addShown = $bindable(false),
     editShown = $bindable(false),
     deleteShown = $bindable(false),
+    addIcon = "mdi:plus",
+    editIcon = "mdi:edit-outline",
+    deleteIcon = "mdi:trash-outline",
   }: Props = $props();
 </script>
 
@@ -80,7 +86,7 @@
       onclick={() => (addShown = true)}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary"
     >
-      <iconify-icon icon="mdi:plus" class="pointer-events-none"></iconify-icon>
+      <iconify-icon icon={addIcon} class="pointer-events-none"></iconify-icon>
     </button>
   {/if}
   {#if editForm}
@@ -91,8 +97,7 @@
       onclick={() => (editShown = true)}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary"
     >
-      <iconify-icon icon="mdi:edit-outline" class="pointer-events-none"
-      ></iconify-icon>
+      <iconify-icon icon={editIcon} class="pointer-events-none"></iconify-icon>
     </button>
   {/if}
   {#if deleteForm}
@@ -103,7 +108,7 @@
       onclick={() => (deleteShown = true)}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary hover:bg-error hover:text-neutral-950"
     >
-      <iconify-icon icon="mdi:trash-outline" class="pointer-events-none"
+      <iconify-icon icon={deleteIcon} class="pointer-events-none"
       ></iconify-icon>
     </button>
   {/if}
@@ -111,8 +116,8 @@
 
 {#if deleteForm}
   <dialog
-  class="modal"
-  bind:this={deleteDialog}
+    class="modal"
+    bind:this={deleteDialog}
     onclose={() => (deleteShown = false)}
   >
     <div class="modal-box bg-neutral {classList}">
@@ -131,8 +136,8 @@
 
 {#if editForm}
   <dialog
-  class="modal"
-  bind:this={editDialog}
+    class="modal"
+    bind:this={editDialog}
     onclose={() => (editShown = false)}
   >
     <div class="modal-box bg-neutral {classList}">
@@ -151,8 +156,8 @@
 
 {#if addForm}
   <dialog
-  class="modal"
-  bind:this={addDialog}
+    class="modal"
+    bind:this={addDialog}
     onclose={() => (addShown = false)}
   >
     <div class="modal-box bg-neutral {classList}">

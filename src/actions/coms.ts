@@ -9,7 +9,7 @@ const credential = new AzureKeyCredential(key);
 const idClient = new CommunicationIdentityClient(endpoint, credential);
 
 export const getComsToken = defineAction({
-  input: z.string().optional(),
+  input: z.string().nullable().optional(),
   handler: async (user) => {
     if (user) return idClient.getToken({ communicationUserId: user }, ["voip"]);
     return await idClient.createUserAndToken(["voip"]);

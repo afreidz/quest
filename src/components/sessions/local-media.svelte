@@ -185,7 +185,7 @@
         </select>
       </label>
 
-      <label class="form-control w-full max-w-xs">
+      <label class="form-control w-full">
         <div class="label">
           <span class="label-text" class:text-xs={["xs", "sm"].includes(size)}
             >Select a microphone</span
@@ -206,7 +206,7 @@
         </select>
       </label>
 
-      <label class="form-control w-full max-w-xs">
+      <label class="form-control w-full">
         <div class="label">
           <span class="label-text" class:text-xs={["xs", "sm"].includes(size)}
             >Select speakers</span
@@ -227,7 +227,7 @@
         </select>
       </label>
 
-      <label class="form-control w-full max-w-xs">
+      <label class="form-control w-full">
         <div class="label">
           <span class="label-text" class:text-xs={["xs", "sm"].includes(size)}
             >{#if allowNameChange}Set{/if} Display Name</span

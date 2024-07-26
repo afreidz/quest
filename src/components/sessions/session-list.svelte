@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
+  import { timezone } from "@/utilities/time";
   import messages from "@/stores/messages.svelte";
   import { Temporal } from "@js-temporal/polyfill";
   import { preventDefault } from "@/utilities/events";
@@ -35,11 +36,11 @@
   });
 
   const now = Temporal.Now.instant().epochMilliseconds;
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   let loading = $state(false);
   let suggestionText = $state("");
   let showCreateSessionForm: boolean = $state(false);
+  let showRescheduleSessionForm: boolean = $state(false);
   let chosenTime: string = $state(timeFormatter.format(now));
   let chosenDate: string = $state(dateFormatter.format(now));
 
@@ -114,6 +115,10 @@
       moderator: store.me?.email ?? "",
     };
 
+    const now = Temporal.Now.instant().epochMilliseconds;
+    chosenTime = timeFormatter.format(now);
+    chosenDate = dateFormatter.format(now);
+
     if (!resp) return;
 
     await store.refreshAllSessions();
@@ -126,6 +131,54 @@
 
     messages.success(
       `Session scheduled for ${displayFormatter.format(sessionDateTime)} with ${resp.respondent.name || resp.respondent.email}`,
+      JSON.stringify(resp, null, 2),
+    );
+  }
+
+  async function rescheduleSession() {
+    showRescheduleSessionForm = false;
+
+    if (!store.sessions.active?.id) return;
+
+    loading = true;
+
+    const scheduled = Temporal.PlainDateTime.from(
+      `${chosenDate}T${chosenTime}:00`,
+    )
+      .toZonedDateTime(timezone)
+      .toInstant()
+      .toString();
+
+    const resp = await actions.sessions
+      .updateById({
+        id: store.sessions.active.id,
+        data: {
+          scheduled,
+        },
+      })
+      .catch((err) => {
+        console.log(err);
+        messages.error(err.message, err.detail);
+      });
+
+    loading = false;
+
+    const now = Temporal.Now.instant().epochMilliseconds;
+    chosenTime = timeFormatter.format(now);
+    chosenDate = dateFormatter.format(now);
+
+    if (!resp) return;
+
+    await store.refreshAllSessions();
+
+    const sessionDateTime = new Date(
+      Temporal.Instant.from(resp.scheduled as any).toZonedDateTimeISO(
+        timezone,
+      ).epochMilliseconds,
+    );
+
+    messages.success(
+      `Session rescheduled for ${displayFormatter.format(sessionDateTime)}`,
       JSON.stringify(resp, null, 2),
     );
   }
@@ -192,7 +245,7 @@
   </div>
 </div>
 
-<div class="flex-1 p-4 overflow-auto">
+<div class="flex-1 p-4 overflow-auto flex justify-between">
   <div class="join">
     {#if store.sessions.active}
       <a
@@ -208,6 +261,14 @@
       >
     {/if}
   </div>
+  {#if store.sessions.active && !store.sessions.active.completed}
+    <Actions
+      editIcon="mdi:calendar"
+      editTip="Reschedule Session"
+      editForm={rescheduleSessionForm}
+      bind:editShown={showRescheduleSessionForm}
+    />
+  {/if}
 </div>
 
 {#snippet createSessionForm()}
@@ -296,7 +357,7 @@
             <input
               required
               type="date"
-              value={chosenDate}
+              bind:value={chosenDate}
               class="input input-bordered bg-neutral w-full accent-primary"
             />
           </label>
@@ -308,7 +369,7 @@
             <input
               required
               type="time"
-              value={chosenTime}
+              bind:value={chosenTime}
               class="input input-bordered bg-neutral w-full accent-primary"
             />
           </label>
@@ -340,6 +401,49 @@
         </footer>
       </div>
     {/if}
+  </form>
+{/snippet}
+
+{#snippet rescheduleSessionForm()}
+  <form
+    onsubmit={preventDefault(rescheduleSession)}
+    class="flex-1 bg-base-100/10 border rounded-box flex flex-col font-normal overflow-clip"
+  >
+    <section class="flex gap-8 w-full flex-none p-4">
+      <label class="form-control flex-1">
+        <div class="label">
+          <span class="label-text">Date</span>
+          <span class="label-text-alt italic">Required</span>
+        </div>
+        <input
+          required
+          type="date"
+          bind:value={chosenDate}
+          class="input input-bordered bg-neutral w-full accent-primary"
+        />
+      </label>
+      <label class="form-control flex-1">
+        <div class="label">
+          <span class="label-text">Time</span>
+          <span class="label-text-alt italic">Required</span>
+        </div>
+        <input
+          required
+          type="time"
+          bind:value={chosenTime}
+          class="input input-bordered bg-neutral w-full accent-primary"
+        />
+      </label>
+    </section>
+    <footer class="flex justify-end gap-4 p-4">
+      <button
+        class="btn btn-ghost"
+        onclick={preventDefault(() => (showCreateSessionForm = false))}
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary">Reschedule Session</button>
+    </footer>
   </form>
 {/snippet}
 
