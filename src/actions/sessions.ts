@@ -116,7 +116,7 @@ export const create = defineAction({
             id: { communicationUserId: moderator.communicationUserId },
           },
           {
-            role: "Attendee",
+            role: "Presenter",
             id: { communicationUserId: respondentComsId! },
           },
         ],
@@ -188,7 +188,7 @@ export const getById = defineAction({
       },
     });
 
-    if (!session) return;
+    if (!session) throw new Error("Unable to find session");
 
     const room = await roomClient.getRoom(session.roomComsId);
 
@@ -302,5 +302,6 @@ export const setStartToNow = defineAction({
 });
 
 export type Sessions = Awaited<ReturnType<typeof getAll>>;
+export type SessionById = Awaited<ReturnType<typeof getById>>;
 export type NewSessionSchema = z.infer<typeof SessionCreateSchema>;
 export type SessionFromAll = Awaited<ReturnType<typeof getAll>>[number];

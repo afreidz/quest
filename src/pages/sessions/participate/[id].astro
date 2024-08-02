@@ -2,11 +2,14 @@
 import { actions } from "astro:actions";
 import SessionLayout from "@/layouts/session.astro";
 import Participate from "@/components/sessions/participate.svelte";
+import SessionInit from "@/components/sessions/session-init.svelte";
 
 const { id } = Astro.params;
 const session = await actions.sessions.getById(id!);
 ---
 
 <SessionLayout>
-  <Participate {session} client:only="svelte" />
+  <SessionInit {session} role="participant" client:only="svelte">
+    <Participate client:only="svelte" />
+  </SessionInit>
 </SessionLayout>

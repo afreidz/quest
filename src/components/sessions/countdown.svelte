@@ -6,13 +6,21 @@
   type Props = {
     until: string;
     run?: boolean;
+    class?: string;
+    onupdate?: (d: Temporal.Duration) => void;
   };
+
+  let {
+    until,
+    onupdate,
+    class: className = "",
+    run = $bindable(true),
+  }: Props = $props();
 
   let days = $state();
   let hours = $state();
   let minutes = $state();
   let seconds = $state();
-  let { until, run = $bindable(true) }: Props = $props();
   let timer: ReturnType<typeof setInterval> | undefined = $state();
 
   $effect(() => {
@@ -35,10 +43,12 @@
     hours = Math.max(duration.hours, 0);
     minutes = Math.max(duration.minutes, 0);
     seconds = Math.max(duration.seconds, 0);
+
+    onupdate?.(duration);
   }
 </script>
 
-<div class="grid auto-cols-max grid-flow-col gap-5 text-center">
+<div class="grid auto-cols-max grid-flow-col gap-5 text-center {className}">
   <div class="flex flex-col">
     <span class="countdown font-mono text-5xl">
       <span style="--value:{days};"></span>

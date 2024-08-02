@@ -1,11 +1,23 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   type Props = {
     icon?: string;
     class?: string;
+    pull?: Snippet;
     border?: boolean;
+    subText?: Snippet;
+    children?: Snippet;
   };
 
-  let { icon, class: className, border = true }: Props = $props();
+  let {
+    icon,
+    pull,
+    subText,
+    children,
+    border = true,
+    class: className,
+  }: Props = $props();
 </script>
 
 <header
@@ -15,12 +27,12 @@
   <iconify-icon class="text-2xl mt-1 flex-none self-start" {icon}
   ></iconify-icon>
   <div class="flex-1 max-w-none text-xl leading-relaxed font-bold">
-    <h3><slot /></h3>
+    <h3>{@render children?.()}</h3>
     <p class="text-sm text-neutral-400 mt-1">
-      <slot name="sub" />
+      {@render subText?.()}
     </p>
   </div>
   <div class="flex-none">
-    <slot name="pull" />
+    {@render pull?.()}
   </div>
 </header>

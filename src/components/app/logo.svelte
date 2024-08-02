@@ -1,13 +1,35 @@
 <script lang="ts">
   import theme from "@/utilities/theme";
+
+  type Props = {
+    class?: string;
+    inert?: boolean;
+    svgClass?: string;
+    logoStop1?: string;
+    logoStop2?: string;
+    textClass?: string;
+    subTextClass?: string;
+    subLogoClass?: string;
+  };
+
+  let {
+    inert = false,
+    svgClass = "",
+    textClass = "",
+    subLogoClass = "h-3",
+    class: className = "",
+    logoStop1 = theme.primary,
+    logoStop2 = theme.secondary,
+    subTextClass = "text-base-200",
+  }: Props = $props();
 </script>
 
-<heading class="flex items-center gap-4 ps-4 pe-4">
-  <a href="/clients">
+<heading class="flex items-center gap-4 ps-4 pe-4 {className}">
+  <a href="/clients" class:pointer-events-none={inert}>
     <svg
-      class="w-10 h-10"
-      viewBox="0 0 39 39"
       fill="none"
+      class="w-10 h-10 {svgClass}"
+      viewBox="0 0 39 39"
       xmlns="http://www.w3.org/2000/svg"
     >
       <g>
@@ -27,22 +49,22 @@
           y2="34"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0.475" stop-color={theme.primary} />
-          <stop offset="1" stop-color={theme.secondary} />
+          <stop offset="0.475" stop-color={logoStop1} />
+          <stop offset="1" stop-color={logoStop2} />
         </linearGradient>
       </defs>
     </svg>
   </a>
-  <a href="/clients">
+  <a href="/clients" class:pointer-events-none={inert}>
     <h1
-      class="bg-clip-text ml-4 text-transparent bg-gradient-to-b from-primary to-secondary text-center font-logo font-black text-3xl"
+      class="bg-clip-text ml-4 text-transparent bg-gradient-to-b from-primary to-secondary text-center font-logo font-black text-3xl {textClass}"
     >
       QUEST
     </h1>
   </a>
-  <div class="flex items-center justify-center text-base-200">
+  <div class="flex items-center justify-center {subTextClass}">
     <span class="text-sm">powered by:</span>
-    <svg viewBox="0 0 300 35" class="h-3 md:h-4">
+    <svg viewBox="0 0 300 35" class={subLogoClass}>
       <path
         fill="currentColor"
         d="M35.64 17.22c-1.56-.76-2.49-1.99-2.84-3.75l-.01-.03c-1.39-4.8-5.23-8.63-10.03-10.02-2.38-.51-3.28-1.87-3.76-2.84L18.72 0l-.28.58c-.75 1.53-2.02 2.49-3.81 2.85-4.8 1.39-8.63 5.23-10 10.05-.52 2.38-1.87 3.28-2.84 3.76l-.59.28.58.28c1.56.76 2.49 1.99 2.85 3.78 1.38 4.76 5.23 8.59 10.07 9.99 2.38.52 3.28 1.87 3.76 2.84l.29.59.28-.58c.76-1.56 1.99-2.49 3.78-2.85 4.77-1.38 8.59-5.22 9.99-10.02.52-2.38 1.87-3.28 2.85-3.76l.58-.28-.59-.29zm-9.39 9.21a11.655 11.655 0 0 1-7.53 2.73c-2.55 0-5.46-1.08-7.49-2.73h15.02zm1.18-8.93c0-2.14-.77-4.15-2.18-5.73h3.63c.98 1.74 1.5 3.72 1.5 5.73 0 2.02-.52 4-1.49 5.74h-3.63a8.59 8.59 0 0 0 2.17-5.74zm-8.71 5.76c-3.17 0-5.75-2.58-5.75-5.75 0-3.28 2.63-6.05 5.75-6.05s5.75 2.77 5.75 6.05c0 3.17-2.58 5.75-5.75 5.75zm-6.54-.01H8.56c-.98-1.74-1.5-3.72-1.5-5.74s.52-4 1.51-5.75l3.56.01c-1.37 1.56-2.12 3.57-2.12 5.74 0 2.14.76 4.15 2.17 5.74zm8.12-17.3c2.17.3 4.23 1.21 5.91 2.61l-5.9.01-.01-2.62zm-9.07 2.61c1.66-1.39 3.7-2.3 5.84-2.6v2.6h-5.84z"
