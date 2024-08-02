@@ -1,9 +1,15 @@
 <script lang="ts">
   import session from "@/stores/session.svelte";
   import DeviceSelect from "@/components/sessions/device-select.svelte";
+
+  type Props = {
+    class?: string;
+  };
+
+  let { class: className = "" }: Props = $props();
 </script>
 
-<footer class="flex-none flex w-full justify-evenly items-center">
+<footer class="flex-none flex w-full justify-evenly items-center {className}">
   <div class="flex items-end flex-1">
     {#if session.status === "Connected"}
       <button onclick={() => session.disconnect()} class="btn btn-error"
@@ -11,7 +17,7 @@
       >
     {/if}
   </div>
-  <DeviceSelect class="flex-1" />
+  <DeviceSelect pip={session.pip} class="flex-1" />
   <div class="flex justify-end flex-1">
     {#if session.status === "Connected"}
       <ul class="join">

@@ -4,9 +4,10 @@
   import Actions from "@/components/sessions/actions.svelte";
   import CardHeader from "@/components/app/card-header.svelte";
   import Countdown from "@/components/sessions/countdown.svelte";
-  import CameraFeed from "@/components/sessions/camera-feed.svelte";
+  import { LocalVideoStream } from "@azure/communication-calling";
   import type { SessionById, SessionFromAll } from "@/actions/sessions";
   import { getInstant, now as getNow, isBefore } from "@/utilities/time";
+  import Participant from "@/components/sessions/participant-view.svelte";
 
   type Props = {
     children: Snippet;
@@ -16,9 +17,13 @@
 
   let now = $state(getNow());
   let { role, children, session: dbSession }: Props = $props();
-
-  let feed = $derived(session.camEnabled ? session.camera : undefined);
   let start = $derived(getInstant(dbSession.scheduled.toISOString()));
+
+  let feed = $derived(
+    session.camEnabled && session.camera
+      ? new LocalVideoStream(session.camera)
+      : undefined,
+  );
 
   let early = $derived(
     isBefore(now, start) &&
@@ -78,9 +83,11 @@
           until={dbSession.scheduled.toISOString()}
         />
       {/if}
-      <CameraFeed
+      <Participant
         {feed}
         class="w-52"
+        id={"preview"}
+        bootable={false}
         name={session.name}
         muted={session.muted}
       />

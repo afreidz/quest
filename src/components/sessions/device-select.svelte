@@ -10,7 +10,7 @@
   export type DeviceSelectProps = {
     class?: string;
     open?: boolean;
-    pip?: MediaStream;
+    pip?: MediaStream | undefined;
   };
 
   type SelectElements = {
@@ -71,6 +71,7 @@
       if (existing) {
         selected.camera = existing;
         session.camera = selected.camera ?? undefined;
+        // session.enableCamera();
       }
     }
 
@@ -80,6 +81,7 @@
       if (existing) {
         selected.mic = existing;
         session.microphone = selected.mic ?? undefined;
+        // session.unmute();
       }
     }
 
@@ -101,15 +103,8 @@
   });
 
   $effect(() => {
-    if (pip && pipVideo) {
-      pipVideo.srcObject = pip;
-    }
-  });
-
-  $effect(() => {
-    if (flipped && preview && selected.camera) {
-      session.renderCamera(preview, selected.camera);
-    }
+    if (!pip || !pipVideo) return;
+    pipVideo.srcObject = pip;
   });
 
   $effect(() => {
@@ -214,7 +209,7 @@
   </dialog>
 {/if}
 <ul class="join">
-  {#if pip}
+  {#if pip && session.role !== "host"}
     <li class="join-item btn btn-ghost btn-sm">
       <button
         class="size-full tooltip tooltip-top"
@@ -256,7 +251,7 @@
 
 {#if pip}
   <!-- svelte-ignore a11y_media_has_caption -->
-  <video class="hidden" autoplay muted bind:this={pipVideo}></video>
+  <video autoplay class="absolute w-0 h-0" muted bind:this={pipVideo}></video>
 {/if}
 
 <style lang="postcss">

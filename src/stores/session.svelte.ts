@@ -8,14 +8,19 @@ import {
   type AudioDeviceInfo,
   type VideoDeviceInfo,
   type CreateViewOptions,
-  type RemoteParticipant,
   type RemoteVideoStream,
+  type RemoteParticipant,
   type VideoStreamRendererView,
 } from "@azure/communication-calling";
 
+import {
+  type CommunicationUserKind,
+  AzureCommunicationTokenCredential,
+} from "@azure/communication-common";
+
 import { actions } from "astro:actions";
 import messages from "@/stores/messages.svelte";
-import { AzureCommunicationTokenCredential } from "@azure/communication-common";
+import { combineCameraStreams } from "@/utilities/video";
 
 export type SessionRole = "host" | "participant" | "unknown";
 
@@ -25,6 +30,14 @@ export type DevicePermission = {
 };
 
 export const TIMEOUT = 30000;
+
+export type Participant = {
+  id: string;
+  name?: string;
+  muted: boolean;
+  speaking?: boolean;
+  camera?: RemoteVideoStream;
+};
 
 class QuestSessionStore {
   // Privates with no getters/setters
@@ -36,15 +49,21 @@ class QuestSessionStore {
   // Privates with public getters/setters
   private _muted = $state(false);
   private _id?: string = $state();
-  private _camEnabled = $state(true);
+  private _camEnabled = $state(false);
   private _userId?: string = $state();
+  private _shareEnabled = $state(false);
   private _displayName: string = $state("");
   private _status: CallState = $state("None");
+  private _pipStream?: MediaStream = $state();
   private _camera?: VideoDeviceInfo = $state();
+  private _screen?: RemoteVideoStream = $state();
   private _role: SessionRole = $state("unknown");
   private _speakers?: AudioDeviceInfo = $state();
   private _microphone?: AudioDeviceInfo = $state();
+  private _participants: Participant[] = $state([]);
+  private _screenView?: VideoStreamRendererView = $state();
   private _deviceManager = $derived(this._client?.getDeviceManager());
+
   private _permissions: DevicePermission = $state({
     audio: false,
     video: false,
@@ -114,6 +133,24 @@ class QuestSessionStore {
     this._camEnabled = b;
   }
 
+  get screenEnabled() {
+    return this._shareEnabled;
+  }
+
+  private set screenEnabled(b: boolean) {
+    this._shareEnabled = b;
+  }
+
+  get screen() {
+    return this._screen;
+  }
+
+  set screen(v: RemoteVideoStream | undefined) {
+    this._screen = v;
+    if (this.screenEnabled && !this._call?.isScreenSharingOn)
+      this.enableScreenShare();
+  }
+
   get camera() {
     return this._camera;
   }
@@ -161,6 +198,22 @@ class QuestSessionStore {
     }
   }
 
+  get pip() {
+    return this._pipStream;
+  }
+
+  get participants() {
+    return this._participants;
+  }
+
+  set participants(p: Participant[]) {
+    this._participants = p;
+  }
+
+  set screenView(v: VideoStreamRendererView | undefined) {
+    this._screenView = v;
+  }
+
   async mute() {
     if (!this._call) return (this.muted = true);
     await this._call.mute();
@@ -189,6 +242,7 @@ class QuestSessionStore {
     }
 
     this.camEnabled = true;
+    await this.updatePipStream();
   }
 
   async disableCamera() {
@@ -200,6 +254,35 @@ class QuestSessionStore {
     if (stream) await this._call.stopVideo(stream);
 
     this.camEnabled = false;
+    await this.updatePipStream();
+  }
+
+  async enableScreenShare() {
+    if (!this._call) return (this.screenEnabled = true);
+
+    const screen = await this.getScreenSharePermission();
+    if (!screen) return (this.screenEnabled = false);
+
+    if (this._call.isScreenSharingOn) await this._call.stopScreenSharing();
+    const stream = new LocalVideoStream(screen);
+    await (this._call.startScreenSharing as any)(stream);
+
+    this.screenEnabled = true;
+  }
+
+  private async getScreenSharePermission() {
+    const video: MediaStreamConstraints["video"] = {
+      frameRate: 30,
+      aspectRatio: 16 / 9,
+      width: { ideal: 1280 },
+    };
+    const media = await navigator.mediaDevices.getDisplayMedia({
+      video,
+      audio: false,
+      preferCurrentTab: true,
+    } as DisplayMediaStreamOptions & { preferCurrentTab: boolean });
+
+    return media;
   }
 
   async getPermission() {
@@ -268,6 +351,18 @@ class QuestSessionStore {
     if (this.camEnabled && this.camera) {
       await this.enableCamera();
     }
+
+    if (this.role === "participant") {
+      await this.enableScreenShare();
+    }
+
+    call.remoteParticipants.forEach((p) => this.addParticipant(p));
+
+    console.log("Listening for participant updates");
+    call.on("remoteParticipantsUpdated", ({ added, removed }) => {
+      removed.forEach((r) => this.removeParticipant(r));
+      added.forEach((r) => this.addParticipant(r));
+    });
   }
 
   async disconnect() {
@@ -276,7 +371,117 @@ class QuestSessionStore {
     await this._agent?.dispose();
     this._call = undefined;
     this._agent = undefined;
+    this._participants = [];
     this._client = undefined;
+  }
+
+  async bootParticipant(id: string) {
+    if (!this._call) return;
+    await this._call.removeParticipant({ communicationUserId: id });
+    await this.updatePipStream();
+  }
+
+  private async addParticipant(remote: RemoteParticipant) {
+    const camera = remote.videoStreams.find(
+      (s) => s.mediaStreamType === "Video",
+    );
+    const screen = remote.videoStreams.find(
+      (s) => s.mediaStreamType === "ScreenSharing",
+    );
+
+    if (camera?.isAvailable) await this.updatePipStream();
+
+    screen?.on("isAvailableChanged", async () => {
+      console.log("Screen Availability Change", screen.isAvailable);
+      if (screen.isAvailable) this.screen = screen;
+      if (!screen.isAvailable) this.screen = undefined;
+      if (!screen.isAvailable && this._screenView) {
+        await this._screenView.dispose();
+        this.screenView = undefined;
+      }
+    });
+
+    camera?.on("isAvailableChanged", async () => {
+      console.log("Camera Availability Change", camera.isAvailable);
+      if (camera.isAvailable) participant.camera = camera;
+      if (!camera.isAvailable) participant.camera = undefined;
+      await this.updatePipStream();
+    });
+
+    remote.on("isMutedChanged", () => {
+      console.log("Participant Muted Update", remote.isMuted);
+      participant.muted = remote.isMuted;
+    });
+
+    remote.on("isSpeakingChanged", () => {
+      participant.speaking = remote.isSpeaking;
+    });
+
+    remote.on("videoStreamsUpdated", async ({ added, removed }) => {
+      const removedCamera = removed.find((r) => r.mediaStreamType === "Video");
+      const removedScreen = removed.find(
+        (r) => r.mediaStreamType === "ScreenSharing",
+      );
+
+      const addedCamera = added.find((r) => r.mediaStreamType === "Video");
+      const addedScreen = added.find(
+        (r) => r.mediaStreamType === "ScreenSharing",
+      );
+
+      if (removedCamera) participant.camera = undefined;
+      if (removedScreen) this.screen = undefined;
+      if (removedScreen && this._screenView) {
+        await this._screenView.dispose();
+        this.screenView = undefined;
+      }
+
+      if (addedCamera?.isAvailable) participant.camera = addedCamera;
+      if (addedScreen?.isAvailable) this.screen = addedScreen;
+
+      await this.updatePipStream();
+
+      addedCamera?.on("isAvailableChanged", async () => {
+        console.log(
+          "Added Camera Availability Change",
+          addedCamera.isAvailable,
+        );
+        if (!addedCamera.isAvailable) participant.camera = undefined;
+        if (addedCamera.isAvailable) participant.camera = addedCamera;
+        await this.updatePipStream();
+      });
+
+      addedScreen?.on("isAvailableChanged", async () => {
+        console.log(
+          "Added Screen Availability Change",
+          addedScreen.isAvailable,
+        );
+        if (!addedScreen.isAvailable) this.screen = undefined;
+        if (addedScreen.isAvailable) this.screen = addedScreen;
+        if (!addedScreen.isAvailable && this._screenView) {
+          await this._screenView.dispose();
+          this.screenView = undefined;
+        }
+      });
+    });
+
+    const participant: Participant = $state({
+      muted: remote.isMuted,
+      name: remote.displayName,
+      camera: camera && camera.isAvailable ? camera : undefined,
+      screen: screen && screen.isAvailable ? screen : undefined,
+      id: (remote.identifier as CommunicationUserKind).communicationUserId,
+    });
+
+    const newParticipants = this.participants.filter(
+      (p) => p.id !== participant.id,
+    );
+    this.participants = [...newParticipants, participant];
+  }
+
+  private removeParticipant(remote: RemoteParticipant) {
+    const id = (remote.identifier as CommunicationUserKind).communicationUserId;
+    const newParticipants = this.participants.filter((p) => p.id !== id);
+    this.participants = newParticipants;
   }
 
   private async callReady() {
@@ -302,525 +507,42 @@ class QuestSessionStore {
     );
   }
 
-  // private _host? = $state(false);
-  // private _call?: Call = $state();
-  // private _permission = $state(false);
-  // private agent?: CallAgent = $state();
-  // private _id?: string | null = $state();
-  // private client = $state(new CallClient());
-  // private _connected?: boolean = $state(false);
-  // private _connecting?: boolean = $state(false);
-  // private _deviceManager = $derived(this.client.getDeviceManager());
-
-  // private _local: {
-  //   name?: string;
-  //   muted?: boolean;
-  //   id?: string | null;
-  //   audio?: AudioDeviceInfo;
-  //   video?: VideoDeviceInfo;
-  //   stream?: LocalVideoStream;
-  //   screen?: LocalVideoStream;
-  //   speakers?: AudioDeviceInfo;
-  //   camera?: VideoStreamRendererView;
-  // } = $state({});
-
-  // private _remote: {
-  //   name?: string;
-  //   muted?: boolean;
-  //   id?: string | null;
-  //   cameraEnabled?: boolean;
-  //   screenEnabled?: boolean;
-  //   stream?: RemoteVideoStream;
-  //   screen?: VideoStreamRendererView;
-  //   camera?: VideoStreamRendererView;
-  // } = $state({});
-
-  // get remote() {
-  //   return this._remote;
-  // }
-
-  // get local() {
-  //   return this._local;
-  // }
-
-  // get deviceManager() {
-  //   return this._deviceManager;
-  // }
-
-  // get connected() {
-  //   return this._connected;
-  // }
-
-  // get connecting() {
-  //   return this._connecting;
-  // }
-
-  // get id() {
-  //   return this._id;
-  // }
-
-  // get call() {
-  //   return this._call;
-  // }
-
-  // get permission() {
-  //   return this._permission;
-  // }
-
-  // get host() {
-  //   return this._host;
-  // }
-
-  // async setHost(v: boolean) {
-  //   const user = await actions.me.getSession.safe();
-
-  //   if (!v) {
-  //     this._host = false;
-  //   } else if (user.error) {
-  //     messages.error("Unable to set host without a valid session", user.error);
-  //   } else {
-  //     this._host = v;
-  //   }
-  // }
-
-  // setId(id: string | undefined | null) {
-  //   this._id = id;
-  // }
-
-  // setLocalId(i: string | undefined | null) {
-  //   this._local.id = i;
-  // }
-
-  // setLocalName(n: string | undefined) {
-  //   this._local.name = n;
-  // }
-
-  // setRemoteId(i: string | undefined | null) {
-  //   this._remote.id = i;
-  // }
-
-  // setRemoteName(n: string) {
-  //   this._remote.name = n;
-  // }
-
-  // async getPermission() {
-  //   if (this._permission) return true;
-  //   const dm = await this.deviceManager;
-  //   const answer = await dm.askDevicePermission({ audio: true, video: true });
-  //   this._permission = answer.audio && answer.video;
-  //   return this._permission;
-  // }
-
-  // async setMicrophone(a: AudioDeviceInfo) {
-  //   this._local.audio = a;
-  //   const dm = await this.deviceManager;
-  //   dm.selectMicrophone(a);
-  // }
-
-  // async setSpeakers(a: AudioDeviceInfo) {
-  //   this._local.speakers = a;
-  //   const dm = await this.deviceManager;
-  //   dm.selectSpeaker(a);
-  // }
-
-  // async setVideo(v: VideoDeviceInfo) {
-  //   this._local.video = v;
-
-  //   if (!this.local.stream) {
-  //     const stream = new LocalVideoStream(v);
-  //     await this.renderLocalCamera(stream);
-
-  //     this._local.stream = stream;
-
-  //     if (!this.call) return;
-  //     console.log(`Starting camera "${v.name}"`);
-  //     if (!this.call.isLocalVideoStarted)
-  //       await this.call
-  //         .startVideo(stream)
-  //         .catch((err) =>
-  //           messages.error("Unable to start camera", err.message),
-  //         );
-  //   } else if (this.local.stream.source.id !== v.id) {
-  //     console.log(
-  //       `Switching camera from "${this.local.stream.source.name}" to "${v.name}"`,
-  //     );
-  //     await this.local.stream
-  //       .switchSource(v)
-  //       .catch((err) => messages.error("Unable to switch camera", err.message));
-  //   }
-  // }
-
-  // async toggleAudio(forceOff?: boolean) {
-  //   if ((this.call && forceOff === true) || (this.call && !this.call.isMuted)) {
-  //     await this.call.mute();
-  //     this._local.muted = this.call.isMuted;
-  //   } else if (this.call) {
-  //     await this.call.unmute();
-  //     this._local.muted = this.call.isMuted;
-  //   }
-  // }
-
-  // async toggleScreen(forceOff?: boolean) {
-  //   if (this._local.screen || forceOff === true) {
-  //     this._local.screen = undefined;
-  //     if (this.call && this.call.isScreenSharingOn)
-  //       await this.call.stopScreenSharing();
-  //   } else {
-  //     await this.startScreenShare();
-  //   }
-  // }
-
-  // async toggleVideo(forceOff?: boolean) {
-  //   if ((this._local.camera && forceOff === true) || this._local.camera) {
-  //     this._local.camera.dispose();
-  //     this._local.camera = undefined;
-
-  //     const stream = this.call?.localVideoStreams.find(
-  //       (s) => s.mediaStreamType === "Video",
-  //     );
-
-  //     if (this.call && this.call.isLocalVideoStarted && stream) {
-  //       await this.call.stopVideo(stream);
-  //     }
-  //   } else if (this.local.video || (this.local.video && forceOff === false)) {
-  //     const local = new LocalVideoStream(this.local.video);
-  //     await this.renderLocalCamera(local);
-
-  //     if (!this.call) return;
-
-  //     await this.call.startVideo(local).catch((err) => {
-  //       messages.error("Unable to connect video", err.message);
-  //     });
-  //   }
-  // }
-
-  // async join() {
-  //   try {
-  //     console.log("Connecting to call:", this.id);
-  //     await this.connectToCall();
-  //     await this.callReady();
-
-  //     console.log("Starting local video if applicable");
-  //     await this.startLocalVideo();
-
-  //     if (!this.host) {
-  //       console.log("Starting screen share");
-  //       await this.startScreenShare();
-  //     }
-
-  //     console.log("Subscribing to participants");
-  //     await this.handleParticipants();
-  //   } catch (err: any) {
-  //     console.log(err);
-  //     messages.error("Unable to join call.", err.messaage);
-  //   }
-  // }
-
-  // async leave() {
-  //   await this.local.camera?.dispose();
-  //   await this.remote.camera?.dispose();
-  //   await this.call?.hangUp();
-  //   await this.agent?.dispose();
-  //   await this.call?.dispose();
-
-  //   this._call = undefined;
-  //   this.agent = undefined;
-  //   this.client = new CallClient();
-
-  //   this._local = {
-  //     ...this.local,
-  //     audio: undefined,
-  //     video: undefined,
-  //     stream: undefined,
-  //     screen: undefined,
-  //     camera: undefined,
-  //     speakers: undefined,
-  //   };
-
-  //   this._remote = {
-  //     ...this.remote,
-  //     stream: undefined,
-  //     screen: undefined,
-  //     camera: undefined,
-  //     cameraEnabled: false,
-  //     screenEnabled: false,
-  //   };
-
-  //   this._connected = false;
-  //   this._connecting = false;
-  // }
-
-  // private async connectToCall() {
-  //   if (!this.id) throw new Error(`Unable to connect without call id`);
-
-  //   if (this.call && this.connected) {
-  //     await this.call.hangUp();
-  //     this.call.dispose();
-  //     this._call = undefined;
-  //     await this.agent?.dispose();
-  //     this.agent = undefined;
-  //   }
-
-  //   const client = new CallClient();
-  //   const { token } = await actions.public.getComsToken(this.local.id);
-  //   const credential = new AzureCommunicationTokenCredential(token);
-
-  //   if (this.agent) await this.agent.dispose();
-
-  //   const agent = await this.client
-  //     .createCallAgent(credential, {
-  //       displayName: this.local.name,
-  //     })
-  //     .catch((err) => {
-  //       messages.error("Unable to create call agent", err.message);
-  //       return undefined;
-  //     });
-
-  //   if (!agent) return;
-
-  //   if (this.host) await actions.sessions.setStartToNow.safe(this.id);
-
-  //   const call = agent.join({ roomId: this.id });
-
-  //   this._call = call;
-  //   this.agent = agent;
-  //   this.client = client;
-
-  //   return call;
-  // }
-
-  // private async callReady() {
-  //   if (!this.call) return false;
-
-  //   return new Promise((r) => {
-  //     this.call?.on("stateChanged", () => {
-  //       console.log(
-  //         "Call State:",
-  //         this.call?.state,
-  //         this.call?.callEndReason?.code ?? "",
-  //         this.call?.callEndReason?.subCode ?? "",
-  //       );
-  //       if (this.call?.state === "Connecting") {
-  //         this._connecting = true;
-  //         this._connected = false;
-  //       }
-  //       if (this.call?.state === "Disconnected") {
-  //         this._connected = false;
-  //         this._connecting = false;
-  //       }
-  //       if (this.call?.state === "Disconnecting") {
-  //         this._connected = false;
-  //         this._connecting = true;
-  //       }
-  //       if (this.call?.state === "Connected") {
-  //         this._connecting = false;
-  //         this._connected = true;
-  //         r(true);
-  //       }
-  //     });
-  //   });
-  // }
-
-  // private async handleParticipants() {
-  //   // if (!this.call)
-  //   //   throw new Error(
-  //   //     `Unable to manage participants without a call.  Call is: ${this.call}`,
-  //   //   );
-
-  //   // const existingParticipant = this.call.remoteParticipants.find(
-  //   //   (p) => p.displayName === this.remote.name,
-  //   // );
-
-  //   // if (existingParticipant) {
-  //   //   await this.handleRemoteVideoStreams(existingParticipant).catch((err) => {
-  //   //     messages.error("Unable to handle remote video", err.message);
-  //   //   });
-  //   // }
-
-  //   // this.call.on("remoteParticipantsUpdated", async (e) => {
-  //   //   console.log("Participants updated", e);
-  //   //   const added = e.added.find((p) => p.displayName === this.remote.name);
-  //   //   const removed = e.removed.find((p) => p.displayName === this.remote.name);
-
-  //   //   if (removed) {
-  //   //     this._remote.stream = undefined;
-  //   //     this._remote.screen = undefined;
-  //   //     this._remote.camera = undefined;
-  //   //     this._remote.cameraEnabled = false;
-  //   //     this._remote.screenEnabled = false;
-  //   //   } else {
-  //   //     await this.handleRemoteVideoStreams(added);
-  //   //   }
-  //   // });
-  // }
-
-  // private async handleRemoteVideoStreams(participant?: RemoteParticipant) {
-  //   // if (!participant) return;
-  //   // if (this.remote.camera) this._remote.camera = undefined;
-  //   // if (this.remote.stream) this._remote.stream = undefined;
-
-  //   // const camStream = participant.videoStreams.find(
-  //   //   (s) => s.mediaStreamType === "Video",
-  //   // );
-
-  //   // const screenStream = participant.videoStreams.find(
-  //   //   (s) => s.mediaStreamType === "ScreenSharing",
-  //   // );
-
-  //   // if (camStream) {
-  //   //   await this.remoteStreamReady(camStream, participant.displayName);
-  //   //   this._remote.camera = await this.renderRemoteStream(camStream);
-  //   // }
-
-  //   // if (screenStream) {
-  //   //   await this.remoteStreamReady(screenStream, participant.displayName);
-  //   //   this._remote.stream = camStream;
-  //   //   this._remote.screen = await this.renderRemoteStream(
-  //   //     screenStream,
-  //   //     "Stretch",
-  //   //   );
-  //   // }
-
-  //   // participant.on("videoStreamsUpdated", async (e) => {
-  //   //   console.log(participant.displayName, "updated video streams", e);
-  //   //   const addedVideo = e.added.find((s) => s.mediaStreamType === "Video");
-  //   //   const removedVideo = e.removed.find((s) => s.mediaStreamType === "Video");
-
-  //   //   const addedScreen = e.added.find(
-  //   //     (s) => s.mediaStreamType === "ScreenSharing",
-  //   //   );
-  //   //   const removedScreen = e.removed.find(
-  //   //     (s) => s.mediaStreamType === "ScreenSharing",
-  //   //   );
-
-  //   //   if (removedVideo) {
-  //   //     this.remote.camera?.dispose();
-  //   //     this._remote.camera = undefined;
-  //   //     this._remote.stream = undefined;
-  //   //     this._remote.cameraEnabled = false;
-  //   //   }
-
-  //   //   if (removedScreen) {
-  //   //     this.remote.screen?.dispose();
-  //   //     this._remote.screen = undefined;
-  //   //     this._remote.screenEnabled = false;
-  //   //   }
-
-  //   //   if (addedVideo) {
-  //   //     await this.remoteStreamReady(addedVideo, participant.displayName);
-  //   //     this._remote.stream = addedVideo;
-  //   //     this._remote.camera = await this.renderRemoteStream(addedVideo);
-  //   //     this._remote.cameraEnabled = true;
-  //   //   }
-
-  //   //   if (addedScreen) {
-  //   //     this._remote.screen = await this.renderRemoteStream(
-  //   //       addedScreen,
-  //   //       "Stretch",
-  //   //     );
-  //   //     this._remote.screenEnabled = true;
-  //   //   }
-  //   // });
-  // }
-
-  // private remoteStreamReady(
-  //   stream: RemoteVideoStream | undefined,
-  //   name?: string,
-  // ) {
-  //   // return new Promise((r) => {
-  //   //   if (!stream) return r(false);
-  //   //   if (stream.isAvailable) {
-  //   //     console.log(name, "camera ready", stream.id);
-  //   //     return r(true);
-  //   //   }
-  //   //   stream.on("isAvailableChanged", () => {
-  //   //     if (stream.isAvailable) {
-  //   //       console.log(name, "camera ready", stream.id);
-  //   //       r(true);
-  //   //     }
-  //   //   });
-  //   // });
-  // }
-
-  // private async renderRemoteStream(
-  //   stream?: RemoteVideoStream,
-  //   mode: ScalingMode = "Crop",
-  // ) {
-  //   // if (!stream?.isAvailable) return;
-
-  //   // console.log("Updating remote camera");
-  //   // const renderer = new VideoStreamRenderer(stream);
-  //   // const view = await renderer
-  //   //   .createView({ scalingMode: mode })
-  //   //   .catch((err) => {
-  //   //     messages.error(
-  //   //       "Unable to handle participant video stream",
-  //   //       err.message,
-  //   //     );
-  //   //     return undefined;
-  //   //   });
-
-  //   // if (view) this._remote.cameraEnabled = true;
-
-  //   // return view;
-  // }
-
-  // private async renderLocalCamera(stream?: LocalVideoStream) {
-  //   // if (!stream) return;
-  //   // console.log("Updating local camera");
-  //   // const renderer = new VideoStreamRenderer(stream);
-  //   // const view = await renderer
-  //   //   .createView({ scalingMode: "Crop" })
-  //   //   .catch((err) => {
-  //   //     console.log(err);
-  //   //     messages.error("Unable to handle local video stream", err.message);
-  //   //     return undefined;
-  //   //   });
-
-  //   // this._local.camera = view;
-  // }
-
-  async renderCamera<T extends HTMLElement>(
+  async renderVideoStream<T extends HTMLElement>(
     target: T,
-    camera: VideoDeviceInfo,
+    camera: LocalVideoStream | RemoteVideoStream,
     options: CreateViewOptions = { scalingMode: "Crop" },
   ) {
-    const stream = new LocalVideoStream(camera || this.camera);
-    const renderer = new VideoStreamRenderer(stream);
+    const renderer = new VideoStreamRenderer(camera);
     const view = await renderer.createView(options);
-    target.replaceChildren(view.target);
+    target.replaceChildren(view?.target ?? "");
+
+    return view;
   }
 
-  // private async startLocalVideo() {
-  //   // if (this.call && this.local.video) {
-  //   //   const local = new LocalVideoStream(this.local.video);
-  //   //   await this.call.startVideo(local).catch((err) => {
-  //   //     messages.error("Unable to connect video", err.message);
-  //   //   });
-  //   // }
-  // }
+  private async updatePipStream() {
+    if (this.role === "host") this._pipStream = undefined;
 
-  // private async startScreenShare() {
-  //   // console.log("Starting screenshare");
-  //   // if (!this.call) return;
+    const local = this.camera ? new LocalVideoStream(this.camera) : undefined;
+    const stream = await local?.getMediaStream();
 
-  //   // const video: MediaStreamConstraints["video"] = {
-  //   //   frameRate: 30,
-  //   //   aspectRatio: 16 / 9,
-  //   //   width: { ideal: 1280 },
-  //   // };
+    const participant = await this.participants
+      .find(async (p) => {
+        const stream = await p.camera?.getMediaStream();
+        return stream?.active;
+      })
+      ?.camera?.getMediaStream();
 
-  //   // const media = await navigator.mediaDevices.getDisplayMedia({
-  //   //   video,
-  //   //   audio: false,
-  //   //   preferCurrentTab: true,
-  //   // } as DisplayMediaStreamOptions & { preferCurrentTab: boolean });
+    if (stream?.active && !participant) return (this._pipStream = stream);
+    if (!stream?.active && participant) return (this._pipStream = participant);
+    if (stream?.active && participant)
+      return (this._pipStream = await combineCameraStreams(
+        stream,
+        participant,
+        500,
+      ));
 
-  //   // const stream = new LocalVideoStream(media);
-
-  //   // (this.call.startScreenSharing as any)(stream);
-  //   // this._local.screen = stream;
-  // }
+    return (this._pipStream = undefined);
+  }
 }
 
 export default new QuestSessionStore();
