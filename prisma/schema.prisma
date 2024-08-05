@@ -173,11 +173,8 @@ model Session {
   started   DateTime? @db.Timestamptz(3)
   completed DateTime? @db.Timestamptz(3)
 
-  moderator         String
-  moderatorComsId   String
-  videoURL          String?
-  roomComsId        String  @unique
-  serverRecordingId String? @unique
+  moderator       String
+  moderatorComsId String
 
   respondentId String
   respondent   Respondent @relation(fields: [respondentId], references: [id])
@@ -186,12 +183,23 @@ model Session {
   revision   Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
 
   moments     KeyMoment[]
+  recordings  SessionRecording[]
   transcripts TranscriptionSegment[]
 
   // clips       SessionClip[]
   // feedback          SummarizedFeedbackItem[]
   // results           SummarizedChecklistResult[]
   // suggestions       SummarizedSuggestion[]
+}
+
+model SessionRecording {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  videoURL String?
 }
 
 model KeyMoment {

@@ -19,7 +19,10 @@ import {
 } from "@azure/communication-common";
 
 import { actions } from "astro:actions";
+import DataMessenger from "@/utilities/data";
 import messages from "@/stores/messages.svelte";
+import Transcriber from "@/utilities/transcribe";
+import { now as getNow } from "@/utilities/time";
 import { combineCameraStreams } from "@/utilities/video";
 
 export type SessionRole = "host" | "participant" | "unknown";
@@ -43,6 +46,9 @@ class QuestSessionStore {
   // Privates with no getters/setters
   private _call?: Call = $state();
   private _agent?: CallAgent = $state();
+  private _recording?: string = $state();
+  private _transcriber?: Transcriber = $state();
+  // private _messenger?: DataMessenger = $state();
   private _client?: CallClient = $state(new CallClient());
   private _cred?: AzureCommunicationTokenCredential = $state();
 
@@ -52,6 +58,7 @@ class QuestSessionStore {
   private _camEnabled = $state(false);
   private _userId?: string = $state();
   private _shareEnabled = $state(false);
+  private _respondentId?: string = $state();
   private _displayName: string = $state("");
   private _status: CallState = $state("None");
   private _pipStream?: MediaStream = $state();
@@ -123,6 +130,9 @@ class QuestSessionStore {
 
   private set muted(b: boolean) {
     this._muted = b;
+    if (b === true && this._transcriber?.transcribing) this._transcriber.stop();
+    if (b === false && this._transcriber && !this._transcriber.transcribing)
+      this._transcriber.start();
   }
 
   get camEnabled() {
@@ -172,6 +182,8 @@ class QuestSessionStore {
     console.log("Setting microphone to", m?.id);
     localStorage.setItem("microphone", m?.id ?? "");
 
+    // if (this._transcriber) this._transcriber.mic = m?.id;
+
     if (!this.deviceManager) return;
     if (!m) {
       this.mute();
@@ -212,6 +224,14 @@ class QuestSessionStore {
 
   set screenView(v: VideoStreamRendererView | undefined) {
     this._screenView = v;
+  }
+
+  get respondentId() {
+    return this._respondentId;
+  }
+
+  set respondentId(r: string | undefined) {
+    this._respondentId = r;
   }
 
   async mute() {
@@ -300,6 +320,17 @@ class QuestSessionStore {
   async connect() {
     if (!this.id) throw new Error(`Unable to connect without call id`);
 
+    if (this.role === "unknown")
+      throw new Error("Unable to connect without a role");
+
+    if (!this.respondentId && this.role === "participant")
+      throw new Error("Unable to connect without respondent");
+
+    if (this._transcriber) {
+      await this._transcriber.dispose();
+      this._transcriber = undefined;
+    }
+
     if (this._cred) {
       this._cred.dispose();
       this._cred = undefined;
@@ -335,18 +366,43 @@ class QuestSessionStore {
 
     console.log(this.role, "Updating start time");
     if (this.role === "host")
-      await actions.sessions.setStartToNow.safe(this.id);
+      await actions.sessions.updateById.safe({
+        id: this.id,
+        data: {
+          scheduled: getNow().toInstant().toString(),
+          started: getNow().toInstant().toString(),
+        },
+      });
 
-    const call = agent.join({ roomId: this.id });
+    const call = agent.join({ groupId: this.id });
 
     this._call = call;
     this._agent = agent;
     this._client = client;
     this._cred = credential;
 
+    this._transcriber = new Transcriber(
+      this.role === "host"
+        ? {
+            role: "host",
+            session: this.id,
+            speaker: undefined,
+            // mic: this.microphone?.id,
+          }
+        : {
+            session: this.id,
+            role: "participant",
+            // mic: this.microphone?.id,
+            speaker: this.respondentId!,
+          },
+    );
+
     await this.callReady().catch((err) => {
       messages.error(err);
     });
+
+    this._transcriber.start();
+    if (this.role === "host") await this.record();
 
     if (this.camEnabled && this.camera) {
       await this.enableCamera();
@@ -366,13 +422,25 @@ class QuestSessionStore {
   }
 
   async disconnect() {
+    if (this.role === "host" && this.id) {
+      if (this._recording) await this.stopRecording();
+      await actions.sessions.updateById.safe({
+        id: this.id,
+        data: {
+          completed: getNow().toInstant().toString(),
+        },
+      });
+    }
+
     await this._call?.hangUp();
     await this._call?.dispose();
     await this._agent?.dispose();
+    await this._transcriber?.dispose();
     this._call = undefined;
     this._agent = undefined;
     this._participants = [];
     this._client = undefined;
+    console.log("Call disconnected");
   }
 
   async bootParticipant(id: string) {
@@ -388,8 +456,6 @@ class QuestSessionStore {
     const screen = remote.videoStreams.find(
       (s) => s.mediaStreamType === "ScreenSharing",
     );
-
-    if (camera?.isAvailable) await this.updatePipStream();
 
     screen?.on("isAvailableChanged", async () => {
       console.log("Screen Availability Change", screen.isAvailable);
@@ -468,9 +534,16 @@ class QuestSessionStore {
       muted: remote.isMuted,
       name: remote.displayName,
       camera: camera && camera.isAvailable ? camera : undefined,
-      screen: screen && screen.isAvailable ? screen : undefined,
       id: (remote.identifier as CommunicationUserKind).communicationUserId,
     });
+
+    if (camera?.isAvailable) {
+      await this.updatePipStream();
+    }
+
+    if (screen?.isAvailable) {
+      this.screen = screen;
+    }
 
     const newParticipants = this.participants.filter(
       (p) => p.id !== participant.id,
@@ -520,7 +593,7 @@ class QuestSessionStore {
   }
 
   private async updatePipStream() {
-    if (this.role === "host") this._pipStream = undefined;
+    if (this.role === "host") return (this._pipStream = undefined);
 
     const local = this.camera ? new LocalVideoStream(this.camera) : undefined;
     const stream = await local?.getMediaStream();
@@ -542,6 +615,28 @@ class QuestSessionStore {
       ));
 
     return (this._pipStream = undefined);
+  }
+
+  public async record() {
+    if (this.status !== "Connected")
+      throw new Error(
+        "Unable to start recording without being connected to call",
+      );
+    if (!this.id)
+      throw new Error(
+        `Unable to start recording with session id: "${this.id}"`,
+      );
+
+    console.log("Starting the recording");
+    this._recording = await actions.sessions.startRecording(this.id);
+  }
+
+  public async stopRecording() {
+    console.log("Stopping the recording");
+    if (!this._recording)
+      throw new Error(`Unable to stop recording with id: "${this._recording}"`);
+    await actions.sessions.stopRecording(this._recording);
+    this._recording = undefined;
   }
 }
 

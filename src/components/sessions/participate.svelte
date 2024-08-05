@@ -35,5 +35,5 @@
       </div>
     </div>
   </div>
-  <Actions pip={session.pip} />
+  <Actions />
 </div>

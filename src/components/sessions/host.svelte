@@ -1,10 +1,7 @@
 <script lang="ts">
   import session from "@/stores/session.svelte";
   import Actions from "@/components/sessions/actions.svelte";
-  import {
-    LocalVideoStream,
-    type VideoStreamRendererView,
-  } from "@azure/communication-calling";
+  import { LocalVideoStream } from "@azure/communication-calling";
   import Participant from "@/components/sessions/participant-view.svelte";
 
   let screen: HTMLElement | null = $state(null);

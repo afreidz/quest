@@ -5,11 +5,13 @@ import * as systems from "./systems";
 import * as surveys from "./surveys";
 import * as sessions from "./sessions";
 import * as revisions from "./revisions";
+import * as utterances from "./utterance";
 import * as respondents from "./respondents";
 
 export const server = {
   public: {
     getComsToken: coms.getComsToken,
+    createRespondentUtterance: utterances.createRespondentUtterance,
   },
   me: {
     ...me,
@@ -31,5 +33,8 @@ export const server = {
   },
   sessions: {
     ...sessions,
+  },
+  utterances: {
+    ...utterances,
   },
 };

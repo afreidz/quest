@@ -8,6 +8,7 @@ const AUTHLESS_ROUTES = [
   "/api/auth",
   "/auth/login",
   "/_actions/public",
+  "/sessions/events",
   "/sessions/participate",
 ];
 

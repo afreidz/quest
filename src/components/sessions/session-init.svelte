@@ -32,7 +32,8 @@
 
   onMount(async () => {
     session.role = role;
-    session.id = dbSession.roomComsId;
+    session.id = dbSession.id;
+    session.respondentId = dbSession.respondent.id;
 
     session.name =
       role === "host"
@@ -144,4 +145,5 @@
   {:else}
     {@render children()}
   {/if}
+  <!-- {@render children()} -->
 </div>

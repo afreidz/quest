@@ -5,7 +5,7 @@ import { defineAction, z } from "astro:actions";
 import { Temporal } from "@js-temporal/polyfill";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { PaginationSchema } from "@/utilities/actions";
-import { RoomsClient } from "@azure/communication-rooms";
+import { CallAutomationClient } from "@azure/communication-call-automation";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
 
 const ONEDAY = Temporal.Duration.from({ days: 1 });
@@ -14,15 +14,18 @@ const key = import.meta.env.AZURE_COMS_KEY;
 const endpoint = import.meta.env.AZURE_COMS_ENDPOINT;
 
 const credential = new AzureKeyCredential(key);
-const roomClient = new RoomsClient(endpoint, credential);
 const idClient = new CommunicationIdentityClient(endpoint, credential);
+
+const automationClient = new CallAutomationClient(endpoint, credential);
+const recordingClient = automationClient.getCallRecording();
+
+const recordingDestinationContainerUrl = `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net/participant-videos/`;
 
 const SessionCreateSchema = z.object({
   revision: z.string(),
   respondent: z.string(),
   moderator: z.string(),
   scheduled: z.string().transform((str) => {
-    console.log("ANDY OG STRING", str);
     return Temporal.Instant.from(str);
   }),
 });
@@ -98,43 +101,18 @@ export const create = defineAction({
       throw err;
     });
 
-    const scheduled = sessionData.scheduled.toZonedDateTimeISO("utc");
-    const roomOpen = Temporal.ZonedDateTime.from(scheduled).subtract(ONEDAY);
-    const roomClose = Temporal.ZonedDateTime.from(scheduled).add(ONEDAY);
-
-    const validFrom = new Date(roomOpen.epochMilliseconds);
-    const validUntil = new Date(roomClose.epochMilliseconds);
-
-    const room = await roomClient
-      .createRoom({
-        validFrom,
-        validUntil,
-        pstnDialOutEnabled: false,
-        participants: [
-          {
-            role: "Presenter",
-            id: { communicationUserId: moderator.communicationUserId },
-          },
-          {
-            role: "Presenter",
-            id: { communicationUserId: respondentComsId! },
-          },
-        ],
-      })
-      .catch((err) => {
-        console.log(err);
-        throw err;
-      });
+    const scheduled = new Date(
+      sessionData.scheduled.toZonedDateTimeISO("utc").epochMilliseconds,
+    ).toISOString();
 
     return orm.session.create({
       data: {
-        roomComsId: room.id,
+        scheduled,
         createdBy: creator.email!,
         moderator: sessionData.moderator,
         revisionId: sessionData.revision,
         respondentId: sessionData.respondent,
         moderatorComsId: moderator.communicationUserId,
-        scheduled: new Date(scheduled.epochMilliseconds).toISOString(),
       },
       include: {
         revision: {
@@ -190,9 +168,7 @@ export const getById = defineAction({
 
     if (!session) throw new Error("Unable to find session");
 
-    const room = await roomClient.getRoom(session.roomComsId);
-
-    return { ...session, room };
+    return session;
   },
 });
 
@@ -250,54 +226,76 @@ export const updateById = defineAction({
 
     if (!session) throw new Error(`Unable to find session "${id}"`);
 
-    const scheduled = data.scheduled?.toZonedDateTimeISO("utc");
+    const scheduled = data.scheduled
+      ? new Date(
+          data.scheduled.toZonedDateTimeISO("utc").epochMilliseconds,
+        ).toISOString()
+      : undefined;
 
-    if (scheduled) {
-      const roomOpen = Temporal.ZonedDateTime.from(scheduled).subtract(ONEDAY);
-      const roomClose = Temporal.ZonedDateTime.from(scheduled).add(ONEDAY);
+    const started = data.started
+      ? new Date(
+          data.started.toZonedDateTimeISO("utc").epochMilliseconds,
+        ).toISOString()
+      : undefined;
 
-      const validFrom = new Date(roomOpen.epochMilliseconds);
-      const validUntil = new Date(roomClose.epochMilliseconds);
-
-      await roomClient.updateRoom(session.roomComsId, {
-        validFrom,
-        validUntil,
-      });
-    }
+    const completed = data.completed
+      ? new Date(
+          data.completed.toZonedDateTimeISO("utc").epochMilliseconds,
+        ).toISOString()
+      : undefined;
 
     return await orm.session.update({
       where: { id },
       data: {
         ...data,
-        started: data.started?.toString(),
-        completed: data.completed?.toString(),
-        scheduled: scheduled
-          ? new Date(scheduled.epochMilliseconds).toISOString()
-          : undefined,
+        started,
+        scheduled,
+        completed,
       },
     });
   },
 });
 
-export const setStartToNow = defineAction({
+export const startRecording = defineAction({
   input: z.string(),
-  handler: async (roomId) => {
-    const room = await roomClient.getRoom(roomId);
-    const validUntil = new Date(room.validUntil);
-    const validFrom = new Date();
+  handler: async (id) => {
+    const session = await orm.session.findFirst({ where: { id } });
 
-    await roomClient
-      .updateRoom(roomId, { validFrom, validUntil })
-      .catch(console.error);
+    if (!session) throw new Error(`Unable to find session id: "${id}"`);
 
-    await orm.session.update({
-      where: { roomComsId: roomId },
-      data: {
-        scheduled: validFrom,
+    const recordingStateCallbackEndpointUrl = new URL(
+      "/sessions/events",
+      import.meta.env.ORIGIN,
+    ).href;
+
+    const resp = await recordingClient.start({
+      pauseOnStart: false,
+      recordingFormat: "mp4",
+      recordingChannel: "mixed",
+      recordingContent: "audioVideo",
+      recordingStateCallbackEndpointUrl,
+      callLocator: { id, kind: "groupCallLocator" },
+      recordingStorage: {
+        recordingDestinationContainerUrl,
+        recordingStorageKind: "azureBlobStorage",
       },
     });
 
-    return true;
+    const recording = await orm.sessionRecording.create({
+      data: {
+        id: resp.recordingId,
+        sessionId: session.id,
+      },
+    });
+
+    return recording.id;
+  },
+});
+
+export const stopRecording = defineAction({
+  input: z.string(),
+  handler: async (id) => {
+    return await recordingClient.stop(id);
   },
 });
 
