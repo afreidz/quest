@@ -9,6 +9,11 @@ const schema = z.object({
   title: z.string().min(2).max(100),
 });
 
+const include = {
+  client: true,
+  revisions: { orderBy: { createdAt: "asc" as const } },
+};
+
 export const getAll = defineAction({
   input: PaginationSchema,
   handler: async (pagination) => {
@@ -16,7 +21,7 @@ export const getAll = defineAction({
       orderBy: { createdAt: "asc" },
       take: pagination?.take,
       skip: pagination?.skip,
-      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
+      include,
     });
   },
 });
@@ -30,7 +35,7 @@ export const create = defineAction({
         ...input,
         createdBy: user.email!,
       },
-      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
+      include,
     });
   },
 });
@@ -40,7 +45,7 @@ export const getByClientId = defineAction({
   handler: async (id) => {
     return await orm.system.findMany({
       where: { clientId: id },
-      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
+      include,
     });
   },
 });
@@ -50,7 +55,7 @@ export const getById = defineAction({
   handler: async (id) => {
     return await orm.system.findFirst({
       where: { id },
-      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
+      include,
     });
   },
 });
@@ -64,7 +69,7 @@ export const updateById = defineAction({
     return await orm.system.update({
       data,
       where: { id },
-      include: { client: true, revisions: { orderBy: { createdAt: "asc" } } },
+      include,
     });
   },
 });
@@ -76,5 +81,7 @@ export const deleteById = defineAction({
   },
 });
 
-export type Systems = Awaited<ReturnType<typeof getAll>>;
+export type Systems = Awaited<
+  ReturnType<typeof orm.system.findMany<{ include: typeof include }>>
+>;
 export type SystemFromAll = Systems[number];

@@ -12,6 +12,15 @@ export const getSession = defineAction({
     const lname = user.name?.split(" ")[1] ?? "";
     const image = user.image;
     const email = user.email;
-    return { fname, lname, email, image };
+    return { fname, lname, email, image } satisfies User;
   },
 });
+
+export type User =
+  | {
+      fname: string;
+      lname: string;
+      email?: string | null;
+      image?: string | null;
+    }
+  | undefined;

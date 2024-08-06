@@ -56,7 +56,7 @@
   });
 </script>
 
-{#snippet nullResult(text)}
+{#snippet nullResult(text: string)}
   <div class="flex-1 size-full flex items-center justify-center">
     <span class="uppercase font-semibold opacity-40 py-40 text-center"
       >{text}</span

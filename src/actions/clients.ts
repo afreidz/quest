@@ -94,6 +94,9 @@ export const deleteById = defineAction({
   },
 });
 
-export type Clients = Awaited<ReturnType<typeof getAll>>;
-export type ClientById = Awaited<ReturnType<typeof getById>>;
-export type ClientFromAll = Awaited<ReturnType<typeof getAll>>[number];
+export type Clients = Awaited<
+  ReturnType<typeof orm.client.findMany<{ include: typeof include }>>
+>;
+
+export type ClientById = Clients[number];
+export type ClientFromAll = Clients[number];

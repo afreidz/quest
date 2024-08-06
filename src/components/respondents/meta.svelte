@@ -20,10 +20,6 @@
   <p class="prose">{respondent.profile}</p>
   <div class="flex justify-between w-full">
     <p class="prose">
-      <strong>{respondent._count.systems}</strong>
-      <span>systems</span>
-    </p>
-    <p class="prose">
       <strong>{respondent._count.revisions}</strong>
       <span>revisions</span>
     </p>

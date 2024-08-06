@@ -180,6 +180,9 @@ export const deleteById = defineAction({
   },
 });
 
-export type Revisions = Awaited<ReturnType<typeof getAll>>;
+export type Revisions = Awaited<
+  ReturnType<typeof orm.revision.findMany<{ include: typeof include }>>
+>;
+
 export type RevisionFromAll = Revisions[number];
 export type SurveyFromRevision = NonNullable<RevisionFromAll["survey"]>;

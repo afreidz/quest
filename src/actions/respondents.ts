@@ -224,6 +224,9 @@ export const deleteById = defineAction({
   },
 });
 
+export type Respondents = Awaited<
+  ReturnType<typeof orm.respondent.findMany<{ include: typeof include }>>
+>;
+
 export type RespondentSchema = z.infer<typeof respondentSchema>;
-export type Respondents = Awaited<ReturnType<typeof getAll>>;
 export type RespondentFromAll = Respondents[number];

@@ -3,8 +3,8 @@ import { type APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json();
-  console.log("Incoming POST from session events");
-  console.log(JSON.stringify(body, null, 2));
+  // console.log("Incoming POST from session events");
+  // console.log(JSON.stringify(body, null, 2));
 
   if (body[0].data.validationCode) {
     const resp = { validationResponse: body[0].data.validationCode };
@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ request }) => {
         data: { videoURL },
       });
       console.log(`Added session recording to: ${session.id}.`);
-      console.log(`Video URL: ${videoURL}.`);
+      // console.log(`Video URL: ${videoURL}.`);
     }
   }
 

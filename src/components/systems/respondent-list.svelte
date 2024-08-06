@@ -6,8 +6,8 @@
   import Actions from "@/components/app/actions.svelte";
   import Scores from "@/components/systems/scores.svelte";
   import Avatar from "@/components/respondents/avatar.svelte";
-  import type { RespondentSchema } from "@/actions/respondents";
   import ChecklistRadar from "@/components/surveys/checklist-radar.svelte";
+  import type { Respondents, RespondentSchema } from "@/actions/respondents";
 
   let loading = $state(false);
   let showNew = $state(false);
@@ -18,12 +18,12 @@
       ? suggestionText
         ? actions.respondents.getBySearch(suggestionText)
         : actions.respondents.getAll({})
-      : [];
+      : { data: [] as Respondents };
   });
 
   let newRespondent: Partial<RespondentSchema> = $state({});
 
-  async function toggleExisting(r: Awaited<typeof respondents>[number]) {
+  async function toggleExisting(r: Respondents[number]) {
     if (!store.revisions.active) return;
     const existing = store.revisions.active.respondents.find(
       (er) => er.id === r.id,
@@ -202,23 +202,26 @@
       <div class="flex-1 overflow-auto">
         {#if !loading}
           {#await respondents then respondents}
-            {#each respondents as respondent}
-              <label
-                class:highlight={store.clients.active?.id === respondent.id}
-                class="skip-focus btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
-              >
-                <span class="flex-1">{respondent.name ?? respondent.email}</span
+            {#if respondents.data}
+              {#each respondents.data as respondent}
+                <label
+                  class:highlight={store.clients.active?.id === respondent.id}
+                  class="skip-focus btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
                 >
-                <input
-                  type="checkbox"
-                  class="checkbox checkbox-primary skip-focus"
-                  onchange={() => toggleExisting(respondent)}
-                  checked={store.revisions.active?.respondents.some(
-                    (r) => r.id === respondent.id,
-                  )}
-                />
-              </label>
-            {/each}
+                  <span class="flex-1"
+                    >{respondent.name ?? respondent.email}</span
+                  >
+                  <input
+                    type="checkbox"
+                    class="checkbox checkbox-primary skip-focus"
+                    onchange={() => toggleExisting(respondent)}
+                    checked={store.revisions.active?.respondents.some(
+                      (r) => r.id === respondent.id,
+                    )}
+                  />
+                </label>
+              {/each}
+            {/if}
           {/await}
         {/if}
       </div>

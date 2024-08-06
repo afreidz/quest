@@ -4,8 +4,9 @@ import SessionLayout from "@/layouts/session.astro";
 import Host from "@/components/sessions/host.svelte";
 import SessionInit from "@/components/sessions/session-init.svelte";
 
-const { id } = Astro.params;
-const session = await actions.sessions.getById(id!);
+const session = (
+  await (Astro as any).callAction(actions.sessions.getById, Astro.params.id)
+).data;
 ---
 
 <SessionLayout>

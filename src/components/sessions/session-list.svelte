@@ -6,7 +6,9 @@
   import messages from "@/stores/messages.svelte";
   import { Temporal } from "@js-temporal/polyfill";
   import { preventDefault } from "@/utilities/events";
+  import type { Revisions } from "@/actions/revisions";
   import Actions from "@/components/app/actions.svelte";
+  import type { Respondents } from "@/actions/respondents";
   import type { NewSessionSchema } from "@/actions/sessions";
 
   onMount(async () => {
@@ -51,7 +53,8 @@
   });
 
   let respondents = $derived.by(async () => {
-    if (!showCreateSessionForm) return [];
+    if (!showCreateSessionForm)
+      return { data: [] as Respondents, error: undefined };
     loading = true;
     return suggestionText
       ? actions.respondents.getBySearch(suggestionText).then((r) => {
@@ -65,7 +68,8 @@
   });
 
   let revisions = $derived.by(async () => {
-    if (!showCreateSessionForm || !newSession.respondent) return [];
+    if (!showCreateSessionForm || !newSession.respondent)
+      return { data: [] as Revisions, error: undefined };
     loading = true;
     return actions.revision
       .getByRespondentId(newSession.respondent)
@@ -98,15 +102,14 @@
       .toInstant()
       .toString();
 
-    const resp = await actions.sessions
-      .create({
-        ...newSession,
-        scheduled,
-      })
-      .catch((err) => {
-        console.log(err);
-        messages.error(err.message, err.detail);
-      });
+    const resp = await actions.sessions.create({
+      ...newSession,
+      scheduled,
+    });
+
+    if (resp.error || !resp.data) {
+      return messages.error("Unable to create session", resp.error);
+    }
 
     loading = false;
     newSession = {
@@ -119,18 +122,16 @@
     chosenTime = timeFormatter.format(now);
     chosenDate = dateFormatter.format(now);
 
-    if (!resp) return;
-
     await store.refreshAllSessions();
 
     const sessionDateTime = new Date(
-      Temporal.Instant.from(resp.scheduled as any).toZonedDateTimeISO(
+      Temporal.Instant.from(resp.data.scheduled as any).toZonedDateTimeISO(
         timezone,
       ).epochMilliseconds,
     );
 
     messages.success(
-      `Session scheduled for ${displayFormatter.format(sessionDateTime)} with ${resp.respondent.name || resp.respondent.email}`,
+      `Session scheduled for ${displayFormatter.format(sessionDateTime)} with ${resp.data.respondent.name || resp.data.respondent.email}`,
       JSON.stringify(resp, null, 2),
     );
   }
@@ -149,17 +150,16 @@
       .toInstant()
       .toString();
 
-    const resp = await actions.sessions
-      .updateById({
-        id: store.sessions.active.id,
-        data: {
-          scheduled,
-        },
-      })
-      .catch((err) => {
-        console.log(err);
-        messages.error(err.message, err.detail);
-      });
+    const resp = await actions.sessions.updateById({
+      id: store.sessions.active.id,
+      data: {
+        scheduled,
+      },
+    });
+
+    if (resp.error || !resp.data) {
+      return messages.error("Unable to create session", resp.error);
+    }
 
     loading = false;
 
@@ -172,7 +172,7 @@
     await store.refreshAllSessions();
 
     const sessionDateTime = new Date(
-      Temporal.Instant.from(resp.scheduled as any).toZonedDateTimeISO(
+      Temporal.Instant.from(resp.data.scheduled as any).toZonedDateTimeISO(
         timezone,
       ).epochMilliseconds,
     );
@@ -301,16 +301,19 @@
       </div>
       <div class="flex-1 overflow-auto">
         {#await respondents then respondents}
-          {#each respondents as respondent}
-            <button
-              type="button"
-              onclick={() => (newSession.respondent = respondent.id)}
-              class:highlight={newSession.respondent === respondent.id}
-              class="skip-focus btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
-            >
-              <span class="flex-1">{respondent.name ?? respondent.email}</span>
-            </button>
-          {/each}
+          {#if respondents.data}
+            {#each respondents.data as respondent}
+              <button
+                type="button"
+                onclick={() => (newSession.respondent = respondent.id)}
+                class:highlight={newSession.respondent === respondent.id}
+                class="skip-focus btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
+              >
+                <span class="flex-1">{respondent.name ?? respondent.email}</span
+                >
+              </button>
+            {/each}
+          {/if}
         {/await}
       </div>
     </div>
@@ -327,19 +330,21 @@
         class="bg-base-100/20 rounded-none flex-1 overflow-auto flex flex-col justify-center"
       >
         {#await revisions then revisions}
-          {#each revisions as revision}
-            <button
-              type="button"
-              onclick={() => (newSession.revision = revision.id)}
-              class:highlight={newSession.revision === revision.id}
-              class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex"
-            >
-              <span class="flex-1">{revision.title}</span>
-              <div class="badge badge-secondary">
-                {revision.system.title}
-              </div>
-            </button>
-          {/each}
+          {#if revisions.data}
+            {#each revisions.data as revision}
+              <button
+                type="button"
+                onclick={() => (newSession.revision = revision.id)}
+                class:highlight={newSession.revision === revision.id}
+                class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex"
+              >
+                <span class="flex-1">{revision.title}</span>
+                <div class="badge badge-secondary">
+                  {revision.system.title}
+                </div>
+              </button>
+            {/each}
+          {/if}
         {/await}
       </div>
     </div>

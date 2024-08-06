@@ -1,5 +1,11 @@
 import { actions } from "astro:actions";
 import messages from "./messages.svelte";
+import type { User } from "@/actions/me";
+import type { Surveys } from "@/actions/surveys";
+import type { Clients } from "@/actions/clients";
+import type { Systems } from "@/actions/systems";
+import type { Sessions } from "@/actions/sessions";
+import type { Revisions } from "@/actions/revisions";
 
 type EntityState<T> = {
   all: T[];
@@ -8,31 +14,23 @@ type EntityState<T> = {
 };
 
 class QuestGlobalStore {
-  _me: Partial<Awaited<ReturnType<typeof actions.me.getSession>>> = $state({});
+  _me: Partial<Awaited<User>> | null = $state();
 
-  _clients: EntityState<
-    Awaited<ReturnType<typeof actions.client.getAll>>[number]
-  > = $state({
+  _clients: EntityState<Awaited<Clients>[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _systems: EntityState<
-    Awaited<ReturnType<typeof actions.system.getByClientId>>[number]
-  > = $state({
+  _systems: EntityState<Awaited<Systems>[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _revisions: EntityState<
-    Awaited<ReturnType<typeof actions.revision.getBySystemId>>[number]
-  > & {
+  _revisions: EntityState<Awaited<Revisions>[number]> & {
     includeBenchmark: boolean;
-    compared:
-      | Awaited<ReturnType<typeof actions.revision.getBySystemId>>[number]
-      | null;
+    compared: Awaited<Revisions>[number] | null;
   } = $state({
     all: [],
     active: null,
@@ -41,17 +39,13 @@ class QuestGlobalStore {
     includeBenchmark: true,
   });
 
-  _surveys: EntityState<
-    Awaited<ReturnType<typeof actions.surveys.getAll>>[number]
-  > = $state({
+  _surveys: EntityState<Awaited<Surveys>[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _sessions: EntityState<
-    Awaited<ReturnType<typeof actions.sessions.getAll>>[number]
-  > = $state({
+  _sessions: EntityState<Awaited<Sessions>[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
@@ -61,9 +55,7 @@ class QuestGlobalStore {
     return this._me;
   }
 
-  get clients(): EntityState<
-    Awaited<ReturnType<typeof actions.client.getAll>>[number]
-  > {
+  get clients() {
     return this._clients;
   }
 
@@ -84,9 +76,9 @@ class QuestGlobalStore {
   }
 
   async refreshMe() {
-    const me = await actions.me.getSession.safe({});
+    const me = await actions.me.getSession();
 
-    if (me.error)
+    if (me.error || !me.data)
       messages.error("Unable to get current user details", me.error);
 
     this._me = me?.data ?? null;
@@ -100,9 +92,10 @@ class QuestGlobalStore {
   }
 
   async refreshAllClients() {
-    const all = await actions.client.getAll.safe({});
+    const all = await actions.client.getAll({});
 
-    if (all.error) messages.error("Unable to refresh clients", all.error);
+    if (all.error || !all.data)
+      messages.error("Unable to refresh clients", all.error);
 
     this._clients.all = all.data || [];
   }
@@ -110,7 +103,7 @@ class QuestGlobalStore {
   async refreshActiveClient() {
     if (!this.clients.active) return;
 
-    const refreshed = await actions.client.getById.safe(this.clients.active.id);
+    const refreshed = await actions.client.getById(this.clients.active.id);
 
     if (refreshed.error) {
       messages.error("Unable to refresh active client", refreshed.error);
@@ -139,9 +132,9 @@ class QuestGlobalStore {
     if (!this.clients.active && !id) return;
 
     const all = id
-      ? await actions.system.getByClientId.safe(id)
+      ? await actions.system.getByClientId(id)
       : this.clients.active
-        ? await actions.system.getByClientId.safe(this.clients.active.id)
+        ? await actions.system.getByClientId(this.clients.active.id)
         : { data: [], error: null };
 
     if (all.error) messages.error("Unable to refresh systems", all.error);
@@ -152,7 +145,7 @@ class QuestGlobalStore {
   async refreshActiveSystem() {
     if (!this.systems.active) return;
 
-    const refreshed = await actions.system.getById.safe(this.systems.active.id);
+    const refreshed = await actions.system.getById(this.systems.active.id);
 
     if (refreshed.error) {
       messages.error("Unable to refresh active system", refreshed.error);
@@ -194,9 +187,9 @@ class QuestGlobalStore {
     if (!this.systems.active?.id && !id) return;
 
     const all = id
-      ? await actions.revision.getBySystemId.safe(id)
+      ? await actions.revision.getBySystemId(id)
       : this.systems.active
-        ? await actions.revision.getBySystemId.safe(this.systems.active.id)
+        ? await actions.revision.getBySystemId(this.systems.active.id)
         : { data: [], error: null };
 
     if (all.error) messages.error("Unable to refresh revisions", all.error);
@@ -207,9 +200,7 @@ class QuestGlobalStore {
   async refreshActiveRevision() {
     if (!this.revisions.active) return;
 
-    const refreshed = await actions.revision.getById.safe(
-      this.revisions.active.id,
-    );
+    const refreshed = await actions.revision.getById(this.revisions.active.id);
 
     if (refreshed.error) {
       messages.error("Unable to refresh active revision", refreshed.error);
@@ -235,7 +226,7 @@ class QuestGlobalStore {
   }
 
   async refreshAllSurveys() {
-    const all = await actions.surveys.getAll.safe({});
+    const all = await actions.surveys.getAll({});
 
     if (all.error) messages.error("Unable to refresh all surveys", all.error);
 
@@ -245,9 +236,7 @@ class QuestGlobalStore {
   async refreshActiveSurvey() {
     if (!this.surveys.active) return;
 
-    const refreshed = await actions.surveys.getById.safe(
-      this.surveys.active.id,
-    );
+    const refreshed = await actions.surveys.getById(this.surveys.active.id);
 
     if (refreshed.error) {
       messages.error("Unable to refresh active survey", refreshed.error);
@@ -262,7 +251,7 @@ class QuestGlobalStore {
   }
 
   async refreshAllSessions() {
-    const all = await actions.sessions.getAll.safe({});
+    const all = await actions.sessions.getAll({});
 
     if (all.error) messages.error("Unable to refresh sessions");
 
@@ -283,9 +272,7 @@ class QuestGlobalStore {
   async refreshActiveSession() {
     if (!this.sessions.active) return;
 
-    const refreshed = await actions.sessions.getById.safe(
-      this.sessions.active.id,
-    );
+    const refreshed = await actions.sessions.getById(this.sessions.active.id);
 
     if (refreshed.error) {
       messages.error("Unable to refresh active session", refreshed.error);

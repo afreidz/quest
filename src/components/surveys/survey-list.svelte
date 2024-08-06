@@ -3,7 +3,9 @@
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
+  import type { Systems } from "@/actions/systems";
   import { preventDefault } from "@/utilities/events";
+  import type { Revisions } from "@/actions/revisions";
   import Actions from "@/components/app/actions.svelte";
   import QuestionList from "@/components/surveys/question-list.svelte";
 
@@ -34,21 +36,15 @@
   });
 
   let clientSystems = $derived.by(() => {
-    if (!newChecklist.clientId) return [];
-    return actions.system.getByClientId(newChecklist.clientId).catch((err) => {
-      messages.error(err.message, err.detail);
-      return [];
-    });
+    if (!newChecklist.clientId)
+      return { data: [] as Systems, error: undefined };
+    return actions.system.getByClientId(newChecklist.clientId);
   });
 
   let revisions = $derived.by(() => {
-    if (!newChecklist.systemId) return [];
-    return actions.revision
-      .getBySystemId(newChecklist.systemId)
-      .catch((err) => {
-        messages.error(err.message, err.detail);
-        return [];
-      });
+    if (!newChecklist.systemId)
+      return { data: [] as Revisions, error: undefined };
+    return actions.revision.getBySystemId(newChecklist.systemId);
   });
 
   $effect(() => {
@@ -91,6 +87,12 @@
         messages.error(err.message, err.detail);
         return null;
       });
+
+    if (!resp || resp?.error || !resp?.data) {
+      loading = false;
+      return messages.error("Unable to create survey", resp?.error);
+    }
+
     await store.refreshAllSurveys();
     loading = false;
 
@@ -106,7 +108,7 @@
       "Survey/Checklist created.",
       JSON.stringify(resp, null, 2),
     );
-    const survey = store.surveys.all.find((s) => s.id === resp?.id);
+    const survey = store.surveys.all.find((s) => s.id === resp.data.id);
     if (survey) store.setActiveSurvey(survey);
   }
 </script>
@@ -243,9 +245,11 @@
       >
         <option disabled selected value={null}>Pick one...</option>
         {#await clientSystems then systems}
-          {#each systems as system}
-            <option value={system.id}>{system.title}</option>
-          {/each}
+          {#if systems.data}
+            {#each systems.data as system}
+              <option value={system.id}>{system.title}</option>
+            {/each}
+          {/if}
         {/await}
       </select>
     </label>
@@ -261,9 +265,11 @@
       >
         <option disabled selected value={null}>Pick one...</option>
         {#await revisions then revision}
-          {#each revision as system}
-            <option value={system.id}>{system.title}</option>
-          {/each}
+          {#if revision.data}
+            {#each revision.data as system}
+              <option value={system.id}>{system.title}</option>
+            {/each}
+          {/if}
         {/await}
       </select>
     </label>

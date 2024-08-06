@@ -5,5 +5,4 @@ export const PaginationSchema = z
     take: z.number().optional().default(500),
     skip: z.number().optional(),
   })
-  .optional()
-  .or(z.undefined());
+  .optional();

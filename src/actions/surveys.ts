@@ -13,9 +13,7 @@ const include = {
       group: true,
       responseOptions: {
         include: {
-          responses: {
-            include: { respondent: true },
-          },
+          responses: { include: { respondent: true } },
         },
       },
     },
@@ -96,31 +94,7 @@ export const getAll = defineAction({
       orderBy: { createdAt: "asc" },
       take: pagination?.take,
       skip: pagination?.skip,
-      include: {
-        _count: {
-          select: { questions: true },
-        },
-        questions: {
-          include: {
-            group: true,
-            responseOptions: {
-              include: {
-                responses: { include: { respondent: true } },
-              },
-            },
-          },
-        },
-        revisionAsChecklist: {
-          include: {
-            system: { include: { client: true } },
-          },
-        },
-        revisionAsSurvey: {
-          include: {
-            system: { include: { client: true } },
-          },
-        },
-      },
+      include,
     });
   },
 });
@@ -223,5 +197,7 @@ export const deleteById = defineAction({
   },
 });
 
-export type Surveys = ORM.SurveyGetPayload<{ include: typeof include }>[];
+export type Surveys = Awaited<
+  ReturnType<typeof orm.survey.findMany<{ include: typeof include }>>
+>;
 export type SurveyFromAll = Surveys[number];

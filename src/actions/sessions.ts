@@ -5,21 +5,27 @@ import { defineAction, z } from "astro:actions";
 import { Temporal } from "@js-temporal/polyfill";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { PaginationSchema } from "@/utilities/actions";
-import { CallAutomationClient } from "@azure/communication-call-automation";
+import { CallRecording } from "@azure/communication-call-automation";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
-
-const ONEDAY = Temporal.Duration.from({ days: 1 });
 
 const key = import.meta.env.AZURE_COMS_KEY;
 const endpoint = import.meta.env.AZURE_COMS_ENDPOINT;
 
 const credential = new AzureKeyCredential(key);
+const recordingClient = new CallRecording(endpoint, credential);
 const idClient = new CommunicationIdentityClient(endpoint, credential);
-
-const automationClient = new CallAutomationClient(endpoint, credential);
-const recordingClient = automationClient.getCallRecording();
-
 const recordingDestinationContainerUrl = `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net/participant-videos/`;
+
+const include = {
+  revision: {
+    include: {
+      system: {
+        include: { client: true },
+      },
+    },
+  },
+  respondent: true,
+};
 
 const SessionCreateSchema = z.object({
   revision: z.string(),
@@ -114,16 +120,7 @@ export const create = defineAction({
         respondentId: sessionData.respondent,
         moderatorComsId: moderator.communicationUserId,
       },
-      include: {
-        revision: {
-          include: {
-            system: {
-              include: { client: true },
-            },
-          },
-        },
-        respondent: true,
-      },
+      include,
     });
   },
 });
@@ -135,16 +132,7 @@ export const getAll = defineAction({
       orderBy: { createdAt: "asc" },
       skip: pagination?.skip,
       take: pagination?.take,
-      include: {
-        revision: {
-          include: {
-            system: {
-              include: { client: true },
-            },
-          },
-        },
-        respondent: true,
-      },
+      include,
     });
   },
 });
@@ -154,16 +142,7 @@ export const getById = defineAction({
   handler: async (id) => {
     const session = await orm.session.findFirst({
       where: { id },
-      include: {
-        revision: {
-          include: {
-            system: {
-              include: { client: true },
-            },
-          },
-        },
-        respondent: true,
-      },
+      include,
     });
 
     if (!session) throw new Error("Unable to find session");
@@ -202,16 +181,7 @@ export const getByQuery = defineAction({
           },
         ],
       },
-      include: {
-        revision: {
-          include: {
-            system: {
-              include: { client: true },
-            },
-          },
-        },
-        respondent: true,
-      },
+      include,
     });
   },
 });
@@ -257,11 +227,13 @@ export const updateById = defineAction({
 });
 
 export const startRecording = defineAction({
-  input: z.string(),
-  handler: async (id) => {
-    const session = await orm.session.findFirst({ where: { id } });
-
-    if (!session) throw new Error(`Unable to find session id: "${id}"`);
+  input: z.object({
+    callId: z.string(),
+    sessionId: z.string(),
+  }),
+  handler: async ({ callId, sessionId }) => {
+    const session = await orm.session.findFirst({ where: { id: sessionId } });
+    if (!session) throw new Error(`Unable to find session id: "${sessionId}"`);
 
     const recordingStateCallbackEndpointUrl = new URL(
       "/sessions/events",
@@ -269,12 +241,10 @@ export const startRecording = defineAction({
     ).href;
 
     const resp = await recordingClient.start({
-      pauseOnStart: false,
       recordingFormat: "mp4",
-      recordingChannel: "mixed",
       recordingContent: "audioVideo",
       recordingStateCallbackEndpointUrl,
-      callLocator: { id, kind: "groupCallLocator" },
+      callLocator: { id: callId, kind: "serverCallLocator" },
       recordingStorage: {
         recordingDestinationContainerUrl,
         recordingStorageKind: "azureBlobStorage",
@@ -295,11 +265,15 @@ export const startRecording = defineAction({
 export const stopRecording = defineAction({
   input: z.string(),
   handler: async (id) => {
-    return await recordingClient.stop(id);
+    const resp = await recordingClient.stop(id).catch((err) => err);
+    return resp;
   },
 });
 
-export type Sessions = Awaited<ReturnType<typeof getAll>>;
-export type SessionById = Awaited<ReturnType<typeof getById>>;
+export type Sessions = Awaited<
+  ReturnType<typeof orm.session.findMany<{ include: typeof include }>>
+>;
+
+export type SessionById = Sessions[number];
+export type SessionFromAll = Sessions[number];
 export type NewSessionSchema = z.infer<typeof SessionCreateSchema>;
-export type SessionFromAll = Awaited<ReturnType<typeof getAll>>[number];

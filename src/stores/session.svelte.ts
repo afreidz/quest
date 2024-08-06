@@ -1,4 +1,5 @@
 import {
+  Features,
   CallClient,
   LocalVideoStream,
   VideoStreamRenderer,
@@ -46,7 +47,7 @@ class QuestSessionStore {
   // Privates with no getters/setters
   private _call?: Call = $state();
   private _agent?: CallAgent = $state();
-  private _recording?: string = $state();
+  private _recordingId?: string = $state();
   private _transcriber?: Transcriber = $state();
   // private _messenger?: DataMessenger = $state();
   private _client?: CallClient = $state(new CallClient());
@@ -55,6 +56,7 @@ class QuestSessionStore {
   // Privates with public getters/setters
   private _muted = $state(false);
   private _id?: string = $state();
+  private _recording = $state(false);
   private _camEnabled = $state(false);
   private _userId?: string = $state();
   private _shareEnabled = $state(false);
@@ -234,6 +236,10 @@ class QuestSessionStore {
     this._respondentId = r;
   }
 
+  get recording() {
+    return this._recording;
+  }
+
   async mute() {
     if (!this._call) return (this.muted = true);
     await this._call.mute();
@@ -254,9 +260,9 @@ class QuestSessionStore {
       (s) => s.mediaStreamType === "Video",
     );
 
-    if (existing && this.camera.id !== (await existing.getMediaStream()).id) {
+    if (existing && this.camera.id !== existing.source.id) {
       existing.switchSource(this.camera);
-    } else {
+    } else if (!existing) {
       const stream = new LocalVideoStream(this.camera);
       await this._call.startVideo(stream);
     }
@@ -350,7 +356,9 @@ class QuestSessionStore {
     console.log(`Connecting to call id: ${this.id} as user: ${this.userId}`);
 
     const client = new CallClient();
-    const { token } = await actions.public.getComsToken(this.userId);
+    const token = (await actions.public.getComsToken(this.userId)).data?.token;
+    if (!token) return messages.error("Unable to authenticate.");
+
     const credential = new AzureCommunicationTokenCredential(token);
 
     const agent = await client
@@ -366,7 +374,7 @@ class QuestSessionStore {
 
     console.log(this.role, "Updating start time");
     if (this.role === "host")
-      await actions.sessions.updateById.safe({
+      await actions.sessions.updateById({
         id: this.id,
         data: {
           scheduled: getNow().toInstant().toString(),
@@ -419,12 +427,17 @@ class QuestSessionStore {
       removed.forEach((r) => this.removeParticipant(r));
       added.forEach((r) => this.addParticipant(r));
     });
+
+    const recorder = call.feature(Features.Recording);
+    recorder.on("isRecordingActiveChanged", () => {
+      this._recording = recorder.isRecordingActive;
+    });
   }
 
   async disconnect() {
     if (this.role === "host" && this.id) {
-      if (this._recording) await this.stopRecording();
-      await actions.sessions.updateById.safe({
+      if (this._recordingId) await this.stopRecording();
+      await actions.sessions.updateById({
         id: this.id,
         data: {
           completed: getNow().toInstant().toString(),
@@ -618,25 +631,44 @@ class QuestSessionStore {
   }
 
   public async record() {
+    if (!this._call) throw new Error(`Unable to start recording without call`);
+
     if (this.status !== "Connected")
       throw new Error(
         "Unable to start recording without being connected to call",
       );
+
     if (!this.id)
       throw new Error(
         `Unable to start recording with session id: "${this.id}"`,
       );
 
+    const recorder = this._call.feature(Features.Recording);
+    recorder.on("isRecordingActiveChanged", () =>
+      console.log(`Recording is ${recorder.isRecordingActive}`),
+    );
+    recorder.on("recordingsUpdated", () =>
+      console.log("Recordings are updated", recorder.recordings),
+    );
+
     console.log("Starting the recording");
-    this._recording = await actions.sessions.startRecording(this.id);
+    const callId = await this._call.info.getServerCallId();
+    this._recordingId = (
+      await actions.sessions.startRecording({
+        callId,
+        sessionId: this.id,
+      })
+    ).data;
   }
 
   public async stopRecording() {
     console.log("Stopping the recording");
-    if (!this._recording)
-      throw new Error(`Unable to stop recording with id: "${this._recording}"`);
-    await actions.sessions.stopRecording(this._recording);
-    this._recording = undefined;
+    if (!this._recordingId)
+      throw new Error(
+        `Unable to stop recording with id: "${this._recordingId}"`,
+      );
+    await actions.sessions.stopRecording(this._recordingId);
+    this._recordingId = undefined;
   }
 }
 

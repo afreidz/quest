@@ -21,6 +21,9 @@ export default defineConfig({
   experimental: {
     actions: true,
   },
+  redirects: {
+    "/": "/clients",
+  },
   output: "server",
   adapter: vercel(),
   integrations: [svelte(), tailwind(), auth()],
