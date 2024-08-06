@@ -16,7 +16,7 @@ type Surveys =
   | RespondentFromAll["surveys"][number];
 
 export async function calculatePracticeAverageSUSScore() {
-  const respondents = await actions.respondents.getAll({});
+  const respondents = (await actions.respondents.getAll({})).data ?? [];
   const scores = respondents
     .map((r) => {
       const survey = r.surveys.find((s) => s.type === "SUS_PROPOSED");

@@ -1,3 +1,4 @@
+import { Buffer } from "buffer";
 import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
