@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
-  import { timezone } from "@/utilities/time";
   import messages from "@/stores/messages.svelte";
   import { Temporal } from "@js-temporal/polyfill";
   import { preventDefault } from "@/utilities/events";
@@ -10,6 +9,7 @@
   import Actions from "@/components/app/actions.svelte";
   import type { Respondents } from "@/actions/respondents";
   import type { NewSessionSchema } from "@/actions/sessions";
+  import { isBefore, timezone, now as getNow } from "@/utilities/time";
 
   onMount(async () => {
     await store.refreshMe();
@@ -49,6 +49,7 @@
   let newSession: Omit<NewSessionSchema, "scheduled"> = $state({
     revision: "",
     moderator: "",
+    invite: false,
     respondent: "",
   });
 
@@ -114,6 +115,7 @@
     loading = false;
     newSession = {
       revision: "",
+      invite: false,
       respondent: "",
       moderator: store.me?.email ?? "",
     };
@@ -220,13 +222,32 @@
               ></iconify-icon>
             </div>
             <div class="flex flex-col gap-2 flex-1">
-              <div class="flex items-center gap-2">
-                <span class="badge badge-primary"
-                  >{session.revision.system.client.name}</span
-                >
-                <span class="badge badge-secondary"
-                  >{session.revision.system.title}</span
-                >
+              <div class="flex justify-between w-full">
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-primary"
+                    >{session.revision.system.client.name}</span
+                  >
+                  <span class="badge badge-secondary"
+                    >{session.revision.system.title}</span
+                  >
+                </div>
+                {#if !session.completed}
+                  <span
+                    class="badge glass self-end tooltip tooltip-left"
+                    data-tip="Upcoming Session"
+                  >
+                    <iconify-icon class="text-xs" icon="mdi:calendar"
+                    ></iconify-icon>
+                  </span>
+                {:else}
+                  <span
+                    data-tip="Completed Session"
+                    class="badge badge-success self-end tooltip tooltip-left"
+                  >
+                    <iconify-icon class="text-xs" icon="mdi:check-bold"
+                    ></iconify-icon>
+                  </span>
+                {/if}
               </div>
               <strong class="font-semibold"
                 >Session with {session.respondent.name ??
@@ -263,9 +284,12 @@
   </div>
   {#if store.sessions.active && !store.sessions.active.completed}
     <Actions
-      editIcon="mdi:calendar"
+      editIcon="mdi:reschedule"
+      addIcon="mdi:calendar-star"
       editTip="Reschedule Session"
       editForm={rescheduleSessionForm}
+      onAdd={console.log}
+      addTip="Download calendar invite"
       bind:editShown={showRescheduleSessionForm}
     />
   {/if}
@@ -379,7 +403,7 @@
             />
           </label>
         </section>
-        <div class="flex flex-1 gap-8">
+        <div class="flex flex-none gap-8">
           <section class="flex flex-col gap-2 flex-1 p-1">
             <label class="form-control flex-none">
               <div class="label">
@@ -393,6 +417,20 @@
               />
             </label>
           </section>
+        </div>
+        <div class="flex flex-col flex-1 gap-8">
+          <div class="form-control w-full">
+            <label class="label cursor-pointer">
+              <span class="label-text"
+                >Send invites to respondent and moderator</span
+              >
+              <input
+                type="checkbox"
+                bind:checked={newSession.invite}
+                class="toggle toggle-primary [--tglbg:#ffffff]"
+              />
+            </label>
+          </div>
         </div>
         <footer class="flex-none flex justify-end gap-4 p-1">
           <button

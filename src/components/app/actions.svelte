@@ -17,6 +17,9 @@
     editShown?: boolean;
     deleteForm?: Snippet;
     deleteShown?: boolean;
+    onAdd?: () => void;
+    onEdit?: () => void;
+    onDelete?: () => void;
   };
 
   let addDialog: HTMLDialogElement | null = $state(null);
@@ -60,7 +63,10 @@
   });
 
   let {
+    onAdd,
+    onEdit,
     addForm,
+    onDelete,
     editForm,
     deleteForm,
     size = "sm",
@@ -78,34 +84,34 @@
 </script>
 
 <div class="join">
-  {#if addForm}
+  {#if addForm || onAdd}
     <button
       data-tip={addTip}
       class:btn-xs={size === "xs"}
       class:btn-sm={size === "sm"}
-      onclick={() => (addShown = true)}
+      onclick={() => (onAdd ? onAdd() : (addShown = true))}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary"
     >
       <iconify-icon icon={addIcon} class="pointer-events-none"></iconify-icon>
     </button>
   {/if}
-  {#if editForm}
+  {#if editForm || onEdit}
     <button
       data-tip={editTip}
       class:btn-xs={size === "xs"}
       class:btn-sm={size === "sm"}
-      onclick={() => (editShown = true)}
+      onclick={() => (onEdit ? onEdit() : (editShown = true))}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary"
     >
       <iconify-icon icon={editIcon} class="pointer-events-none"></iconify-icon>
     </button>
   {/if}
-  {#if deleteForm}
+  {#if deleteForm || onDelete}
     <button
       data-tip={deleteTip}
       class:btn-xs={size === "xs"}
       class:btn-sm={size === "sm"}
-      onclick={() => (deleteShown = true)}
+      onclick={() => (onDelete ? onDelete() : (deleteShown = true))}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary hover:bg-error hover:text-neutral-950"
     >
       <iconify-icon icon={deleteIcon} class="pointer-events-none"

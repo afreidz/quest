@@ -182,6 +182,7 @@ model Session {
   revisionId String
   revision   Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
 
+  invite      Boolean                @default(false)
   moments     KeyMoment[]
   recordings  SessionRecording[]
   transcripts TranscriptionSegment[]

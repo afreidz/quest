@@ -47,7 +47,7 @@ export function getBadgeColor(
   num: number | null,
   min: number | null,
   max: number | null | undefined,
-  p: boolean
+  p: boolean,
 ) {
   if (num === null || min === null || max === null || max === undefined)
     return surveysAndCharts.neutral;
