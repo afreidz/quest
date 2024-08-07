@@ -6,9 +6,9 @@ const AUTHLESS_ROUTES = [
   "/error",
   "/public",
   "/api/auth",
-  "/auth/login",
   "/_actions/public",
   "/sessions/events",
+  "/auth/auth/signin",
   "/sessions/participate",
 ];
 
@@ -23,7 +23,7 @@ export const auth = defineMiddleware(async (context, next) => {
 
   if (!session?.user) {
     const redirect = new URL(url.origin);
-    redirect.pathname = "/auth/login";
+    redirect.pathname = "/api/auth/signin";
     return Response.redirect(redirect.href);
   }
 

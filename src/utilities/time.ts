@@ -15,40 +15,13 @@ export function getInstant(s: string) {
   return Temporal.Instant.from(s).toZonedDateTimeISO(timezone);
 }
 
-export type ICSInvite = {
-  id: string;
-  summary: string;
-  sequence: number;
-  location: string;
-  attendee: string;
-  organizer: string;
-  description: string;
-  duration: Temporal.Duration;
-  start: Temporal.ZonedDateTime;
-};
-export function createIcs(invite: ICSInvite) {
-  const endDate = invite.start.add(invite.duration);
+export function formatUTCDateToISO(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const day = date.getUTCDate().toString().padStart(2, "0");
+  const hours = date.getUTCHours().toString().padStart(2, "0");
+  const minutes = date.getUTCMinutes().toString().padStart(2, "0");
+  const seconds = date.getUTCSeconds().toString().padStart(2, "0");
 
-  const formatDate = (date: Temporal.ZonedDateTime) => {
-    return (
-      date.toPlainDateTime().toString().replace(/[-:]/g, "").split(".")[0] + "Z"
-    );
-  };
-
-  return `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Your Company//Your Product//EN
-BEGIN:VEVENT
-UID:${invite.id}
-SEQUENCE:${invite.sequence}
-DTSTAMP:${formatDate(Temporal.Now.zonedDateTimeISO())}
-DTSTART:${formatDate(invite.start)}
-DTEND:${formatDate(endDate)}
-SUMMARY:${invite.summary}
-DESCRIPTION:${invite.description}
-LOCATION:${invite.location}
-ORGANIZER;CN=${invite.organizer}
-ATTENDEE;CN=${invite.attendee};RSVP=TRUE:mailto:${invite.attendee}
-END:VEVENT
-END:VCALENDAR`;
+  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
 }

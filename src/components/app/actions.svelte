@@ -9,7 +9,6 @@
     editTip?: string;
     editIcon?: string;
     addForm?: Snippet;
-    size?: "xs" | "sm";
     editForm?: Snippet;
     addShown?: boolean;
     deleteTip?: string;
@@ -20,6 +19,7 @@
     onAdd?: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
+    size?: "xs" | "sm" | "md";
   };
 
   let addDialog: HTMLDialogElement | null = $state(null);
@@ -89,10 +89,15 @@
       data-tip={addTip}
       class:btn-xs={size === "xs"}
       class:btn-sm={size === "sm"}
+      class:btn-md={size === "md"}
       onclick={() => (onAdd ? onAdd() : (addShown = true))}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary"
     >
-      <iconify-icon icon={addIcon} class="pointer-events-none"></iconify-icon>
+      <iconify-icon
+        icon={addIcon}
+        class="pointer-events-none"
+        class:text-xl={size === "md"}
+      ></iconify-icon>
     </button>
   {/if}
   {#if editForm || onEdit}
@@ -100,10 +105,15 @@
       data-tip={editTip}
       class:btn-xs={size === "xs"}
       class:btn-sm={size === "sm"}
+      class:btn-md={size === "md"}
       onclick={() => (onEdit ? onEdit() : (editShown = true))}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary"
     >
-      <iconify-icon icon={editIcon} class="pointer-events-none"></iconify-icon>
+      <iconify-icon
+        icon={editIcon}
+        class="pointer-events-none"
+        class:text-xl={size === "md"}
+      ></iconify-icon>
     </button>
   {/if}
   {#if deleteForm || onDelete}
@@ -111,10 +121,14 @@
       data-tip={deleteTip}
       class:btn-xs={size === "xs"}
       class:btn-sm={size === "sm"}
+      class:btn-md={size === "md"}
       onclick={() => (onDelete ? onDelete() : (deleteShown = true))}
       class="btn btn-outline join-item tooltip tooltip-left tooltip-primary hover:bg-error hover:text-neutral-950"
     >
-      <iconify-icon icon={deleteIcon} class="pointer-events-none"
+      <iconify-icon
+        icon={deleteIcon}
+        class="pointer-events-none"
+        class:text-xl={size === "md"}
       ></iconify-icon>
     </button>
   {/if}

@@ -1,15 +1,14 @@
-import { Buffer } from "buffer";
 import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
 import { Temporal } from "@js-temporal/polyfill";
+import { sessionToEmail } from "@/utilities/events";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { PaginationSchema } from "@/utilities/actions";
 import { EmailClient } from "@azure/communication-email";
 import { CallRecording } from "@azure/communication-call-automation";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
-import { createIcs, type ICSInvite } from "@/utilities/time";
 
 const key = import.meta.env.AZURE_COMS_KEY;
 const endpoint = import.meta.env.AZURE_COMS_ENDPOINT;
@@ -19,14 +18,6 @@ const emailClient = new EmailClient(endpoint, credential);
 const recordingClient = new CallRecording(endpoint, credential);
 const idClient = new CommunicationIdentityClient(endpoint, credential);
 const recordingDestinationContainerUrl = `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net/participant-videos/`;
-
-const displayFormatter = new Intl.DateTimeFormat("en-us", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  hour: "numeric",
-  minute: "numeric",
-});
 
 const include = {
   revision: {
@@ -41,12 +32,10 @@ const include = {
 
 const SessionCreateSchema = z.object({
   revision: z.string(),
-  respondent: z.string(),
   moderator: z.string(),
+  scheduled: z.string(),
+  respondent: z.string(),
   invite: z.boolean().default(false),
-  scheduled: z.string().transform((str) => {
-    return Temporal.Instant.from(str);
-  }),
 });
 
 const SessionUpdateSchema = z.object({
@@ -54,18 +43,9 @@ const SessionUpdateSchema = z.object({
   videoURL: z.string().optional(),
   moderator: z.string().optional(),
   recordingId: z.string().optional(),
-  started: z
-    .string()
-    .transform((str) => Temporal.Instant.from(str))
-    .optional(),
-  completed: z
-    .string()
-    .transform((str) => Temporal.Instant.from(str))
-    .optional(),
-  scheduled: z
-    .string()
-    .transform((str) => Temporal.Instant.from(str))
-    .optional(),
+  started: z.string().optional(),
+  completed: z.string().optional(),
+  scheduled: z.string().optional(),
 });
 
 const SessionQuerySchema = z
@@ -105,7 +85,7 @@ export const create = defineAction({
       throw new Error(`Unable to find participant "${sessionData.respondent}"`);
 
     if (!revision)
-      throw new Error(`Unable to find participant "${sessionData.respondent}"`);
+      throw new Error(`Unable to find revision "${sessionData.respondent}"`);
 
     let respondentComsId = respondent.comsId;
 
@@ -124,106 +104,27 @@ export const create = defineAction({
     }
 
     const moderator = await idClient.createUser();
+    const scheduled = new Date(sessionData.scheduled).toISOString();
 
-    const scheduled = new Date(
-      sessionData.scheduled.toZonedDateTimeISO("utc").epochMilliseconds,
-    ).toISOString();
-
-    const session = await orm.session.create({
-      data: {
-        scheduled,
-        createdBy: creator.email!,
-        invite: sessionData.invite,
-        moderator: sessionData.moderator,
-        revisionId: sessionData.revision,
-        respondentId: sessionData.respondent,
-        moderatorComsId: moderator.communicationUserId,
-      },
-      include,
-    });
-
-    const participantLink = new URL(
-      `/sessions/participate/${session.id}`,
-      import.meta.env.ORIGIN,
-    );
+    const session = await orm.session
+      .create({
+        data: {
+          scheduled,
+          createdBy: creator.email!,
+          invite: sessionData.invite,
+          moderator: sessionData.moderator,
+          revisionId: sessionData.revision,
+          respondentId: sessionData.respondent,
+          moderatorComsId: moderator.communicationUserId,
+        },
+        include,
+      })
+      .catch((err) => {
+        throw new Error(`Unable to save session due to: ${err.message}`);
+      });
 
     if (sessionData.invite) {
-      const event: ICSInvite = {
-        sequence: 1,
-        id: session.id,
-        attendee: respondent.email,
-        location: participantLink.href,
-        organizer: sessionData.moderator,
-        start: sessionData.scheduled.toZonedDateTimeISO("utc"),
-        duration: Temporal.Duration.from({ hours: 1 }),
-        summary: `${respondent.name || respondent.email} User test for "${revision.system.title}" by QUEST`,
-        description: `${revision.system.client.name} would like help determining the usability of the system ${revision.system.title}
-\n
-QUEST is a tool that helps conduct moderated user testing sessions that can be used to quantify the usability of
-a system. You will be joined by a moderator on a recorded video call. You will be shown a system on your screen
-and asked to perform a series of tasks and give your open and honest feedback on what you are experiencing.
-\n
-The session screen (and camera if you choose to enable it) will be recorded and analyzed to help ${revision.system.client.name}
-understand how to make ${revision.system.title} better!
-\n
-Your participation is greatly appreaciated! Should you have any questions or concerns, feel free to email the
-scheduled moderator at ${sessionData.moderator}
-\n
-Here is your private access link: ${participantLink.href}`,
-      };
-
-      const ics = createIcs(event);
-      const buffer = Buffer.from(ics, "utf8");
-      const inviteContent = buffer.toString("base64");
-
-      const poller = await emailClient.beginSend({
-        senderAddress: "donotreply@quest.hsalux.app",
-        content: {
-          subject:
-            "You have been invited to a moderated user test powered by QUEST",
-          html: `
-            <h1>Hello${respondent.name?.padStart(1, " ") ?? ""}!</h1>
-            <p>${revision.system.client.name} would like help determining the usability of the system <strong>${revision.system.title}</strong>.  QUEST is a tool that helps conduct moderated user testing sessions that can be used to quantify the usability of a system. You will be joined by a moderator on a recorded video call.  Your session is scheduled for ${displayFormatter.format(new Date(sessionData.scheduled.epochMilliseconds))} You will be shown a system on your screen and asked to perform a series of tasks and give your open and honest feedback on what you are experiencing.</p>
-            <p>The session screen (and camera if you choose to enable it) will be recorded and analyzed to help ${revision.system.client.name} understand how to make <strong>${revision.system.title}</strong> better!</p>
-            <p>Your participation is greatly appreaciated! Should you have any questions or concerns, feel free to email the scheduled moderator at <a href="mailto:${sessionData.moderator}">${sessionData.moderator}</a>.</p>
-            <p>Here is your <a href="${participantLink.href}">private access link</a></p>
-          `,
-          plainText: `
-Hello${respondent.name?.padStart(1, " ") ?? " "}!
-\n
-${revision.system.client.name} would like help determining the usability of the system ${revision.system.title}
-QUEST is a tool that helps conduct moderated user testing sessions that can be used to quantify the usability of
-a system. You will be joined by a moderator on a recorded video call. Your session is scheduled for ${displayFormatter.format(new Date(sessionData.scheduled.epochMilliseconds))} You will be shown a system on your screen
-and asked to perform a series of tasks and give your open and honest feedback on what you are experiencing.
-\n
-The session screen (and camera if you choose to enable it) will be recorded and analyzed to help ${revision.system.client.name}
-understand how to make ${revision.system.title} better!
-\n
-Your participation is greatly appreaciated! Should you have any questions or concerns, feel free to email the
-scheduled moderator at ${sessionData.moderator}
-\n
-Here is your private access link: ${participantLink.href}`,
-        },
-        recipients: {
-          to: [
-            {
-              address: sessionData.moderator,
-              displayName: "Moderator",
-            },
-            {
-              address: respondent.email,
-              displayName: respondent.name || respondent.email,
-            },
-          ],
-        },
-        attachments: [
-          {
-            name: "invite.ics",
-            contentType: "text/calendar",
-            contentInBase64: inviteContent,
-          },
-        ],
-      });
+      const poller = await emailClient.beginSend(sessionToEmail(session));
       await poller.pollUntilDone();
     }
 
@@ -303,21 +204,15 @@ export const updateById = defineAction({
     if (!session) throw new Error(`Unable to find session "${id}"`);
 
     const scheduled = data.scheduled
-      ? new Date(
-          data.scheduled.toZonedDateTimeISO("utc").epochMilliseconds,
-        ).toISOString()
+      ? new Date(data.scheduled).toISOString()
       : undefined;
 
     const started = data.started
-      ? new Date(
-          data.started.toZonedDateTimeISO("utc").epochMilliseconds,
-        ).toISOString()
+      ? new Date(data.started).toISOString()
       : undefined;
 
     const completed = data.completed
-      ? new Date(
-          data.completed.toZonedDateTimeISO("utc").epochMilliseconds,
-        ).toISOString()
+      ? new Date(data.completed).toISOString()
       : undefined;
 
     return await orm.session.update({

@@ -1,15 +1,20 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { msTeams } from "calendar-link";
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
   import { Temporal } from "@js-temporal/polyfill";
-  import { preventDefault } from "@/utilities/events";
   import type { Revisions } from "@/actions/revisions";
   import Actions from "@/components/app/actions.svelte";
   import type { Respondents } from "@/actions/respondents";
   import type { NewSessionSchema } from "@/actions/sessions";
   import { isBefore, timezone, now as getNow } from "@/utilities/time";
+  import {
+    preventDefault,
+    sessionToICSInvite,
+    sessionToTeamsEvent,
+  } from "@/utilities/events";
 
   onMount(async () => {
     await store.refreshMe();
@@ -184,6 +189,16 @@
       JSON.stringify(resp, null, 2),
     );
   }
+
+  async function saveToTeams() {
+    if (!store.sessions.active) return;
+    const event = sessionToICSInvite(store.sessions.active, true);
+
+    const anchor = document.createElement("a");
+    anchor.target = "_blank";
+    anchor.href = `data:text/calendar;base64,${event}`;
+    anchor.click();
+  }
 </script>
 
 <div
@@ -284,12 +299,13 @@
   </div>
   {#if store.sessions.active && !store.sessions.active.completed}
     <Actions
+      size="md"
+      onAdd={saveToTeams}
       editIcon="mdi:reschedule"
-      addIcon="mdi:calendar-star"
       editTip="Reschedule Session"
+      addIcon="mdi:microsoft-teams"
+      addTip="Save to Teams calendar"
       editForm={rescheduleSessionForm}
-      onAdd={console.log}
-      addTip="Download calendar invite"
       bind:editShown={showRescheduleSessionForm}
     />
   {/if}

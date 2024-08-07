@@ -5,7 +5,7 @@ export const getSession = defineAction({
   handler: async (_, context) => {
     const session = await serverSession(context.request);
 
-    if (!session?.user) return null;
+    if (!session?.user) return undefined;
     const user = session.user;
 
     const fname = user.name?.split(" ")[0] ?? "";
