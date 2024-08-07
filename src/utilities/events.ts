@@ -85,13 +85,14 @@ function generateDescription(
     minute: "numeric",
   });
 
-  return `${html ? "<h1>" : ""} Hello${session.respondent.name?.padStart(session.respondent.name.length + 1, " ") ?? ""}! ${html ? "</h1>" : ""}${!html ? "\\n" : ""}${html ? "<p>" : ""}${session.revision.system.client.name} would like help determining the usability of the system ${html ? "<strong>" : ""}${session.revision.system.title}${html ? "</strong>" : ""}.${!html ? "\\n" : ""}QUEST is a tool that helps conduct moderated user testing sessions that can be used to quantify the usability of a system.${!html ? "\\n" : ""}You will be joined by a moderator on a recorded video call. Your session is scheduled for ${displayFormatter.format(new Date(session.scheduled))}${!html ? "\\n" : ""}You will be shown a system on your screen and asked to perform a series of tasks and give your open and honest feedback on what you${!html ? "\\n" : ""}are experiencing.${html ? "</p>" : ""}${!html ? "\\n" : ""}${html ? "<p>" : ""}The session screen (and camera if you choose to enable it) will be recorded and analyzed to help ${session.revision.system.client.name}${!html ? "\\n" : ""}understand how to make ${html ? "<strong>" : ""}${session.revision.system.title}${html ? "</strong>" : ""} better!${html ? "</p>" : ""}${!html ? "\\n" : ""}${html ? "<p>" : ""}Your participation is greatly appreciated! Should you have any questions or concerns, feel free to email the${!html ? "\\n" : ""}scheduled moderator at ${html ? '<a href="mailto:${sessionData.moderator}">' : ""}${session.moderator}${html ? "</a>.</p>" : "."}${!html ? "\\n" : ""}${html ? "<p>" : ""}Here is your ${html ? '<a href="' + link + '">private access link</a>' : "private access link: " + link} ${html ? "</a></p>" : ""}${!html ? "\\n" : ""}`;
+  return `${html ? "<h1>" : ""} Hello${session.respondent.name?.padStart(session.respondent.name.length + 1, " ") ?? ""}! ${html ? "</h1>" : ""}${!html ? "\\n" : ""}${html ? "<p>" : ""}${session.revision.system.client.name} would like help determining the usability of the system ${html ? "<strong>" : ""}${session.revision.system.title}${html ? "</strong>" : ""}.${!html ? "\\n" : ""} QUEST is a tool that helps conduct moderated user testing sessions that can be used to quantify the usability of a system.${!html ? "\\n" : ""}You will be joined by a moderator on a recorded video call. Your session is scheduled for ${displayFormatter.format(new Date(session.scheduled))}. ${!html ? "\\n" : ""}You will be shown a system on your screen and asked to perform a series of tasks and give your open and honest feedback on what you${!html ? "\\n" : ""}are experiencing.${html ? "</p>" : ""}${!html ? "\\n" : ""}${html ? "<p>" : ""}The session screen (and camera if you choose to enable it) will be recorded and analyzed to help ${session.revision.system.client.name}${!html ? "\\n" : ""}understand how to make ${html ? "<strong>" : ""}${session.revision.system.title}${html ? "</strong>" : ""} better!${html ? "</p>" : ""}${!html ? "\\n" : ""}${html ? "<p>" : ""}Your participation is greatly appreciated! Should you have any questions or concerns, feel free to email the${!html ? "\\n" : ""}scheduled moderator at ${html ? '<a href="mailto:${sessionData.moderator}">' : ""}${session.moderator}${html ? "</a>.</p>" : "."}${!html ? "\\n" : ""}${html ? "<p>" : ""}Here is your ${html ? '<a href="' + link + '">private access link</a>' : "private access link: " + link} ${html ? "</a></p>" : ""}${!html ? "\\n" : ""}`;
 }
 
 export function sessionToICSInvite(
   session: SessionById | SessionFromAll,
   base64 = false,
   sequence = 1,
+  cancel = false,
 ) {
   const start = new Date(session.scheduled);
   const participantLink = generateLink(session.id);
@@ -107,6 +108,7 @@ PRODID:-//Hitachi Solutions//QUEST//EN
 BEGIN:VEVENT
 UID:${session.id}
 SEQUENCE:${sequence}
+METHOD:${cancel ? "CANCEL" : "REQUEST"}
 DTSTAMP:${formatUTCDateToISO(new Date())}
 DTSTART:${formatUTCDateToISO(start)}
 DTEND:${formatUTCDateToISO(endDate)}
@@ -115,6 +117,7 @@ URL:${participantLink.href}
 DESCRIPTION:${generateDescription(session, participantLink.href)}
 ORGANIZER;CN=${session.moderator};RSVP=TRUE:mailto:${session.moderator}
 ATTENDEE;CN=${session.respondent.email};RSVP=TRUE:mailto:${session.respondent.email}
+STATUS:${cancel ? "CANCELLED" : "TENTATIVE"}
 END:VEVENT
 END:VCALENDAR`;
 
@@ -143,18 +146,34 @@ export function sessionToTeamsEvent(
 
 export function sessionToEmail(
   session: SessionFromAll | SessionById,
+  type: "new" | "update" | "cancel" = "new",
 ): EmailMessage {
+  const invite = sessionToICSInvite(
+    session,
+    true,
+    session.version,
+    type === "cancel",
+  );
+
   const participantLink = generateLink(session.id);
-  const invite = sessionToICSInvite(session, true);
-  const buffer = Buffer.from(invite, "utf-8");
-  const inviteContent = buffer.toString("base64");
 
   return {
     senderAddress: "donotreply@quest.hsalux.app",
     content: {
-      subject: generateTitle(session, true),
-      html: generateDescription(session, participantLink.href, true),
-      plainText: generateDescription(session, participantLink.href, false),
+      subject:
+        (type === "update"
+          ? `UPDATE: `
+          : type === "cancel"
+            ? "CANCELLED: "
+            : "") + generateTitle(session, true),
+      html:
+        type === "cancel"
+          ? "<p>This session has been cancelled.</p><br/>"
+          : generateDescription(session, participantLink.href, true),
+      plainText:
+        type === "cancel"
+          ? "This session has been cancelled.\\n"
+          : generateDescription(session, participantLink.href, false),
     },
     recipients: {
       to: [
@@ -166,9 +185,9 @@ export function sessionToEmail(
     },
     attachments: [
       {
-        name: "invite.ics",
+        contentInBase64: invite,
         contentType: "text/calendar",
-        contentInBase64: inviteContent,
+        name: "quest-session-invite.ics",
       },
     ],
   };

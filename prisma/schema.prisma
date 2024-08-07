@@ -168,6 +168,7 @@ model Session {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
+  version   Int      @default(1)
 
   scheduled DateTime  @db.Timestamptz(3)
   started   DateTime? @db.Timestamptz(3)

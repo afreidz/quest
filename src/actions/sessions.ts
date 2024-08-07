@@ -199,7 +199,7 @@ export const updateById = defineAction({
     data: SessionUpdateSchema,
   }),
   handler: async ({ id, data }) => {
-    const session = await orm.session.findFirst({ where: { id } });
+    const session = await orm.session.findFirst({ where: { id }, include });
 
     if (!session) throw new Error(`Unable to find session "${id}"`);
 
@@ -215,15 +215,46 @@ export const updateById = defineAction({
       ? new Date(data.completed).toISOString()
       : undefined;
 
-    return await orm.session.update({
+    const updated = await orm.session.update({
       where: { id },
       data: {
         ...data,
         started,
         scheduled,
         completed,
+        version: (session.version || 0) + 1,
       },
+      include,
     });
+
+    if (updated.invite) {
+      const poller = await emailClient.beginSend(
+        sessionToEmail(updated, "update"),
+      );
+      await poller.pollUntilDone();
+    }
+
+    return updated;
+  },
+});
+
+export const deleteById = defineAction({
+  input: z.string(),
+  handler: async (id) => {
+    const session = await orm.session.findFirst({ where: { id }, include });
+
+    if (!session) throw new Error(`Unable to find session "${id}"`);
+
+    const resp = await orm.session.delete({ where: { id } });
+
+    if (session.invite) {
+      const poller = await emailClient.beginSend(
+        sessionToEmail(session, "cancel"),
+      );
+      await poller.pollUntilDone();
+    }
+
+    return resp;
   },
 });
 

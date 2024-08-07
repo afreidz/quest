@@ -1,3 +1,7 @@
+<script lang="ts" context="module">
+  export const DEFAULT_CONFIRM_TEXT = "YES";
+</script>
+
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { preventDefault } from "@/utilities/events";
@@ -18,8 +22,8 @@
     onsubmit,
     placeholder,
     error = true,
-    confirmText = "YES",
     class: className = "",
+    confirmText = DEFAULT_CONFIRM_TEXT,
   }: Props = $props();
 
   function handleSumbit() {
@@ -30,8 +34,8 @@
 
 <form
   method="dialog"
-  class="{className ?? ''}"
-  onsubmit="{preventDefault(handleSumbit)}"
+  class={className ?? ""}
+  onsubmit={preventDefault(handleSumbit)}
 >
   <div class="prose max-w-none font-normal">
     <p>
@@ -43,13 +47,13 @@
           <input
             required
             type="text"
-            class:input-error="{error}"
+            class:input-error={error}
             id="confirm_delete_client"
-            bind:value="{confirmTextValue}"
+            bind:value={confirmTextValue}
             class="input input-error w-full max-w-xs bg-base-100/10"
-            placeholder="{placeholder !== undefined
+            placeholder={placeholder !== undefined
               ? placeholder
-              : `Type "${confirmText}" to confirm`}"
+              : `Type "${confirmText}" to confirm`}
           />
         </label>
       </p>
@@ -57,6 +61,9 @@
   </div>
   <div class="modal-action">
     <button type="submit" class="btn btn-ghost">Ok</button>
-    <button onclick="{preventDefault(handleSumbit)}" class="btn btn-secondary text-neutral">Cancel</button>
+    <button
+      onclick={preventDefault(handleSumbit)}
+      class="btn btn-secondary text-neutral">Cancel</button
+    >
   </div>
 </form>

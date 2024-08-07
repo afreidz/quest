@@ -1,20 +1,19 @@
 <script lang="ts">
+  import ConfirmForm, {
+    DEFAULT_CONFIRM_TEXT,
+  } from "@/components/app/confirm-form.svelte";
+
   import { onMount } from "svelte";
-  import { msTeams } from "calendar-link";
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
+  import { timezone } from "@/utilities/time";
   import messages from "@/stores/messages.svelte";
   import { Temporal } from "@js-temporal/polyfill";
   import type { Revisions } from "@/actions/revisions";
   import Actions from "@/components/app/actions.svelte";
   import type { Respondents } from "@/actions/respondents";
   import type { NewSessionSchema } from "@/actions/sessions";
-  import { isBefore, timezone, now as getNow } from "@/utilities/time";
-  import {
-    preventDefault,
-    sessionToICSInvite,
-    sessionToTeamsEvent,
-  } from "@/utilities/events";
+  import { preventDefault, sessionToICSInvite } from "@/utilities/events";
 
   onMount(async () => {
     await store.refreshMe();
@@ -46,6 +45,7 @@
 
   let loading = $state(false);
   let suggestionText = $state("");
+  let showConfirmCancel = $state(false);
   let showCreateSessionForm: boolean = $state(false);
   let showRescheduleSessionForm: boolean = $state(false);
   let chosenTime: string = $state(timeFormatter.format(now));
@@ -190,13 +190,36 @@
     );
   }
 
+  async function deleteSession(returnValue?: string) {
+    showConfirmCancel = false;
+
+    if (!returnValue || returnValue !== DEFAULT_CONFIRM_TEXT) return;
+    if (!store.sessions.active) return;
+
+    loading = true;
+    const resp = await actions.sessions
+      .deleteById(store.sessions.active.id)
+      .catch((err) => {
+        messages.error(err.message, err.detail);
+      });
+    loading = false;
+    store.setActiveSession(null);
+
+    if (!resp) return;
+
+    await store.refreshAllSessions();
+    messages.success(`Sesion was deleted.`, JSON.stringify(resp, null, 2));
+  }
+
   async function saveToTeams() {
     if (!store.sessions.active) return;
-    const event = sessionToICSInvite(store.sessions.active, true);
+    const event = sessionToICSInvite(store.sessions.active);
 
     const anchor = document.createElement("a");
-    anchor.target = "_blank";
-    anchor.href = `data:text/calendar;base64,${event}`;
+    anchor.href = URL.createObjectURL(
+      new Blob([event], { type: "text/calendar" }),
+    );
+    anchor.download = `quest-session-with-${store.sessions.active.respondent.email}.ics`;
     anchor.click();
   }
 </script>
@@ -302,11 +325,21 @@
       size="md"
       onAdd={saveToTeams}
       editIcon="mdi:reschedule"
+      deleteTip="Cancel Session"
       editTip="Reschedule Session"
       addIcon="mdi:microsoft-teams"
       addTip="Save to Teams calendar"
       editForm={rescheduleSessionForm}
+      deleteForm={cancelOrDeleteSession}
+      bind:deleteShown={showConfirmCancel}
       bind:editShown={showRescheduleSessionForm}
+    />
+  {:else if store.sessions.active && store.sessions.active.completed}
+    <Actions
+      size="md"
+      deleteTip="Cancel Session"
+      deleteForm={cancelOrDeleteSession}
+      bind:deleteShown={showConfirmCancel}
     />
   {/if}
 </div>
@@ -437,9 +470,7 @@
         <div class="flex flex-col flex-1 gap-8">
           <div class="form-control w-full">
             <label class="label cursor-pointer">
-              <span class="label-text"
-                >Send invites to respondent and moderator</span
-              >
+              <span class="label-text">Send invite to respondent email</span>
               <input
                 type="checkbox"
                 bind:checked={newSession.invite}
@@ -504,6 +535,16 @@
       <button type="submit" class="btn btn-primary">Reschedule Session</button>
     </footer>
   </form>
+{/snippet}
+
+{#snippet cancelOrDeleteSession()}
+  <ConfirmForm onsubmit={deleteSession}>
+    Are you sure you want to {store.sessions.active?.completed
+      ? "delete"
+      : "cancel"} this session?
+    {#if store.sessions.active?.completed}You will lose all systems and scores
+      associated with it. This is not reversible!{/if}
+  </ConfirmForm>
 {/snippet}
 
 <style lang="postcss">
