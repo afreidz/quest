@@ -270,6 +270,7 @@ class QuestGlobalStore {
     }
 
     this._sessions.active = session;
+    this.setSessionRecording(null);
   }
 
   async refreshActiveSession() {

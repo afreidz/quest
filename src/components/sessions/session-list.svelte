@@ -373,6 +373,7 @@
         controls
         bind:this={video}
         class="w-full max-w-[1280px] aspect-video"
+        class:hidden={!store.sessions.activeRecording.videoURL}
       ></video>
     {/if}
   </div>
