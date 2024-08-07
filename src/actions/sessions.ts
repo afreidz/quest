@@ -27,7 +27,9 @@ const include = {
       },
     },
   },
+  recordings: true,
   respondent: true,
+  transcripts: true,
 };
 
 const SessionCreateSchema = z.object({

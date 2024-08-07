@@ -14,21 +14,21 @@ type EntityState<T> = {
 };
 
 class QuestGlobalStore {
-  _me: Partial<Awaited<User>> | null = $state();
+  _me: Partial<User> | null = $state();
 
-  _clients: EntityState<Awaited<Clients>[number]> = $state({
+  _clients: EntityState<Clients[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _systems: EntityState<Awaited<Systems>[number]> = $state({
+  _systems: EntityState<Systems[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _revisions: EntityState<Awaited<Revisions>[number]> & {
+  _revisions: EntityState<Revisions[number]> & {
     includeBenchmark: boolean;
     compared: Awaited<Revisions>[number] | null;
   } = $state({
@@ -39,16 +39,19 @@ class QuestGlobalStore {
     includeBenchmark: true,
   });
 
-  _surveys: EntityState<Awaited<Surveys>[number]> = $state({
+  _surveys: EntityState<Surveys[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _sessions: EntityState<Awaited<Sessions>[number]> = $state({
+  _sessions: EntityState<Sessions[number]> & {
+    activeRecording: Sessions[number]["recordings"][number] | null;
+  } = $state({
     all: [],
     active: null,
     unsaved: false,
+    activeRecording: null,
   });
 
   get me() {
@@ -284,6 +287,14 @@ class QuestGlobalStore {
       s.id === refreshed.data?.id ? refreshed.data : s,
     );
     this._sessions.active = refreshed.data;
+  }
+
+  setSessionRecording(recording: typeof this.sessions.activeRecording) {
+    if (!recording) {
+      this._sessions.activeRecording = null;
+      return;
+    }
+    this._sessions.activeRecording = recording;
   }
 }
 

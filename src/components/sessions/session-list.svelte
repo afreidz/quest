@@ -46,6 +46,7 @@
   let loading = $state(false);
   let suggestionText = $state("");
   let showConfirmCancel = $state(false);
+  let video: HTMLVideoElement | null = $state(null);
   let showCreateSessionForm: boolean = $state(false);
   let showRescheduleSessionForm: boolean = $state(false);
   let chosenTime: string = $state(timeFormatter.format(now));
@@ -94,6 +95,25 @@
   $effect(() => {
     if (store.me?.email && !newSession.moderator)
       newSession.moderator = store.me.email;
+  });
+
+  $effect(() => {
+    if (video && store.sessions.activeRecording?.videoURL) {
+      actions.tokens.getBlobToken().then((resp) => {
+        if (video && resp.data)
+          video.src = `${store.sessions.activeRecording?.videoURL}?${resp.data.toString()}`;
+      });
+    }
+  });
+
+  $effect(() => {
+    if (
+      store.sessions.active &&
+      !store.sessions.activeRecording &&
+      store.sessions.active.recordings[0]
+    ) {
+      store.setSessionRecording(store.sessions.active.recordings[0]);
+    }
   });
 
   async function scheduleSession() {
@@ -304,44 +324,58 @@
   </div>
 </div>
 
-<div class="flex-1 p-4 overflow-auto flex justify-between">
-  <div class="join">
-    {#if store.sessions.active}
-      <a
-        target="_blank"
-        class="btn btn-ghost join-item"
-        href={`/sessions/participate/${store.sessions.active.id}`}
-        >Open Participant Page</a
-      >
-      <a
-        target="_blank"
-        class="btn btn-ghost join-item"
-        href={`/sessions/host/${store.sessions.active.id}`}>Open Host Page</a
-      >
+<div class="flex-1 p-4 overflow-auto flex flex-col justify-between">
+  <header class="flex w-full justify-between">
+    {#if store.sessions.active && !store.sessions.active.completed}
+      <div class="join">
+        {#if store.sessions.active}
+          <a
+            target="_blank"
+            class="btn btn-ghost join-item"
+            href={`/sessions/participate/${store.sessions.active.id}`}
+            >Open Participant Page</a
+          >
+          <a
+            target="_blank"
+            class="btn btn-ghost join-item"
+            href={`/sessions/host/${store.sessions.active.id}`}
+            >Open Host Page</a
+          >
+        {/if}
+      </div>
+      <Actions
+        size="md"
+        onAdd={saveToTeams}
+        editIcon="mdi:reschedule"
+        deleteTip="Cancel Session"
+        editTip="Reschedule Session"
+        addIcon="mdi:microsoft-teams"
+        addTip="Save to Teams calendar"
+        editForm={rescheduleSessionForm}
+        deleteForm={cancelOrDeleteSession}
+        bind:deleteShown={showConfirmCancel}
+        bind:editShown={showRescheduleSessionForm}
+      />
+    {:else if store.sessions.active && store.sessions.active.completed}
+      <div class="flex-1"></div>
+      <Actions
+        size="md"
+        deleteTip="Cancel Session"
+        deleteForm={cancelOrDeleteSession}
+        bind:deleteShown={showConfirmCancel}
+      />
+    {/if}
+  </header>
+  <div class="flex-1 w-full flex items-center justify-center">
+    {#if store.sessions.activeRecording}
+      <!-- svelte-ignore a11y_media_has_caption -->
+      <video
+        controls
+        bind:this={video}
+        class="w-full max-w-[1280px] aspect-video"
+      ></video>
     {/if}
   </div>
-  {#if store.sessions.active && !store.sessions.active.completed}
-    <Actions
-      size="md"
-      onAdd={saveToTeams}
-      editIcon="mdi:reschedule"
-      deleteTip="Cancel Session"
-      editTip="Reschedule Session"
-      addIcon="mdi:microsoft-teams"
-      addTip="Save to Teams calendar"
-      editForm={rescheduleSessionForm}
-      deleteForm={cancelOrDeleteSession}
-      bind:deleteShown={showConfirmCancel}
-      bind:editShown={showRescheduleSessionForm}
-    />
-  {:else if store.sessions.active && store.sessions.active.completed}
-    <Actions
-      size="md"
-      deleteTip="Cancel Session"
-      deleteForm={cancelOrDeleteSession}
-      bind:deleteShown={showConfirmCancel}
-    />
-  {/if}
 </div>
 
 {#snippet createSessionForm()}
