@@ -99,7 +99,7 @@
 
   $effect(() => {
     if (video && store.sessions.activeRecording?.videoURL) {
-      actions.tokens.getBlobToken().then((resp) => {
+      actions.tokens.getBlobToken({}).then((resp) => {
         if (resp.error) console.error(resp.error);
         if (video && resp.data)
           video.src = `${store.sessions.activeRecording?.videoURL}?${resp.data.toString()}`;
