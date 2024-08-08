@@ -1,54 +1,32 @@
 <script lang="ts">
-  import ConfirmForm, {
-    DEFAULT_CONFIRM_TEXT,
-  } from "@/components/app/confirm-form.svelte";
-
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
-  import { timezone } from "@/utilities/time";
   import messages from "@/stores/messages.svelte";
   import { Temporal } from "@js-temporal/polyfill";
+  import { preventDefault } from "@/utilities/events";
   import type { Revisions } from "@/actions/revisions";
   import Actions from "@/components/app/actions.svelte";
   import type { Respondents } from "@/actions/respondents";
   import type { NewSessionSchema } from "@/actions/sessions";
-  import { preventDefault, sessionToICSInvite } from "@/utilities/events";
+  import SessionDetails from "@/components/sessions/session-details.svelte";
+  import {
+    timezone,
+    timeFormatter,
+    dateFormatter,
+    displayFormatter,
+  } from "@/utilities/time";
 
   onMount(async () => {
     await store.refreshMe();
     await store.refreshAllSessions();
   });
 
-  // Use "en-ca" so that the date is formatted YYYY-MM-DD
-  const dateFormatter = new Intl.DateTimeFormat("en-ca", {
-    day: "2-digit",
-    year: "numeric",
-    month: "2-digit",
-  });
-
-  const timeFormatter = new Intl.DateTimeFormat("en-us", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const displayFormatter = new Intl.DateTimeFormat("en-us", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-  });
-
   const now = Temporal.Now.instant().epochMilliseconds;
 
   let loading = $state(false);
   let suggestionText = $state("");
-  let showConfirmCancel = $state(false);
-  let video: HTMLVideoElement | null = $state(null);
   let showCreateSessionForm: boolean = $state(false);
-  let showRescheduleSessionForm: boolean = $state(false);
   let chosenTime: string = $state(timeFormatter.format(now));
   let chosenDate: string = $state(dateFormatter.format(now));
 
@@ -93,18 +71,24 @@
   });
 
   $effect(() => {
-    if (store.me?.email && !newSession.moderator)
-      newSession.moderator = store.me.email;
+    if (window.location.hash) {
+      const session = store.sessions.all.find(
+        (c) => c.id === window.location.hash.replace("#", ""),
+      );
+      if (session) store.setActiveSession(session);
+    } else {
+      store.setActiveClient(null);
+    }
   });
 
   $effect(() => {
-    if (video && store.sessions.activeRecording?.videoURL) {
-      actions.tokens.getBlobToken({}).then((resp) => {
-        if (resp.error) console.error(resp.error);
-        if (video && resp.data)
-          video.src = `${store.sessions.activeRecording?.videoURL}?${resp.data.toString()}`;
-      });
-    }
+    if (store.sessions.active)
+      window.history.pushState({}, "", `#${store.sessions.active.id}`);
+  });
+
+  $effect(() => {
+    if (store.me?.email && !newSession.moderator)
+      newSession.moderator = store.me.email;
   });
 
   $effect(() => {
@@ -163,86 +147,6 @@
       JSON.stringify(resp, null, 2),
     );
   }
-
-  async function rescheduleSession() {
-    showRescheduleSessionForm = false;
-
-    if (!store.sessions.active?.id) return;
-
-    loading = true;
-
-    const scheduled = Temporal.PlainDateTime.from(
-      `${chosenDate}T${chosenTime}:00`,
-    )
-      .toZonedDateTime(timezone)
-      .toInstant()
-      .toString();
-
-    const resp = await actions.sessions.updateById({
-      id: store.sessions.active.id,
-      data: {
-        scheduled,
-      },
-    });
-
-    if (resp.error || !resp.data) {
-      return messages.error("Unable to create session", resp.error);
-    }
-
-    loading = false;
-
-    const now = Temporal.Now.instant().epochMilliseconds;
-    chosenTime = timeFormatter.format(now);
-    chosenDate = dateFormatter.format(now);
-
-    if (!resp) return;
-
-    await store.refreshAllSessions();
-
-    const sessionDateTime = new Date(
-      Temporal.Instant.from(resp.data.scheduled as any).toZonedDateTimeISO(
-        timezone,
-      ).epochMilliseconds,
-    );
-
-    messages.success(
-      `Session rescheduled for ${displayFormatter.format(sessionDateTime)}`,
-      JSON.stringify(resp, null, 2),
-    );
-  }
-
-  async function deleteSession(returnValue?: string) {
-    showConfirmCancel = false;
-
-    if (!returnValue || returnValue !== DEFAULT_CONFIRM_TEXT) return;
-    if (!store.sessions.active) return;
-
-    loading = true;
-    const resp = await actions.sessions
-      .deleteById(store.sessions.active.id)
-      .catch((err) => {
-        messages.error(err.message, err.detail);
-      });
-    loading = false;
-    store.setActiveSession(null);
-
-    if (!resp) return;
-
-    await store.refreshAllSessions();
-    messages.success(`Sesion was deleted.`, JSON.stringify(resp, null, 2));
-  }
-
-  async function saveToTeams() {
-    if (!store.sessions.active) return;
-    const event = sessionToICSInvite(store.sessions.active);
-
-    const anchor = document.createElement("a");
-    anchor.href = URL.createObjectURL(
-      new Blob([event], { type: "text/calendar" }),
-    );
-    anchor.download = `quest-session-with-${store.sessions.active.respondent.email}.ics`;
-    anchor.click();
-  }
 </script>
 
 <div
@@ -266,9 +170,12 @@
     {#if !loading}
       {#each store.sessions.all as session}
         {@const scheduled = Temporal.Instant.from(
-          session.scheduled.toString(),
+          session.started
+            ? session.started.toString()
+            : session.scheduled.toString(),
         ).toZonedDateTimeISO(timezone)}
-        <button
+        <a
+          href={`#${session.id}`}
           class:tooltip={store.sessions.unsaved}
           class:highlight={store.sessions.active?.id === session.id}
           data-tip={"You have unsaved changes to the current session!"}
@@ -319,66 +226,13 @@
               >
             </div>
           </div>
-        </button>
+        </a>
       {/each}
     {/if}
   </div>
 </div>
 
-<div class="flex-1 p-4 overflow-auto flex flex-col justify-between">
-  <header class="flex w-full justify-between">
-    {#if store.sessions.active && !store.sessions.active.completed}
-      <div class="join">
-        {#if store.sessions.active}
-          <a
-            target="_blank"
-            class="btn btn-ghost join-item"
-            href={`/sessions/participate/${store.sessions.active.id}`}
-            >Open Participant Page</a
-          >
-          <a
-            target="_blank"
-            class="btn btn-ghost join-item"
-            href={`/sessions/host/${store.sessions.active.id}`}
-            >Open Host Page</a
-          >
-        {/if}
-      </div>
-      <Actions
-        size="md"
-        onAdd={saveToTeams}
-        editIcon="mdi:reschedule"
-        deleteTip="Cancel Session"
-        editTip="Reschedule Session"
-        addIcon="mdi:microsoft-teams"
-        addTip="Save to Teams calendar"
-        editForm={rescheduleSessionForm}
-        deleteForm={cancelOrDeleteSession}
-        bind:deleteShown={showConfirmCancel}
-        bind:editShown={showRescheduleSessionForm}
-      />
-    {:else if store.sessions.active && store.sessions.active.completed}
-      <div class="flex-1"></div>
-      <Actions
-        size="md"
-        deleteTip="Cancel Session"
-        deleteForm={cancelOrDeleteSession}
-        bind:deleteShown={showConfirmCancel}
-      />
-    {/if}
-  </header>
-  <div class="flex-1 w-full flex items-center justify-center">
-    {#if store.sessions.activeRecording}
-      <!-- svelte-ignore a11y_media_has_caption -->
-      <video
-        controls
-        bind:this={video}
-        class="w-full max-w-[1280px] aspect-video"
-        class:hidden={!store.sessions.activeRecording.videoURL}
-      ></video>
-    {/if}
-  </div>
-</div>
+<SessionDetails />
 
 {#snippet createSessionForm()}
   <form
@@ -528,59 +382,6 @@
       </div>
     {/if}
   </form>
-{/snippet}
-
-{#snippet rescheduleSessionForm()}
-  <form
-    onsubmit={preventDefault(rescheduleSession)}
-    class="flex-1 bg-base-100/10 border rounded-box flex flex-col font-normal overflow-clip"
-  >
-    <section class="flex gap-8 w-full flex-none p-4">
-      <label class="form-control flex-1">
-        <div class="label">
-          <span class="label-text">Date</span>
-          <span class="label-text-alt italic">Required</span>
-        </div>
-        <input
-          required
-          type="date"
-          bind:value={chosenDate}
-          class="input input-bordered bg-neutral w-full accent-primary"
-        />
-      </label>
-      <label class="form-control flex-1">
-        <div class="label">
-          <span class="label-text">Time</span>
-          <span class="label-text-alt italic">Required</span>
-        </div>
-        <input
-          required
-          type="time"
-          bind:value={chosenTime}
-          class="input input-bordered bg-neutral w-full accent-primary"
-        />
-      </label>
-    </section>
-    <footer class="flex justify-end gap-4 p-4">
-      <button
-        class="btn btn-ghost"
-        onclick={preventDefault(() => (showCreateSessionForm = false))}
-      >
-        Cancel
-      </button>
-      <button type="submit" class="btn btn-primary">Reschedule Session</button>
-    </footer>
-  </form>
-{/snippet}
-
-{#snippet cancelOrDeleteSession()}
-  <ConfirmForm onsubmit={deleteSession}>
-    Are you sure you want to {store.sessions.active?.completed
-      ? "delete"
-      : "cancel"} this session?
-    {#if store.sessions.active?.completed}You will lose all systems and scores
-      associated with it. This is not reversible!{/if}
-  </ConfirmForm>
 {/snippet}
 
 <style lang="postcss">

@@ -1,3 +1,6 @@
+import { Temporal } from "@js-temporal/polyfill";
+import { getInstant } from "./time";
+
 export async function combineCameraStreams(
   participant: MediaStream | MediaProvider,
   host: MediaStream | MediaProvider,
@@ -62,4 +65,72 @@ export async function combineCameraStreams(
 
   // Return the canvas's stream
   return canvas.captureStream();
+}
+
+export function getVideoDuration(url: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.src = url;
+    video.preload = "metadata";
+
+    video.addEventListener("loadedmetadata", () => {
+      if (video.duration === Infinity) {
+        video.currentTime = Number.MAX_SAFE_INTEGER;
+        video.ontimeupdate = () => {
+          video.ontimeupdate = null;
+          resolve(video.duration);
+          video.currentTime = 0;
+        };
+      } else {
+        resolve(video.duration);
+      }
+    });
+
+    video.addEventListener("error", () => {
+      reject(new Error(`Failed to load video: ${url}`));
+    });
+  });
+}
+
+interface RecordingObject {
+  [key: string]: any;
+  videoURL: string | null;
+}
+
+interface RecordingSchedule {
+  start: Temporal.ZonedDateTime;
+  end: Temporal.ZonedDateTime;
+}
+
+export async function getRecordingSchedule<T extends RecordingObject>(
+  start: Date,
+  videos: T[],
+  token: string | null = "",
+) {
+  const startTime = getInstant(start.toString());
+  let currentTime = startTime;
+
+  const result: { recording: T; schedule: RecordingSchedule }[] = [];
+
+  for (const video of videos) {
+    const durationSeconds = await getVideoDuration(
+      `${video.videoURL}?${token}`,
+    );
+
+    const endTime = currentTime.add(
+      Temporal.Duration.from({ seconds: Math.round(durationSeconds) }),
+    );
+
+    result.push({
+      recording: video,
+      schedule: {
+        end: endTime,
+        start: currentTime,
+      },
+    });
+
+    currentTime = endTime;
+  }
+
+  return result;
 }

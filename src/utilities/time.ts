@@ -25,3 +25,31 @@ export function formatUTCDateToISO(date: Date): string {
 
   return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
 }
+
+// Use "en-ca" so that the date is formatted YYYY-MM-DD
+export const dateFormatter = new Intl.DateTimeFormat("en-ca", {
+  day: "2-digit",
+  year: "numeric",
+  month: "2-digit",
+});
+
+export const timeFormatter = new Intl.DateTimeFormat("en-us", {
+  hour12: false,
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+export const displayTimeFormatter = new Intl.DateTimeFormat("en-us", {
+  hour12: true,
+  hour: "numeric",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+export const displayFormatter = new Intl.DateTimeFormat("en-us", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+});
