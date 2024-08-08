@@ -158,9 +158,9 @@
         class="menu bg-neutral border-l text-base-content min-h-full min-w-[500px] max-w-[25vw] w-full p-0 relative flex flex-col"
       >
         <CardHeader
-          icon="tabler:live-photo"
           pull={sessionActions}
-          class="sticky top-0 left-0 right-0 flex-none"
+          icon="tabler:live-photo"
+          class="sticky top-0 left-0 right-0 flex-none z-[1] bg-neutral"
         >
           <span>
             Session with {session.respondent.name || session.respondent.email}
