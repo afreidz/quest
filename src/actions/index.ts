@@ -6,6 +6,7 @@ import * as surveys from "./surveys";
 import * as sessions from "./sessions";
 import * as revisions from "./revisions";
 import * as utterances from "./utterance";
+import * as recordings from "./recordings";
 import * as respondents from "./respondents";
 
 export const server = {
@@ -39,5 +40,8 @@ export const server = {
   },
   tokens: {
     ...tokens,
+  },
+  recording: {
+    ...recordings,
   },
 };

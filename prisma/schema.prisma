@@ -201,7 +201,9 @@ model SessionRecording {
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  videoURL String?
+  videoURL             String?
+  started              DateTime
+  TranscriptionSegment TranscriptionSegment[]
 }
 
 model KeyMoment {
@@ -216,8 +218,10 @@ model KeyMoment {
 }
 
 model TranscriptionSegment {
-  id   String   @id @default(uuid())
-  time DateTime @default(now()) @db.Timestamptz(3)
+  id String @id @default(uuid())
+
+  offset   Int
+  duration Int
 
   text      String
   moderator Boolean?
@@ -227,6 +231,9 @@ model TranscriptionSegment {
 
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  recordingId String
+  recording   SessionRecording @relation(fields: [recordingId], references: [id])
 }
 
 // model SessionClip {

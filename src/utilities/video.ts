@@ -1,5 +1,6 @@
+import { getInstant } from "@/utilities/time";
 import { Temporal } from "@js-temporal/polyfill";
-import { getInstant } from "./time";
+import type { Recordings } from "@/actions/recordings";
 
 export async function combineCameraStreams(
   participant: MediaStream | MediaProvider,
@@ -73,7 +74,7 @@ export function getVideoDuration(url: string): Promise<number> {
     video.src = url;
     video.preload = "metadata";
 
-    video.addEventListener("loadedmetadata", () => {
+    video.addEventListener("loadedmetadata", (e) => {
       if (video.duration === Infinity) {
         video.currentTime = Number.MAX_SAFE_INTEGER;
         video.ontimeupdate = () => {
@@ -92,44 +93,48 @@ export function getVideoDuration(url: string): Promise<number> {
   });
 }
 
-interface RecordingObject {
-  [key: string]: any;
-  videoURL: string | null;
-}
-
 interface RecordingSchedule {
   start: Temporal.ZonedDateTime;
   end: Temporal.ZonedDateTime;
 }
 
-export async function getRecordingSchedule<T extends RecordingObject>(
-  start: Date,
-  videos: T[],
+export async function getRecordingSchedule(
+  recordings: Recordings,
   token: string | null = "",
-) {
-  const startTime = getInstant(start.toString());
-  let currentTime = startTime;
+): Promise<
+  {
+    recording: Recordings[number];
+    schedule: {
+      start: Temporal.ZonedDateTime;
+      end: Temporal.ZonedDateTime;
+    };
+  }[]
+> {
+  const result: {
+    recording: Recordings[number];
+    schedule: RecordingSchedule;
+  }[] = [];
 
-  const result: { recording: T; schedule: RecordingSchedule }[] = [];
+  for (const recording of recordings) {
+    const startTime = getInstant(recording.started.toString());
 
-  for (const video of videos) {
     const durationSeconds = await getVideoDuration(
-      `${video.videoURL}?${token}`,
+      `${recording.videoURL}?${token}`,
     );
 
-    const endTime = currentTime.add(
-      Temporal.Duration.from({ seconds: Math.round(durationSeconds) }),
+    const endTime = startTime.add(
+      Temporal.Duration.from({
+        milliseconds: Math.ceil(durationSeconds * 1000),
+      }),
     );
 
     result.push({
-      recording: video,
+      recording: recording,
       schedule: {
         end: endTime,
-        start: currentTime,
+        start: startTime,
       },
     });
-
-    currentTime = endTime;
   }
 
   return result;

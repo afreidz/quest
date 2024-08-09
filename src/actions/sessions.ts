@@ -23,7 +23,7 @@ const include = {
   revision: { include: revisionIncludes },
   recordings: true,
   respondent: true,
-  transcripts: true,
+  transcripts: { include: { recording: true } },
 };
 
 const SessionCreateSchema = z.object({
@@ -279,12 +279,24 @@ export const startRecording = defineAction({
       },
     });
 
+    const started = new Date();
+
     const recording = await orm.sessionRecording.create({
       data: {
         id: resp.recordingId,
         sessionId: session.id,
+        started,
       },
     });
+
+    if (!session.started) {
+      await orm.session.update({
+        where: { id: sessionId },
+        data: {
+          started,
+        },
+      });
+    }
 
     return recording.id;
   },
@@ -294,6 +306,19 @@ export const stopRecording = defineAction({
   input: z.string(),
   handler: async (id) => {
     const resp = await recordingClient.stop(id).catch((err) => err);
+    const session = await orm.session.findFirst({
+      where: { recordings: { some: { id } } },
+    });
+
+    if (session && !session.completed) {
+      await orm.session.update({
+        where: { id: session.id },
+        data: {
+          completed: new Date(),
+        },
+      });
+    }
+
     return resp;
   },
 });

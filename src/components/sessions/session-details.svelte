@@ -4,6 +4,7 @@
     timeFormatter,
     displayFormatter,
     displayTimeFormatter,
+    getInstant,
   } from "@/utilities/time";
 
   import ConfirmForm, {
@@ -20,22 +21,37 @@
   import { getRecordingSchedule } from "@/utilities/video";
   import Avatar from "@/components/respondents/avatar.svelte";
   import CardHeader from "@/components/app/card-header.svelte";
-  import ChecklistRadar from "../surveys/checklist-radar.svelte";
   import { preventDefault, sessionToICSInvite } from "@/utilities/events";
+  import ChecklistRadar from "@/components/surveys/checklist-radar.svelte";
 
   const now = Temporal.Now.instant().epochMilliseconds;
 
   let loading = $state(false);
   let showConfirmCancel = $state(false);
   let token: string | null = $state(null);
+  let timestamp: number | null = $state(null);
   let video: HTMLVideoElement | null = $state(null);
   let showCreateSessionForm: boolean = $state(false);
   let showRescheduleSessionForm: boolean = $state(false);
   let chosenTime: string = $state(timeFormatter.format(now));
   let chosenDate: string = $state(dateFormatter.format(now));
+  let recordingSchedules: Awaited<ReturnType<typeof getRecordingSchedule>> =
+    $state([]);
 
   onMount(async () => {
     token = (await actions.tokens.getBlobToken({})).data ?? null;
+  });
+
+  $effect(() => {
+    if (
+      token &&
+      store.sessions.activeRecording &&
+      store.sessions.active?.recordings.length
+    ) {
+      getRecordingSchedule(store.sessions.active.recordings, token).then(
+        (s) => (recordingSchedules = s),
+      );
+    }
   });
 
   $effect(() => {
@@ -45,6 +61,13 @@
         if (video && resp.data)
           video.src = `${store.sessions.activeRecording?.videoURL}?${resp.data.toString()}`;
       });
+    }
+  });
+
+  $effect(() => {
+    if (timestamp && video) {
+      video.currentTime = timestamp;
+      video.play();
     }
   });
 
@@ -128,7 +151,32 @@
     anchor.click();
   }
 
-  $effect(() => console.log(store.sessions.active));
+  function jumpVideoToTime(
+    utterance: (typeof store.sessions.all)[number]["transcripts"][number],
+  ) {
+    const recording = store.sessions.active?.recordings.find(
+      (r) => r.id === utterance.recordingId,
+    );
+    if (!recording) return;
+    store.setSessionRecording(recording);
+
+    const ms = utterance.offset - utterance.duration;
+    if (video) {
+      video.currentTime = ms / 1000;
+      video.play();
+    }
+  }
+
+  function displayUtteranceTime(
+    utterance: (typeof store.sessions.all)[number]["transcripts"][number],
+  ) {
+    const start = getInstant(utterance.recording.started.toString());
+    const instant = start.add({
+      milliseconds: utterance.offset - utterance.duration,
+    });
+
+    return displayTimeFormatter.format(new Date(instant.epochMilliseconds));
+  }
 </script>
 
 {#if store.sessions.active && token}
@@ -228,28 +276,26 @@
           </CardHeader>
           <div class="collapse-content">
             <div class="flex-none overflow-auto m-3 border rounded-box">
-              {#await getRecordingSchedule(session.started || session.scheduled, session.recordings, token) then schedule}
-                {#each schedule as result, i}
-                  <button
-                    onclick={preventDefault(() =>
-                      store.setSessionRecording(result.recording),
-                    )}
-                    class:highlight={store.sessions.activeRecording?.id ===
-                      result.recording.id}
-                    class="btn btn-primary btn-lg btn-outline bg-neutral rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 last:border-b-0 flex"
+              {#each recordingSchedules as result, i}
+                <button
+                  onclick={preventDefault(() =>
+                    store.setSessionRecording(result.recording),
+                  )}
+                  class:highlight={store.sessions.activeRecording?.id ===
+                    result.recording.id}
+                  class="btn btn-primary btn-lg btn-outline bg-neutral rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 last:border-b-0 flex"
+                >
+                  <iconify-icon icon="mdi:video-outline"></iconify-icon>
+                  <span class="flex-1">Recording {i + 1}</span>
+                  <i class="badge badge-secondary"
+                    >{displayTimeFormatter.format(
+                      new Date(result.schedule.start.epochMilliseconds),
+                    )}-{displayTimeFormatter.format(
+                      new Date(result.schedule.end.epochMilliseconds),
+                    )}</i
                   >
-                    <iconify-icon icon="mdi:video-outline"></iconify-icon>
-                    <span class="flex-1">Recording {i + 1}</span>
-                    <i class="badge badge-secondary"
-                      >{displayTimeFormatter.format(
-                        new Date(result.schedule.start.epochMilliseconds),
-                      )}-{displayTimeFormatter.format(
-                        new Date(result.schedule.end.epochMilliseconds),
-                      )}</i
-                    >
-                  </button>
-                {/each}
-              {/await}
+                </button>
+              {/each}
             </div>
           </div>
         </div>
@@ -262,10 +308,10 @@
           <div class="collapse-content">
             <ul class="flex-1 overflow-auto flex flex-col justify-start p-2">
               {#each session.transcripts as utterance}
-                <div
-                  class:chat-start={utterance.moderator}
-                  class:chat-end={!utterance.moderator}
+                <li
                   class="chat"
+                  class:chat-end={!utterance.moderator}
+                  class:chat-start={utterance.moderator}
                 >
                   <Avatar
                     tip={utterance.moderator
@@ -283,18 +329,17 @@
                         : session.respondent.imageURL,
                     }}
                   />
-                  <div
+                  <button
+                    onclick={() => jumpVideoToTime(utterance)}
                     class="chat-bubble shadow-sm"
                     class:chat-bubble-secondary={utterance.moderator}
                   >
                     {utterance.text}
-                  </div>
+                  </button>
                   <div class="chat-footer opacity-50 text-[10px]">
-                    {displayTimeFormatter.format(
-                      new Date(utterance.time.toString()),
-                    )}
+                    {displayUtteranceTime(utterance)}
                   </div>
-                </div>
+                </li>
               {/each}
             </ul>
           </div>
@@ -311,8 +356,6 @@
     </div>
   </div>
 {/if}
-
-{#snippet sessionActions()}{/snippet}
 
 {#snippet rescheduleSessionForm()}
   <form

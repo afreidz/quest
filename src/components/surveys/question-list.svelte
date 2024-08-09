@@ -402,7 +402,7 @@
               <iconify-icon icon="mdi:plus" class="pointer-events-none"
               ></iconify-icon>
             </button>
-            <button
+            <!-- <button
               data-tip="Drag to reorder group"
               class="btn btn-outline btn-sm handle join-item tooltip tooltip-left tooltip-primary"
             >
@@ -410,7 +410,7 @@
                 icon="mdi:chevron-up-down"
                 class="pointer-events-none"
               ></iconify-icon>
-            </button>
+            </button> -->
           </div>
         {/if}
       </strong>
@@ -449,11 +449,12 @@
           </label>
         </div>
       {/if}
+      <!-- DISABLED DUE TO MEMORY LEAK-->
       <OrderableList
         class="flex-1"
         itemClass="group"
         render={question}
-        enabled={editable}
+        enabled={false}
         items={group.questions}
         onUpdate={(updated) => {
           const newGroup = proposed?.find((p) => p.id === group.id);
@@ -524,13 +525,13 @@
           <iconify-icon icon="mdi:trash-outline" class="pointer-events-none"
           ></iconify-icon>
         </button>
-        <button
+        <!-- <button
           data-tip="Drag to reorder question"
           class="btn btn-outline btn-sm tooltip tooltip-left tooltip-primary handle join-item"
         >
           <iconify-icon icon="mdi:chevron-up-down" class="pointer-events-none"
           ></iconify-icon>
-        </button>
+        </button> -->
       </div>
     {/if}
   </div>

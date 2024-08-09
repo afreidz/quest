@@ -23,8 +23,8 @@ import { actions } from "astro:actions";
 import DataMessenger from "@/utilities/data";
 import messages from "@/stores/messages.svelte";
 import Transcriber from "@/utilities/transcribe";
-import { now as getNow } from "@/utilities/time";
 import { combineCameraStreams } from "@/utilities/video";
+import { now as getNow, formatUTCDateToISO } from "@/utilities/time";
 
 export type SessionRole = "host" | "participant" | "unknown";
 
@@ -132,9 +132,6 @@ class QuestSessionStore {
 
   private set muted(b: boolean) {
     this._muted = b;
-    if (b === true && this._transcriber?.transcribing) this._transcriber.stop();
-    if (b === false && this._transcriber && !this._transcriber.transcribing)
-      this._transcriber.start();
   }
 
   get camEnabled() {
@@ -372,16 +369,6 @@ class QuestSessionStore {
 
     if (!agent) return;
 
-    console.log(this.role, "Updating start time");
-    if (this.role === "host")
-      await actions.sessions.updateById({
-        id: this.id,
-        data: {
-          scheduled: getNow().toInstant().toString(),
-          started: getNow().toInstant().toString(),
-        },
-      });
-
     const call = agent.join({ groupId: this.id });
 
     this._call = call;
@@ -395,13 +382,15 @@ class QuestSessionStore {
             role: "host",
             session: this.id,
             speaker: undefined,
-            // mic: this.microphone?.id,
+            muted: () => this.muted,
+            recording: () => this._recordingId,
           }
         : {
             session: this.id,
             role: "participant",
-            // mic: this.microphone?.id,
+            muted: () => this.muted,
             speaker: this.respondentId!,
+            recording: () => this._recordingId,
           },
     );
 
@@ -409,7 +398,6 @@ class QuestSessionStore {
       messages.error(err);
     });
 
-    this._transcriber.start();
     if (this.role === "host") await this.record();
 
     if (this.camEnabled && this.camera) {
@@ -437,12 +425,6 @@ class QuestSessionStore {
   async disconnect() {
     if (this.role === "host" && this.id) {
       if (this._recordingId) await this.stopRecording();
-      await actions.sessions.updateById({
-        id: this.id,
-        data: {
-          completed: getNow().toInstant().toString(),
-        },
-      });
     }
 
     await this._call?.hangUp();
@@ -643,22 +625,28 @@ class QuestSessionStore {
         `Unable to start recording with session id: "${this.id}"`,
       );
 
+    if (!this._transcriber)
+      throw new Error(`Unable to start recording without transcriber`);
+
+    this._transcriber.start();
     const recorder = this._call.feature(Features.Recording);
+
     recorder.on("isRecordingActiveChanged", () =>
       console.log(`Recording is ${recorder.isRecordingActive}`),
-    );
-    recorder.on("recordingsUpdated", () =>
-      console.log("Recordings are updated", recorder.recordings),
     );
 
     console.log("Starting the recording");
     const callId = await this._call.info.getServerCallId();
-    this._recordingId = (
-      await actions.sessions.startRecording({
-        callId,
-        sessionId: this.id,
-      })
-    ).data;
+    const resp = await actions.sessions.startRecording({
+      callId,
+      sessionId: this.id,
+    });
+
+    if (resp.error) {
+      messages.error("Unable to start recroding", resp.error);
+    }
+
+    this._recordingId = resp.data;
   }
 
   public async stopRecording() {
