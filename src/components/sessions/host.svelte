@@ -21,7 +21,9 @@
   });
 </script>
 
-<div class="flex-1 size-full flex flex-col items-center justify-center -mt-12">
+<div
+  class="flex-1 size-full flex flex-col items-center justify-center xl:-mt-12"
+>
   <header class="flex w-full justify-end items-center gap-4">
     {#each session.participants as participant}
       <Participant
@@ -54,7 +56,7 @@
     >
     <div
       bind:this={screen}
-      class="aspect-video shadow-2xl h-full max-h-[72vh] border border-success bg-black rounded-box flex items-center justify-center"
+      class="w-full max-w-[1280px] min-w-[320px] aspect-video shadow-2xl border border-success bg-black rounded-box flex items-center justify-center"
     ></div>
   </section>
   <Actions />

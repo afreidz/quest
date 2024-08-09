@@ -2,11 +2,11 @@ import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
-import { Temporal } from "@js-temporal/polyfill";
 import { sessionToEmail } from "@/utilities/events";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { PaginationSchema } from "@/utilities/actions";
 import { EmailClient } from "@azure/communication-email";
+import { include as revisionIncludes } from "@/actions/revisions";
 import { CallRecording } from "@azure/communication-call-automation";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
 
@@ -20,13 +20,7 @@ const idClient = new CommunicationIdentityClient(endpoint, credential);
 const recordingDestinationContainerUrl = `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net/participant-videos/`;
 
 const include = {
-  revision: {
-    include: {
-      system: {
-        include: { client: true },
-      },
-    },
-  },
+  revision: { include: revisionIncludes },
   recordings: true,
   respondent: true,
   transcripts: true,

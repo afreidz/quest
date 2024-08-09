@@ -70,8 +70,8 @@
   </span>
 {/snippet}
 
-<div class="flex-1 flex flex-col items-center justify-center m-6 gap-4">
-  {#if session.status !== "Connected"}
+<div class="w-full flex-1 flex flex-col items-center justify-center m-6 gap-4">
+  <!-- {#if session.status !== "Connected"}
     <div
       class="flex flex-col items-center justify-center card rounded-box bg-neutral border shadow-sm gap-4"
     >
@@ -144,6 +144,6 @@
     </div>
   {:else}
     {@render children()}
-  {/if}
-  <!-- {@render children()} -->
+  {/if} -->
+  {@render children()}
 </div>

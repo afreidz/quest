@@ -3,6 +3,6 @@ import PrivateLayout from "@/layouts/private.astro";
 import SessionList from "@/components/sessions/session-list.svelte";
 ---
 
-<PrivateLayout class="flex flex-1">
+<PrivateLayout class="flex">
   <SessionList client:only="svelte" />
 </PrivateLayout>

@@ -4,8 +4,8 @@ import { defineAction, z } from "astro:actions";
 import orm, { SurveyType } from "@hsalux/quest-db";
 import { PaginationSchema } from "@/utilities/actions";
 
-const include = {
-  system: true,
+export const include = {
+  system: { include: { client: true } },
   survey: {
     include: {
       questions: {
@@ -34,6 +34,7 @@ const include = {
     include: {
       questions: {
         include: {
+          group: true,
           responseOptions: {
             include: {
               responses: true,

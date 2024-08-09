@@ -9,4 +9,7 @@ export default defineConfig({
       clientSecret: import.meta.env.AZURE_AD_CLIENT_SECRET,
     }),
   ],
+  pages: {
+    signIn: "/auth/signin",
+  },
 });

@@ -1,16 +1,52 @@
 ---
+import theme from "@/utilities/theme";
 import { actions } from "astro:actions";
-import SessionLayout from "@/layouts/session.astro";
+import BaseLayout from "@/layouts/base.astro";
+import Sidebar from "@/layouts/sidebar.astro";
+import Logo from "@/components/app/logo.svelte";
 import Host from "@/components/sessions/host.svelte";
+import HostTools from "@/components/sessions/host-tools.svelte";
 import SessionInit from "@/components/sessions/session-init.svelte";
 
-const session = (
-  await (Astro as any).callAction(actions.sessions.getById, Astro.params.id)
-).data;
+const resp = await (Astro as any).callAction(
+  actions.sessions.getById,
+  Astro.params.id
+);
+
+if (resp.error) {
+  console.error(resp.error);
+  return Astro.redirect("/404");
+}
+
+const session = resp.data;
+
+const sidebarID = `sidebar_${+new Date() * Math.round(Math.random())}`;
 ---
 
-<SessionLayout>
-  <SessionInit {session} role="host" client:only="svelte">
-    <Host client:only="svelte" />
-  </SessionInit>
-</SessionLayout>
+<BaseLayout>
+  <Sidebar id={sidebarID}>
+    <div class="flex-none flex justify-center xl:justify-start w-full">
+      <label
+        for={sidebarID}
+        class="btn btn-ghost xl:hidden transition-opacity opacity-50 hover:opacity-100"
+      >
+        <iconify-icon icon="mdi:hamburger-menu"></iconify-icon>
+      </label>
+      <Logo
+        inert
+        svgClass="!opacity-50"
+        logoStop1={theme["base-100"]}
+        logoStop2={theme["base-100"]}
+        subTextClass="!opacity-20 hidden xl:flex"
+        textClass="!bg-gradient-none !text-base-100 !ml-0 mr-2 opacity-50"
+        class="ps-0 pe-0 !gap-0 flex-1 flex justify-center xl:justify-start"
+      />
+    </div>
+    <SessionInit {session} role="host" client:only="svelte">
+      <Host client:only="svelte" />
+    </SessionInit>
+    <div slot="sidebar" class="flex-1 flex flex-col">
+      <HostTools {session} client:only="svelte" />
+    </div>
+  </Sidebar>
+</BaseLayout>

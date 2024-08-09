@@ -62,6 +62,14 @@ const surveySchema = z.object({
   }),
 });
 
+const responseSchema = z.object({
+  survey: z.string(),
+  question: z.string(),
+  respondent: z.string(),
+  response: z.string().optional(),
+  freeForm: z.string().optional(),
+});
+
 export const create = defineAction({
   input: z.string(),
   handler: async (id, context) => {
@@ -103,6 +111,34 @@ export const getById = defineAction({
   input: z.string(),
   handler: async (id) => {
     return await orm.survey.findFirst({ where: { id }, include });
+  },
+});
+
+export const respondToQuestion = defineAction({
+  input: responseSchema,
+  handler: async (data, context) => {
+    const user = (await getSession(context.request))?.user as User;
+    return await orm.response.upsert({
+      where: {
+        respondentId_surveyId_questionId: {
+          respondentId: data.respondent,
+          surveyId: data.survey,
+          questionId: data.question,
+        },
+      },
+      update: {
+        responseId: data.response,
+        freeformResponse: data.freeForm,
+      },
+      create: {
+        createdBy: user.email!,
+        surveyId: data.survey,
+        questionId: data.question,
+        responseId: data.response,
+        respondentId: data.respondent,
+        freeformResponse: data.freeForm,
+      },
+    });
   },
 });
 

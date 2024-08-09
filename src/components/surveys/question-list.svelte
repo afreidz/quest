@@ -89,7 +89,13 @@
           position: question.position,
           positive: question.positive,
           responses: question.responseOptions
-            .sort((a, b) => (a?.numericalValue ?? 0) - (b?.numericalValue ?? 0))
+            .sort((a, b) => {
+              if (a.numericalValue === null && b.numericalValue === null)
+                return 0;
+              if (a.numericalValue === null) return 1;
+              if (b.numericalValue === null) return -1;
+              return b.numericalValue - a.numericalValue;
+            })
             .map((ro) => {
               const surveyId = survey?.id || store.surveys.active?.id;
               return {
@@ -486,8 +492,10 @@
                   class="flex-none w-5 h-5 text-xs leading-none flex items-center justify-center rounded-full"
                   style="background-color: {getBadgeColor(
                     response.value,
-                    question.responses[0].value,
-                    question.responses.at(-1)?.value,
+                    question.responses.at(-1)?.value ??
+                      question.responses.at(-2)?.value ??
+                      0,
+                    question.responses.at(0)?.value,
                     question.positive === false ? false : true,
                   )};">{response.count}</strong
                 >

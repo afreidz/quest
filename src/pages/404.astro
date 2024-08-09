@@ -1,28 +1,12 @@
 ---
 import theme from "@/utilities/theme";
-import { actions } from "astro:actions";
 import BaseLayout from "@/layouts/base.astro";
 import Logo from "@/components/app/logo.svelte";
-import Participate from "@/components/sessions/participate.svelte";
-import SessionInit from "@/components/sessions/session-init.svelte";
-
-const resp = await (Astro as any).callAction(
-  actions.sessions.getById,
-  Astro.params.id
-);
-
-if (resp.error) {
-  console.error(resp.error);
-  return Astro.redirect("/404");
-}
-
-const session = resp.data;
 ---
 
-<BaseLayout>
+<BaseLayout class="flex flex-col">
   <div class="flex-none flex justify-center xl:justify-start w-full">
     <Logo
-      inert
       svgClass="!opacity-50"
       logoStop1={theme["base-100"]}
       logoStop2={theme["base-100"]}
@@ -31,7 +15,7 @@ const session = resp.data;
       class="p-2 !gap-0 flex-1 flex justify-center xl:justify-start"
     />
   </div>
-  <SessionInit {session} role="participant" client:only="svelte">
-    <Participate client:only="svelte" />
-  </SessionInit>
+  <div class="flex-1 flex items-center justify-center">
+    <h2 class="text-6xl font-extrabold opacity-50">404</h2>
+  </div>
 </BaseLayout>

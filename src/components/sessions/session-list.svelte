@@ -231,7 +231,6 @@
     {/if}
   </div>
 </div>
-
 <SessionDetails />
 
 {#snippet createSessionForm()}

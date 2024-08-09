@@ -1,14 +1,10 @@
 <script lang="ts">
   import session from "@/stores/session.svelte";
   import Actions from "@/components/sessions/actions.svelte";
-
-  $effect(() => {
-    if (session.pip) console.log("PIP Update");
-  });
 </script>
 
 <div class="flex-1 size-full flex flex-col items-center justify-center gap-4">
-  <header class="w-full flex -mt-16 justify-end">
+  <header class="w-full flex justify-end">
     {#each session.participants as participant}
       <div class="badge glass flex items-center gap-2">
         <iconify-icon
