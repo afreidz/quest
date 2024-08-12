@@ -12,8 +12,10 @@
 <footer class="flex-none flex w-full justify-evenly items-center {className}">
   <div class="flex items-end flex-1 gap-3">
     {#if session.status === "Connected"}
-      <button onclick={() => session.disconnect()} class="btn btn-error"
-        >End Session</button
+      <button
+        disabled={!session.connected}
+        onclick={() => session.disconnect()}
+        class="btn btn-error">End Session</button
       >
     {/if}
   </div>

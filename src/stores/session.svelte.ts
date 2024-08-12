@@ -24,7 +24,6 @@ import DataMessenger from "@/utilities/data";
 import messages from "@/stores/messages.svelte";
 import Transcriber from "@/utilities/transcribe";
 import { combineCameraStreams } from "@/utilities/video";
-import { now as getNow, formatUTCDateToISO } from "@/utilities/time";
 
 export type SessionRole = "host" | "participant" | "unknown";
 
@@ -49,13 +48,14 @@ class QuestSessionStore {
   private _agent?: CallAgent = $state();
   private _recordingId?: string = $state();
   private _transcriber?: Transcriber = $state();
-  // private _messenger?: DataMessenger = $state();
+  private _messenger?: DataMessenger = $state();
   private _client?: CallClient = $state(new CallClient());
   private _cred?: AzureCommunicationTokenCredential = $state();
 
   // Privates with public getters/setters
   private _muted = $state(false);
   private _id?: string = $state();
+  private _connected = $state(false);
   private _recording = $state(false);
   private _camEnabled = $state(false);
   private _userId?: string = $state();
@@ -237,6 +237,14 @@ class QuestSessionStore {
     return this._recording;
   }
 
+  get connected() {
+    return this._connected;
+  }
+
+  get messenger() {
+    return this._messenger;
+  }
+
   async mute() {
     if (!this._call) return (this.muted = true);
     await this._call.mute();
@@ -321,6 +329,7 @@ class QuestSessionStore {
   }
 
   async connect() {
+    this._connected = false;
     if (!this.id) throw new Error(`Unable to connect without call id`);
 
     if (this.role === "unknown")
@@ -330,7 +339,7 @@ class QuestSessionStore {
       throw new Error("Unable to connect without respondent");
 
     if (this._transcriber) {
-      await this._transcriber.dispose();
+      await this._transcriber.stop();
       this._transcriber = undefined;
     }
 
@@ -394,6 +403,8 @@ class QuestSessionStore {
           },
     );
 
+    this._messenger = new DataMessenger(call);
+
     await this.callReady().catch((err) => {
       messages.error(err);
     });
@@ -420,6 +431,8 @@ class QuestSessionStore {
     recorder.on("isRecordingActiveChanged", () => {
       this._recording = recorder.isRecordingActive;
     });
+
+    this._connected = true;
   }
 
   async disconnect() {
@@ -430,12 +443,13 @@ class QuestSessionStore {
     await this._call?.hangUp();
     await this._call?.dispose();
     await this._agent?.dispose();
-    await this._transcriber?.dispose();
+    await this._transcriber?.stop();
     this._call = undefined;
     this._agent = undefined;
     this._participants = [];
     this._client = undefined;
     console.log("Call disconnected");
+    this._connected = false;
   }
 
   async bootParticipant(id: string) {

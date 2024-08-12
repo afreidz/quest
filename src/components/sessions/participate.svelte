@@ -1,6 +1,13 @@
 <script lang="ts">
   import session from "@/stores/session.svelte";
+  import type { DataMessage } from "@/utilities/data";
   import Actions from "@/components/sessions/actions.svelte";
+
+  session.messenger?.on("message", (e: DataMessage) => {
+    if (e.type === "push-url") url = e.url;
+  });
+
+  let url: string | null = $state(null);
 </script>
 
 <div class="flex-1 size-full flex flex-col items-center justify-center gap-4">
@@ -19,17 +26,27 @@
   </header>
   <div class="flex-1 w-full text-center">
     <div
-      class="mx-auto mockup-browser bg-base-300/10 border shadow-sm max-h-[88vh] aspect-video"
+      class="mt-12 mx-auto mockup-browser bg-base-300/10 border shadow-sm max-h-[80vh] aspect-video"
     >
       <div class="mockup-browser-toolbar">
         <div class="input !bg-neutral"></div>
       </div>
       <div class="bg-neutral flex justify-center items-center size-full">
-        <span class="uppercase font-semibold text-base-200"
-          >Waiting for host to push</span
-        >
+        {#if url}
+          <iframe
+            src={url}
+            frameborder="0"
+            class:hidden={!url}
+            class="flex-1 size-full"
+            title="Host's shared content"
+          ></iframe>
+        {:else}
+          <span class="uppercase font-semibold text-base-200"
+            >Waiting for host to push</span
+          >
+        {/if}
       </div>
     </div>
   </div>
-  <Actions />
+  <Actions class="p-3" />
 </div>

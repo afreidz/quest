@@ -133,10 +133,4 @@ export default class SessionTranscriber {
     console.log("Transcriber stopped");
     this.transcribing = false;
   }
-
-  public async dispose() {
-    return new Promise((r, x) => this.transcriber.close(() => r(true), x)).then(
-      () => console.log("Transcriber closed"),
-    );
-  }
 }

@@ -6,11 +6,13 @@
   import { LocalVideoStream } from "@azure/communication-calling";
   import HostTools from "@/components/sessions/host-tools.svelte";
   import Participant from "@/components/sessions/participant-view.svelte";
+  import { preventDefault } from "@/utilities/events";
 
   type Props = {
     session: SessionById;
   };
 
+  let urlToPush: string = $state("");
   let screen: HTMLElement | null = $state(null);
   let { session: sessionRecord }: Props = $props();
 
@@ -27,6 +29,11 @@
         .then((v) => (session.screenView = v));
     }
   });
+
+  function pushURL() {
+    if (URL.canParse(urlToPush))
+      session.messenger?.send({ type: "push-url", url: urlToPush });
+  }
 </script>
 
 <div class="flex size-full gap-4">
@@ -56,7 +63,7 @@
       {/if}
     </header>
     <section
-      class="w-full flex-1 flex items-center justify-center my-4 relative"
+      class="w-full flex-1 flex flex-col items-center justify-center my-4 relative"
     >
       <span
         class:hidden={session.screen}
@@ -65,12 +72,39 @@
       >
       <div
         bind:this={screen}
-        class="w-full max-w-[1280px] min-w-[320px] aspect-video shadow-2xl border border-success bg-black rounded-box flex items-center justify-center"
+        class="w-full max-w-[1280px] min-w-[320px] aspect-video shadow-md border border-success bg-black rounded-box flex items-center justify-center"
       ></div>
+      <div class="py-4 w-full max-w-[1280px] min-w-[320px] relative z-[2]">
+        <form
+          onsubmit={preventDefault(() => pushURL())}
+          class="join border w-full flex overflow-clip"
+        >
+          <label
+            for="push"
+            class:opacity-30={!session.screen}
+            class:bg-neutral={!!session.screen}
+            class="text-sm px-4 flex items-center"
+            >Push URL To Participant</label
+          >
+          <input
+            id="push"
+            name="push"
+            type="text"
+            bind:value={urlToPush}
+            disabled={!session.screen}
+            class="join-item flex-1 px-2"
+          />
+          <button
+            type="submit"
+            disabled={!session.screen}
+            class="join-item btn btn-primary">Push</button
+          >
+        </form>
+      </div>
     </section>
-    <Actions />
+    <Actions class="p-3" />
   </div>
-  <Pane location="right" min="500" max="500">
+  <Pane location="right" min="500" max="500" class="flex flex-col">
     <HostTools session={sessionRecord} />
   </Pane>
 </div>

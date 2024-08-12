@@ -136,8 +136,9 @@
           </div>
           <button
             onclick={connect}
-            disabled={session.status === "Connecting"}
             class="btn btn-primary btn-lg flex-none"
+            disabled={session.status === "Connecting" ||
+              session.status === "Disconnecting"}
           >
             {#if early}Start Now{:else}Connect{/if}
           </button>
