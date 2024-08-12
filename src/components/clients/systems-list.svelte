@@ -1,19 +1,18 @@
 <script lang="ts">
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
+  import Pane from "@/components/app/pane.svelte";
   import messages from "@/stores/messages.svelte";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
+  import type { SystemFromAll } from "@/actions/systems";
   import ConfirmForm from "@/components/app/confirm-form.svelte";
 
-  let loading = $state(false);
-
   let newName = $state("");
+  let loading = $state(false);
   let showNew = $state(false);
-
   let editedName = $state("");
   let showEdit = $state(false);
-
   let showConfirmDelete = $state(false);
 
   $effect(() => {
@@ -99,47 +98,43 @@
 </script>
 
 {#if store.clients.active}
-  <div
-    class="min-w-80 max-w-md w-1/3 bg-neutral flex flex-col border-neutral-200 border-r"
-  >
-    <h2
-      class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
-    >
-      <span>{store.clients.active?.name} Systems</span>
-      <Actions
-        addTip="Add system to client"
-        editTip="Edit client name"
-        deleteTip="Delete client"
-        deleteForm={deleteClientForm}
-        editForm={editClientForm}
-        addForm={addSystemForm}
-        bind:addShown={showNew}
-        bind:editShown={showEdit}
-        bind:deleteShown={showConfirmDelete}
-      />
-    </h2>
-    <div
-      class:skeleton={loading}
-      class="bg-base-100/20 rounded-none flex-1 overflow-auto flex flex-col justify-center"
-    >
-      {#if !loading}
-        {#each store.systems.all as system}
-          <a
-            href={`/clients/${store.clients.active.id}/systems/${system.id}`}
-            class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex"
-          >
-            <span class="flex-1">{system.title}</span>
-            <div class="badge badge-secondary">
-              {system.revisions.length} revision{system.revisions.length !== 1
-                ? "s"
-                : ""}
-            </div>
-          </a>
-        {/each}
-      {/if}
-    </div>
-  </div>
+  <Pane
+    {loading}
+    title="Systems"
+    render={renderSystem}
+    actions={systemActions}
+    items={store.systems.all}
+    class="!bg-base-100/20 flex flex-col justify-center"
+  />
 {/if}
+
+{#snippet renderSystem(system: SystemFromAll)}
+  <a
+    href={`/clients/${store.clients.active!.id}/systems/${system.id}`}
+    class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex"
+  >
+    <span class="flex-1">{system.title}</span>
+    <div class="badge badge-secondary">
+      {system.revisions.length} revision{system.revisions.length !== 1
+        ? "s"
+        : ""}
+    </div>
+  </a>
+{/snippet}
+
+{#snippet systemActions()}
+  <Actions
+    addTip="Add system to client"
+    editTip="Edit client name"
+    deleteTip="Delete client"
+    deleteForm={deleteClientForm}
+    editForm={editClientForm}
+    addForm={addSystemForm}
+    bind:addShown={showNew}
+    bind:editShown={showEdit}
+    bind:deleteShown={showConfirmDelete}
+  />
+{/snippet}
 
 {#snippet addSystemForm()}
   <form

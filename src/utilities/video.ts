@@ -139,3 +139,24 @@ export async function getRecordingSchedule(
 
   return result;
 }
+
+export async function preloadVideos(
+  recordings: Recordings,
+  token: string = "",
+) {
+  const record: Record<string, string> = {};
+  const videoPromises = recordings
+    .filter((r) => !!r.videoURL)
+    .map(async (recording) => {
+      const response = await fetch(`${recording.videoURL!}?${token}`);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      return { id: recording.id, url: blobUrl };
+    });
+
+  const preloaded = await Promise.all(videoPromises);
+  preloaded.forEach((vid) => {
+    record[vid.id] = vid.url;
+  });
+  return record;
+}

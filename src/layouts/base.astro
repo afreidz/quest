@@ -15,7 +15,7 @@ import Messages from "@/components/app/messages.svelte";
   <body>
     <style is:global>
       html {
-        @apply h-screen relative tracking-tighter text-base-content font-sans font-normal text-base min-h-full flex flex-col;
+        @apply h-screen relative tracking-tighter text-base-content font-sans font-normal text-base min-h-full flex flex-col max-w-[100vw];
       }
       body {
         @apply !contents;
@@ -27,6 +27,9 @@ import Messages from "@/components/app/messages.svelte";
         font-weight: 900;
         font-family: "Galano Grotesque";
         src: url("/fonts/galano-grotesque/GalanoGrotesqueBlack.otf");
+      }
+      .highlight {
+        @apply bg-secondary/30 border-l-4 border-l-secondary;
       }
     </style>
     <slot />

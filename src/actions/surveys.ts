@@ -114,6 +114,18 @@ export const getById = defineAction({
   },
 });
 
+export const getResponsesByRespondent = defineAction({
+  input: z.object({
+    survey: z.string(),
+    respondent: z.string(),
+  }),
+  handler: async ({ survey, respondent }) => {
+    return await orm.response.findMany({
+      where: { respondentId: respondent, surveyId: survey },
+    });
+  },
+});
+
 export const respondToQuestion = defineAction({
   input: responseSchema,
   handler: async (data, context) => {
@@ -237,3 +249,7 @@ export type Surveys = Awaited<
   ReturnType<typeof orm.survey.findMany<{ include: typeof include }>>
 >;
 export type SurveyFromAll = Surveys[number];
+
+export type ResponsesByRespondent = Awaited<
+  ReturnType<typeof orm.response.findMany>
+>;

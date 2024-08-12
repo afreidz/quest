@@ -3,8 +3,10 @@
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
+  import Pane from "@/components/app/pane.svelte";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
+  import type { ClientFromAll } from "@/actions/clients";
   import SystemsList from "@/components/clients/systems-list.svelte";
 
   let loading = $state(true);
@@ -71,57 +73,27 @@
   }
 </script>
 
-<div
-  class="min-w-80 max-w-md w-1/3 bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
->
-  <h2
-    class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
-  >
-    <span>Clients</span>
-    <Actions
-      addForm={createNewClientForm}
-      addTip="Add new client"
-      bind:addShown={showNewDialog}
-    />
-  </h2>
-  <form class="p-3 flex-none border-neutral-200 border-b">
-    <label class="input input-bordered bg-base-100/10 flex items-center gap-2">
-      <input
-        type="text"
-        class="grow"
-        bind:this={search}
-        placeholder="Search"
-        bind:value={searchString}
-      />
-      <iconify-icon class="text-xl" icon="material-symbols:search"
-      ></iconify-icon>
-    </label>
-  </form>
-  <div
-    class:skeleton={loading}
-    class="bg-neutral rounded-none flex-1 overflow-auto"
-  >
-    {#if !loading}
-      {#each filteredClients as client}
-        <a
-          href={`#${client.id}`}
-          class:highlight={store.clients.active?.id === client.id}
-          onclick={preventDefault(() => store.setActiveClient(client))}
-          class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
-        >
-          <span class="flex-1">{client.name}</span>
-          <div class="badge badge-secondary">
-            {client._count.systems} system{client._count.systems !== 1
-              ? "s"
-              : ""}
-          </div>
-        </a>
-      {/each}
-    {/if}
-  </div>
-</div>
+{#snippet clientActions()}
+  <Actions
+    addForm={createNewClientForm}
+    addTip="Add new client"
+    bind:addShown={showNewDialog}
+  />
+{/snippet}
 
-<SystemsList />
+{#snippet renderClient(client: ClientFromAll)}
+  <a
+    href={`#${client.id}`}
+    class:highlight={store.clients.active?.id === client.id}
+    onclick={preventDefault(() => store.setActiveClient(client))}
+    class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
+  >
+    <span class="flex-1">{client.name}</span>
+    <div class="badge badge-secondary">
+      {client._count.systems} system{client._count.systems !== 1 ? "s" : ""}
+    </div>
+  </a>
+{/snippet}
 
 {#snippet createNewClientForm()}
   <form
@@ -144,8 +116,29 @@
   </form>
 {/snippet}
 
-<style lang="postcss">
-  .highlight {
-    @apply bg-secondary/30 border-l-4 border-l-secondary;
-  }
-</style>
+{#snippet clientSearch()}
+  <form class="p-3 flex-none border-neutral-200 border-b">
+    <label class="input input-bordered bg-base-100/10 flex items-center gap-2">
+      <input
+        type="text"
+        class="grow"
+        bind:this={search}
+        placeholder="Search"
+        bind:value={searchString}
+      />
+      <iconify-icon class="text-xl" icon="material-symbols:search"
+      ></iconify-icon>
+    </label>
+  </form>
+{/snippet}
+
+<Pane
+  {loading}
+  title="Clients"
+  render={renderClient}
+  prelist={clientSearch}
+  actions={clientActions}
+  items={filteredClients}
+/>
+
+<SystemsList />

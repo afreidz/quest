@@ -3,8 +3,10 @@
   import store from "@/stores/global.svelte";
   import { SurveyType } from "@hsalux/quest-db";
   import messages from "@/stores/messages.svelte";
+  import Pane from "@/components/app/pane.svelte";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
+  import type { RevisionFromAll } from "@/actions/revisions";
   import ConfirmForm from "@/components/app/confirm-form.svelte";
 
   let loading = $state(false);
@@ -110,54 +112,44 @@
 </script>
 
 {#if store.systems.active}
-  <div
-    class="min-w-80 max-w-[400px] w-full bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
-  >
-    <h2
-      class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
-    >
-      <span>{store.systems.active.title} Revisions</span>
-      <Actions
-        deleteTip="Delete System"
-        editTip="Edit System Name"
-        addTip="Add Revision to System"
-        addForm={newRevisionForm}
-        editForm={updateSystemForm}
-        deleteForm={deleteSystemForm}
-        bind:editShown={showEdit}
-        bind:addShown={showNewRevision}
-        bind:deleteShown={showConfirmDelete}
-      />
-    </h2>
-    <div
-      class:skeleton={loading}
-      class="bg-neutral rounded-none flex-1 overflow-auto"
-    >
-      {#if !loading}
-        {#if !store.revisions.all.length}
-          <strong class="block uppercase font-semibold opacity-40 p-4 text-sm"
-            >No revisions for this system. Please create one above</strong
-          >
-        {:else}
-          {#each store.revisions.all ?? [] as revision}
-            <div
-              class:highlight={store.revisions.active?.id === revision.id}
-              class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left pl-0 border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
-            >
-              <a
-                href="#{revision.id}"
-                class:tooltip={store.revisions.unsaved}
-                onclick={preventDefault(() => navigateToRevision(revision))}
-                data-tip={"You have unsaved changes to the current revision!"}
-                class="flex-1 h-full flex items-center pl-4">{revision.title}</a
-              >
-            </div>
-          {/each}
-        {/if}
-      {/if}
-    </div>
-  </div>
+  <Pane
+    max="sm"
+    {loading}
+    title="Revisions"
+    render={renderRevision}
+    actions={revisionActions}
+    items={store.revisions.all}
+  />
 {/if}
+
+{#snippet renderRevision(revision: RevisionFromAll)}
+  <div
+    class:highlight={store.revisions.active?.id === revision.id}
+    class="btn btn-primary btn-lg btn-outline rounded-none w-full text-left pl-0 border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
+  >
+    <a
+      href="#{revision.id}"
+      class:tooltip={store.revisions.unsaved}
+      onclick={preventDefault(() => navigateToRevision(revision))}
+      data-tip={"You have unsaved changes to the current revision!"}
+      class="flex-1 h-full flex items-center pl-4">{revision.title}</a
+    >
+  </div>
+{/snippet}
+
+{#snippet revisionActions()}
+  <Actions
+    deleteTip="Delete System"
+    editTip="Edit System Name"
+    addTip="Add Revision to System"
+    addForm={newRevisionForm}
+    editForm={updateSystemForm}
+    deleteForm={deleteSystemForm}
+    bind:editShown={showEdit}
+    bind:addShown={showNewRevision}
+    bind:deleteShown={showConfirmDelete}
+  />
+{/snippet}
 
 {#snippet updateSystemForm()}
   <form
@@ -225,9 +217,3 @@
     </label>
   </form>
 {/snippet}
-
-<style lang="postcss">
-  .highlight {
-    @apply bg-secondary/30 border-l-4 border-l-secondary;
-  }
-</style>

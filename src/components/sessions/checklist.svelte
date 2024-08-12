@@ -5,6 +5,8 @@
   import type { SurveyQuestionGroup } from "@/utilities/order";
   import type { SessionById, SessionFromAll } from "@/actions/sessions";
   import { actions } from "astro:actions";
+  import type { ResponsesByRespondent } from "@/actions/surveys";
+  import messages from "@/stores/messages.svelte";
 
   type Props = {
     respondent: string;
@@ -17,14 +19,26 @@
   let { survey, respondent }: Props = $props();
   let groups: SurveyQuestionGroup = $state([]);
   let notes: HTMLTextAreaElement[] = $state([]);
+  let existing: ResponsesByRespondent = $state([]);
   let activeCard: HTMLElement | null = $state(null);
   let active: SurveyQuestionGroup[number] | null = $state(null);
 
-  onMount(() => {
+  onMount(async () => {
+    loading = true;
     const grouped = Object.groupBy(
       survey.questions,
       ({ group }) => group?.text ?? "null",
     );
+
+    const responses = await actions.surveys.getResponsesByRespondent({
+      respondent,
+      survey: survey.id,
+    });
+
+    if (responses.error)
+      messages.error("Unable to get responses", responses.error);
+
+    existing = responses.data ?? [];
 
     groups = orderByPosition(
       Object.entries(grouped).map(([groupName, questions], i) => ({
@@ -60,6 +74,7 @@
     );
 
     active = groups[0];
+    loading = false;
   });
 
   async function respond(q: string, r: string, n: HTMLTextAreaElement) {
@@ -92,6 +107,9 @@
             <span class="block">{q.text}</span>
             <ul class="join bg-base-100/10 mt-2">
               {#each q.responses as response}
+                {@const existingResponse = existing.find(
+                  (r) => r.questionId === q.id,
+                )}
                 <li class="join-item flex-1 border text-xs flex flex-col gap-4">
                   <label class="flex justify-between items-center gap-1 p-3">
                     <span class="flex-none">{response.label}</span>
@@ -103,6 +121,7 @@
                       class:radio-success={response.value! > 2}
                       class:radio-info={response.value === null}
                       onchange={() => respond(q.id, response.id, notes[i])}
+                      checked={existingResponse?.responseId === response.id}
                       class:radio-warning={[1, 2].includes(response.value!)}
                       class="radio radio-sm radio-primary !border-base-200 custom-radio"
                     />

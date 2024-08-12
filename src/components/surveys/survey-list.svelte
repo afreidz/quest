@@ -3,10 +3,12 @@
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
+  import Pane from "@/components/app/pane.svelte";
   import type { Systems } from "@/actions/systems";
   import { preventDefault } from "@/utilities/events";
   import type { Revisions } from "@/actions/revisions";
   import Actions from "@/components/app/actions.svelte";
+  import type { SurveyFromAll } from "@/actions/surveys";
   import QuestionList from "@/components/surveys/question-list.svelte";
 
   let loading = $state(false);
@@ -113,19 +115,60 @@
   }
 </script>
 
-<div
-  class="min-w-80 max-w-md w-1/3 bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
->
-  <h2
-    class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
+<Pane
+  {loading}
+  render={renderSurvey}
+  actions={surveyActions}
+  prelist={filterSurveys}
+  title="Surveys and Checklists"
+  items={filteredSurveysAndChecklists}
+/>
+
+<div class="flex-1 p-4 overflow-auto">
+  <section class="flex flex-col m-auto gap-6 w-full max-w-[1000px]">
+    <QuestionList editable={true} />
+  </section>
+</div>
+
+{#snippet renderSurvey(survey: SurveyFromAll)}
+  {@const revision =
+    survey.type === "CHECKLIST"
+      ? survey.revisionAsChecklist
+      : survey.revisionAsSurvey}
+  <a
+    href={`#${survey.id}`}
+    data-tip={"You have unsaved changes to the current checklist or survey!"}
+    class:tooltip={store.surveys.unsaved}
+    class:highlight={store.surveys.active?.id === survey.id}
+    onclick={preventDefault(() => navigateToSurvey(survey))}
+    class="btn btn-primary btn-lg btn-outline rounded-none w-full tooltip-error tooltip-top first:tooltip-bottom tooltip-b text-left border-neutral-200 border-t-0 border-r-0 border-l-0 !h-auto px-4 py-4"
   >
-    <span>Surveys and Checklists</span>
-    <Actions
-      addTip="Create a new checklist"
-      addForm={createChecklistForm}
-      bind:addShown={showNew}
-    />
-  </h2>
+    <div class="flex flex-1 items-center justify-start gap-4">
+      <div class="flex-none flex justify-center">
+        {#if survey.type === "CHECKLIST"}
+          <iconify-icon class="text-neutral-400" icon="ic:baseline-checklist"
+          ></iconify-icon>
+        {:else}
+          <iconify-icon class="text-neutral-400" icon="ri:survey-line"
+          ></iconify-icon>
+        {/if}
+      </div>
+      <div class="flex flex-col gap-2 flex-1">
+        <div class="flex items-center gap-2">
+          <span class="badge badge-primary">{revision?.system.client.name}</span
+          >
+          <span class="badge badge-secondary">{revision?.system.title}</span>
+        </div>
+        <strong class="font-semibold"
+          >{survey.type === "CHECKLIST" ? "Checklist" : "Survey"} for {revision?.title}</strong
+        >
+        <small class="text-xs text-neutral-400">{survey.type}</small>
+      </div>
+    </div>
+  </a>
+{/snippet}
+
+{#snippet filterSurveys()}
   <form class="p-3 flex-none border-neutral-200 border-b">
     <span class="block mb-2 font-semibold">Filters</span>
     <div class="flex items-center gap-3">
@@ -156,62 +199,15 @@
       </div>
     </div>
   </form>
-  <div
-    class:skeleton={loading}
-    class="bg-neutral rounded-none flex-1 overflow-auto"
-  >
-    {#if !loading}
-      {#each filteredSurveysAndChecklists as survey}
-        {@const revision =
-          survey.type === "CHECKLIST"
-            ? survey.revisionAsChecklist
-            : survey.revisionAsSurvey}
-        <a
-          href={`#${survey.id}`}
-          data-tip={"You have unsaved changes to the current checklist or survey!"}
-          class:tooltip={store.surveys.unsaved}
-          class:highlight={store.surveys.active?.id === survey.id}
-          onclick={preventDefault(() => navigateToSurvey(survey))}
-          class="btn btn-primary btn-lg btn-outline rounded-none w-full tooltip-error tooltip-top first:tooltip-bottom tooltip-b text-left border-neutral-200 border-t-0 border-r-0 border-l-0 !h-auto px-4 py-4"
-        >
-          <div class="flex flex-1 items-center justify-start gap-4">
-            <div class="flex-none flex justify-center">
-              {#if survey.type === "CHECKLIST"}
-                <iconify-icon
-                  class="text-neutral-400"
-                  icon="ic:baseline-checklist"
-                ></iconify-icon>
-              {:else}
-                <iconify-icon class="text-neutral-400" icon="ri:survey-line"
-                ></iconify-icon>
-              {/if}
-            </div>
-            <div class="flex flex-col gap-2 flex-1">
-              <div class="flex items-center gap-2">
-                <span class="badge badge-primary"
-                  >{revision?.system.client.name}</span
-                >
-                <span class="badge badge-secondary"
-                  >{revision?.system.title}</span
-                >
-              </div>
-              <strong class="font-semibold"
-                >{survey.type === "CHECKLIST" ? "Checklist" : "Survey"} for {revision?.title}</strong
-              >
-              <small class="text-xs text-neutral-400">{survey.type}</small>
-            </div>
-          </div>
-        </a>
-      {/each}
-    {/if}
-  </div>
-</div>
+{/snippet}
 
-<div class="flex-1 p-4 overflow-auto">
-  <section class="flex flex-col m-auto gap-6 w-full max-w-[1000px]">
-    <QuestionList editable={true} />
-  </section>
-</div>
+{#snippet surveyActions()}
+  <Actions
+    addTip="Create a new checklist"
+    addForm={createChecklistForm}
+    bind:addShown={showNew}
+  />
+{/snippet}
 
 {#snippet createChecklistForm()}
   <form
@@ -281,9 +277,3 @@
     </div>
   </form>
 {/snippet}
-
-<style lang="postcss">
-  .highlight {
-    @apply bg-secondary/30 border-l-4 border-l-secondary;
-  }
-</style>

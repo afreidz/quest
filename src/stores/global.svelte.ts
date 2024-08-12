@@ -6,6 +6,8 @@ import type { Clients } from "@/actions/clients";
 import type { Systems } from "@/actions/systems";
 import type { Sessions } from "@/actions/sessions";
 import type { Revisions } from "@/actions/revisions";
+import type { Recordings } from "@/actions/recordings";
+import { preloadVideos } from "@/utilities/video";
 
 type EntityState<T> = {
   all: T[];
@@ -45,13 +47,20 @@ class QuestGlobalStore {
     unsaved: false,
   });
 
-  _sessions: EntityState<Sessions[number]> & {
-    activeRecording: Sessions[number]["recordings"][number] | null;
-  } = $state({
+  _sessions: EntityState<Sessions[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
     activeRecording: null,
+  });
+
+  _recordings: EntityState<Recordings[number]> & {
+    preloaded: Record<string, string>;
+  } = $state({
+    all: [],
+    active: null,
+    preloaded: {},
+    unsaved: false,
   });
 
   get me() {
@@ -76,6 +85,10 @@ class QuestGlobalStore {
 
   get sessions() {
     return this._sessions;
+  }
+
+  get recordings() {
+    return this._recordings;
   }
 
   async refreshMe() {
@@ -270,7 +283,6 @@ class QuestGlobalStore {
     }
 
     this._sessions.active = session;
-    this.setSessionRecording(null);
   }
 
   async refreshActiveSession() {
@@ -290,12 +302,55 @@ class QuestGlobalStore {
     this._sessions.active = refreshed.data;
   }
 
-  setSessionRecording(recording: typeof this.sessions.activeRecording) {
-    if (!recording) {
-      this._sessions.activeRecording = null;
+  async refreshRecordings() {
+    if (!this.sessions.active) return;
+
+    const refreshed = await actions.recording.getBySessionId(
+      this.sessions.active.id,
+    );
+
+    if (refreshed.error) {
+      messages.error("Unable to refresh session recordings", refreshed.error);
+    }
+
+    this.recordings.all = refreshed.data ?? [];
+  }
+
+  async refreshActiveRecording() {
+    if (!this.recordings.active) return;
+
+    const refreshed = await actions.recording.getById(
+      this.recordings.active.id,
+    );
+
+    if (refreshed.error) {
+      messages.error("Unable to refresh active recroding", refreshed.error);
+      this._recordings.active = null;
       return;
     }
-    this._sessions.activeRecording = recording;
+
+    this._recordings.all = this.recordings.all.map((r) =>
+      r.id === refreshed.data?.id ? refreshed.data : r,
+    );
+    this._recordings.active = refreshed.data;
+  }
+
+  setActiveRecording(recording: typeof this.recordings.active) {
+    if (this.recordings.unsaved) return;
+
+    if (!recording) {
+      this._recordings.active = null;
+      return;
+    }
+
+    this._recordings.active = recording;
+  }
+
+  async preloadRecordings(token: string) {
+    this._recordings.preloaded = await preloadVideos(
+      this.recordings.all,
+      token,
+    );
   }
 }
 

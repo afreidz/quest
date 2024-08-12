@@ -1,8 +1,6 @@
 ---
-import theme from "@/utilities/theme";
 import { actions } from "astro:actions";
-import BaseLayout from "@/layouts/base.astro";
-import Logo from "@/components/app/logo.svelte";
+import BaseLayout from "@/layouts/session.astro";
 import Participate from "@/components/sessions/participate.svelte";
 import SessionInit from "@/components/sessions/session-init.svelte";
 
@@ -20,17 +18,6 @@ const session = resp.data;
 ---
 
 <BaseLayout>
-  <div class="flex-none flex justify-center xl:justify-start w-full">
-    <Logo
-      inert
-      svgClass="!opacity-50"
-      logoStop1={theme["base-100"]}
-      logoStop2={theme["base-100"]}
-      subTextClass="!opacity-20 hidden xl:flex"
-      textClass="!bg-gradient-none !text-base-100 !ml-0 mr-2 opacity-50"
-      class="p-2 !gap-0 flex-1 flex justify-center xl:justify-start"
-    />
-  </div>
   <SessionInit {session} role="participant" client:only="svelte">
     <Participate client:only="svelte" />
   </SessionInit>

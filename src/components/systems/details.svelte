@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
+  import Pane from "@/components/app/pane.svelte";
   import messages from "@/stores/messages.svelte";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
@@ -106,15 +107,13 @@
     </section>
   </div>
   {#if store.revisions.all.length}
-    <div
-      class="bg-neutral flex flex-col max-w-md border-l w-full flex-1 overflow-auto"
-    >
+    <Pane location="right">
       <Scores />
       <ChecklistRadar />
       <div class="px-4">
         <Customize />
       </div>
-    </div>
+    </Pane>
   {/if}
 {/if}
 

@@ -10,6 +10,16 @@ export const getById = defineAction({
   },
 });
 
+export const getBySessionId = defineAction({
+  input: z.string(),
+  handler: async (id) => {
+    return await orm.sessionRecording.findMany({
+      where: { sessionId: id },
+      include,
+    });
+  },
+});
+
 export type Recordings = Awaited<
   ReturnType<typeof orm.sessionRecording.findMany<{ include: typeof include }>>
 >;

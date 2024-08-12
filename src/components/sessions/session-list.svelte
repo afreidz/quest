@@ -1,21 +1,27 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { actions } from "astro:actions";
-  import store from "@/stores/global.svelte";
-  import messages from "@/stores/messages.svelte";
-  import { Temporal } from "@js-temporal/polyfill";
-  import { preventDefault } from "@/utilities/events";
-  import type { Revisions } from "@/actions/revisions";
-  import Actions from "@/components/app/actions.svelte";
-  import type { Respondents } from "@/actions/respondents";
-  import type { NewSessionSchema } from "@/actions/sessions";
-  import SessionDetails from "@/components/sessions/session-details.svelte";
   import {
     timezone,
     timeFormatter,
     dateFormatter,
     displayFormatter,
   } from "@/utilities/time";
+
+  import { onMount, tick } from "svelte";
+  import { actions } from "astro:actions";
+  import store from "@/stores/global.svelte";
+  import messages from "@/stores/messages.svelte";
+  import Pane from "@/components/app/pane.svelte";
+  import { Temporal } from "@js-temporal/polyfill";
+  import { preventDefault } from "@/utilities/events";
+  import type { Revisions } from "@/actions/revisions";
+  import Actions from "@/components/app/actions.svelte";
+  import type { Respondents } from "@/actions/respondents";
+  import Videos from "@/components/sessions/videos.svelte";
+  import CardHeader from "@/components/app/card-header.svelte";
+  import Transcript from "@/components/sessions/transcript.svelte";
+  import ChecklistRadar from "@/components/surveys/checklist-radar.svelte";
+  import SessionDetails from "@/components/sessions/session-details.svelte";
+  import type { NewSessionSchema, SessionFromAll } from "@/actions/sessions";
 
   onMount(async () => {
     await store.refreshMe();
@@ -26,6 +32,7 @@
 
   let loading = $state(false);
   let suggestionText = $state("");
+  let video: HTMLVideoElement | null = $state(null);
   let showCreateSessionForm: boolean = $state(false);
   let chosenTime: string = $state(timeFormatter.format(now));
   let chosenDate: string = $state(dateFormatter.format(now));
@@ -91,15 +98,13 @@
       newSession.moderator = store.me.email;
   });
 
-  $effect(() => {
-    if (
-      store.sessions.active &&
-      !store.sessions.activeRecording &&
-      store.sessions.active.recordings[0]
-    ) {
-      store.setSessionRecording(store.sessions.active.recordings[0]);
+  async function jumpToTime(n: number) {
+    await tick();
+    if (video) {
+      video.currentTime = n;
+      video.play();
     }
-  });
+  }
 
   async function scheduleSession() {
     showCreateSessionForm = false;
@@ -149,89 +154,134 @@
   }
 </script>
 
-<div
-  class="min-w-80 max-w-md w-1/3 bg-neutral flex flex-col border-neutral-200 border-r sticky top-0"
->
-  <h2
-    class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
-  >
-    <span>Sessions</span>
-    <Actions
-      addForm={createSessionForm}
-      addTip="Schedule a New Session"
-      bind:addShown={showCreateSessionForm}
-      class="max-w-[95vw] min-w-[800px] w-full max-h-[95vh] min-h-[800px] h-full flex flex-col"
-    />
-  </h2>
-  <div
-    class:skeleton={loading}
-    class="bg-neutral rounded-none flex-1 overflow-auto"
-  >
-    {#if !loading}
-      {#each store.sessions.all as session}
-        {@const scheduled = Temporal.Instant.from(
-          session.started
-            ? session.started.toString()
-            : session.scheduled.toString(),
-        ).toZonedDateTimeISO(timezone)}
-        <a
-          href={`#${session.id}`}
-          class:tooltip={store.sessions.unsaved}
-          class:highlight={store.sessions.active?.id === session.id}
-          data-tip={"You have unsaved changes to the current session!"}
-          onclick={preventDefault(() => store.setActiveSession(session))}
-          class="btn btn-primary btn-lg btn-outline rounded-none w-full tooltip-error tooltip-top first:tooltip-bottom tooltip-b text-left border-neutral-200 border-t-0 border-r-0 border-l-0 !h-auto px-4 py-4"
-        >
-          <div class="flex flex-1 items-center justify-start gap-4">
-            <div class="flex-none flex justify-center">
-              <iconify-icon class="text-neutral-400" icon="tabler:live-photo"
-              ></iconify-icon>
-            </div>
-            <div class="flex flex-col gap-2 flex-1">
-              <div class="flex justify-between w-full">
-                <div class="flex items-center gap-2">
-                  <span class="badge badge-primary"
-                    >{session.revision.system.client.name}</span
-                  >
-                  <span class="badge badge-secondary"
-                    >{session.revision.system.title}</span
-                  >
-                </div>
-                {#if !session.completed}
-                  <span
-                    class="badge glass self-end tooltip tooltip-left"
-                    data-tip="Upcoming Session"
-                  >
-                    <iconify-icon class="text-xs" icon="mdi:calendar"
-                    ></iconify-icon>
-                  </span>
-                {:else}
-                  <span
-                    data-tip="Completed Session"
-                    class="badge badge-success self-end tooltip tooltip-left"
-                  >
-                    <iconify-icon class="text-xs" icon="mdi:check-bold"
-                    ></iconify-icon>
-                  </span>
-                {/if}
-              </div>
-              <strong class="font-semibold"
-                >Session with {session.respondent.name ??
-                  session.respondent.email}</strong
-              >
-              <small class="text-xs text-neutral-400"
-                >{displayFormatter.format(
-                  new Date(scheduled.epochMilliseconds),
-                )}</small
-              >
-            </div>
-          </div>
-        </a>
-      {/each}
-    {/if}
-  </div>
+<Pane
+  title="Sessions"
+  render={rednerSession}
+  actions={sessionActions}
+  items={store.sessions.all}
+/>
+
+<div class="flex-1 p-4">
+  <SessionDetails bind:video />
 </div>
-<SessionDetails />
+
+{#if store.sessions.active}
+  <Pane location="right" class="!bg-base-100/20" max="1/4" min="500">
+    {#if store.sessions.active}
+      {@const session = store.sessions.active}
+      <div class="collapse collapse-arrow rounded-none">
+        <input type="checkbox" checked />
+        <CardHeader icon="tabler:live-photo" class="bg-neutral collapse-title">
+          <span>
+            Session with {session.respondent.name || session.respondent.email}
+          </span>
+        </CardHeader>
+        <div class="collapse-content">
+          <div class="flex items-center gap-2 px-2 pt-4">
+            <span class="badge badge-primary"
+              >{session.revision.system.client.name}</span
+            >
+            <span class="badge badge-secondary"
+              >{session.revision.system.title}</span
+            >
+          </div>
+          <ul>
+            <li></li>
+          </ul>
+        </div>
+      </div>
+      {#if session.completed}
+        <ChecklistRadar
+          collapseable
+          showDetails={true}
+          toggleDetails={true}
+          headerClass="bg-neutral"
+          showIfNoResponses={false}
+          respondent={session.respondent.id}
+          class="flex-none border-b bg-neutral"
+          checklist={session.revision.checklist}
+        />
+        <Videos onclick={(r) => store.setActiveRecording(r)} />
+        <Transcript onclick={(t) => jumpToTime(t)} />
+      {:else}
+        <div class="p-6 text-center">
+          <a
+            target="_blank"
+            href={`/sessions/host/${session.id}`}
+            class="btn btn-primary btn-lg">Start Session</a
+          >
+        </div>
+      {/if}
+    {/if}
+  </Pane>
+{/if}
+
+{#snippet sessionActions()}
+  <Actions
+    addForm={createSessionForm}
+    addTip="Schedule a New Session"
+    bind:addShown={showCreateSessionForm}
+    class="max-w-[95vw] min-w-[800px] w-full max-h-[95vh] min-h-[800px] h-full flex flex-col"
+  />
+{/snippet}
+
+{#snippet rednerSession(session: SessionFromAll)}
+  {@const scheduled = Temporal.Instant.from(
+    session.started ? session.started.toString() : session.scheduled.toString(),
+  ).toZonedDateTimeISO(timezone)}
+  <a
+    href={`#${session.id}`}
+    class:tooltip={store.sessions.unsaved}
+    class:highlight={store.sessions.active?.id === session.id}
+    data-tip={"You have unsaved changes to the current session!"}
+    onclick={preventDefault(() => store.setActiveSession(session))}
+    class="btn btn-primary btn-lg btn-outline rounded-none w-full tooltip-error tooltip-top first:tooltip-bottom tooltip-b text-left border-neutral-200 border-t-0 border-r-0 border-l-0 !h-auto px-4 py-4"
+  >
+    <div class="flex flex-1 items-center justify-start gap-4">
+      <div class="flex-none flex justify-center">
+        <iconify-icon class="text-neutral-400" icon="tabler:live-photo"
+        ></iconify-icon>
+      </div>
+      <div class="flex flex-col gap-2 flex-1">
+        <div class="flex justify-between w-full">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-primary"
+              >{session.revision.system.client.name}</span
+            >
+            <span class="badge badge-secondary"
+              >{session.revision.system.title}</span
+            >
+          </div>
+          {#if !session.completed}
+            <span
+              class="badge glass self-end tooltip tooltip-left"
+              data-tip="Upcoming Session"
+            >
+              <iconify-icon class="text-xs" icon="mdi:calendar"></iconify-icon>
+            </span>
+          {:else}
+            <span
+              data-tip="Completed Session"
+              class="badge badge-success self-end tooltip tooltip-left"
+            >
+              <iconify-icon class="text-xs" icon="mdi:check-bold"
+              ></iconify-icon>
+            </span>
+          {/if}
+        </div>
+        <strong class="font-semibold"
+          >Session with {session.respondent.name ??
+            session.respondent.email}</strong
+        >
+        <small class="text-xs text-neutral-400"
+          >{displayFormatter.format(
+            new Date(scheduled.epochMilliseconds),
+          )}</small
+        >
+      </div>
+    </div>
+  </a>
+{/snippet}
 
 {#snippet createSessionForm()}
   <form
@@ -382,9 +432,3 @@
     {/if}
   </form>
 {/snippet}
-
-<style lang="postcss">
-  .highlight {
-    @apply bg-secondary/30 border-l-4 border-l-secondary;
-  }
-</style>

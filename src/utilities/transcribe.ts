@@ -106,17 +106,15 @@ export default class SessionTranscriber {
     const duration = (e.result.duration * 100) / 1000000; //milliseconds;
 
     const since = now().toInstant().since(started);
-    const offset = since
-      .subtract({ milliseconds: duration })
-      .total({ unit: "millisecond" });
+    const offset = since.subtract({ milliseconds: duration });
 
     const resp = await action({
-      offset,
       duration,
       recording: id,
       text: e.result.text,
       speaker: this.speaker,
       session: this.session,
+      offset: offset.total({ unit: "milliseconds" }),
     });
 
     if (resp.error) {
