@@ -1,4 +1,5 @@
 <script lang="ts">
+  import messages from "@/stores/messages.svelte";
   import { Temporal } from "@js-temporal/polyfill";
   import sessionStore from "@/stores/session.svelte";
   import type { DataMessage } from "@/utilities/data";
@@ -12,9 +13,17 @@
   sessionStore.messenger?.on("message", (e: DataMessage) => {
     if (e.type === "push-url") url = e.url;
     if (e.type === "recording-stop") recording = false;
-    if (e.type === "session-stop") sessionStore.disconnect();
-    if (e.type === "recording-start")
-      recording = Temporal.Now.zonedDateTimeISO();
+
+    if (e.type === "session-stop") {
+      sessionStore.disconnect();
+      messages.info("The host has ended the session");
+    }
+
+    if (e.type === "recording-start") {
+      recording = Temporal.ZonedDateTime.from(
+        e.time ?? new Date().toISOString(),
+      );
+    }
   });
 
   let { session }: Props = $props();
@@ -30,6 +39,11 @@
   $effect(() => {
     if (recording && !interval) interval = setInterval(updateRecording, 1000);
     if (!recording && interval) clearInterval(interval);
+  });
+
+  $effect(() => {
+    if (sessionStore.status === "Connected")
+      recording = Temporal.Now.zonedDateTimeISO();
   });
 
   function updateRecording() {

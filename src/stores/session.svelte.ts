@@ -20,10 +20,10 @@ import {
 } from "@azure/communication-common";
 
 import { actions } from "astro:actions";
-import DataMessenger from "@/utilities/data";
 import messages from "@/stores/messages.svelte";
 import Transcriber from "@/utilities/transcribe";
 import { combineCameraStreams } from "@/utilities/video";
+import DataMessenger, { type DataMessage } from "@/utilities/data";
 
 export type SessionRole = "host" | "participant" | "unknown";
 
@@ -49,6 +49,7 @@ class QuestSessionStore {
   private _recordingId?: string = $state();
   private _transcriber?: Transcriber = $state();
   private _messenger?: DataMessenger = $state();
+  private _recordingSince?: Date | null = $state(null);
   private _client?: CallClient = $state(new CallClient());
   private _cred?: AzureCommunicationTokenCredential = $state();
 
@@ -438,6 +439,8 @@ class QuestSessionStore {
   async disconnect() {
     if (this.role === "host" && this.id) {
       if (this._recordingId) await this.stopRecording();
+      this.messenger?.send({ type: "recording-stop" });
+      this.messenger?.send({ type: "session-stop" });
     }
 
     await this._call?.hangUp();
@@ -459,12 +462,26 @@ class QuestSessionStore {
   }
 
   private async addParticipant(remote: RemoteParticipant) {
+    console.log(
+      `Participant ${remote.displayName || remote.identifier} has joined the call`,
+    );
     const camera = remote.videoStreams.find(
       (s) => s.mediaStreamType === "Video",
     );
     const screen = remote.videoStreams.find(
       (s) => s.mediaStreamType === "ScreenSharing",
     );
+
+    this.messenger?.on("message", (e: DataMessage) => {
+      if (e.type === "ping" && this._recordingSince) {
+        this.messenger?.send({
+          type: "recording-start",
+          time: this._recordingSince.toISOString(),
+        });
+      }
+    });
+
+    this.messenger?.send({ type: "ping" });
 
     screen?.on("isAvailableChanged", async () => {
       console.log("Screen Availability Change", screen.isAvailable);
@@ -661,6 +678,12 @@ class QuestSessionStore {
     }
 
     this._recordingId = resp.data;
+    this._recordingSince = new Date();
+
+    this.messenger?.send({
+      type: "recording-start",
+      time: this._recordingSince.toISOString(),
+    });
   }
 
   public async stopRecording() {
@@ -671,6 +694,7 @@ class QuestSessionStore {
       );
     await actions.sessions.stopRecording(this._recordingId);
     this._recordingId = undefined;
+    this.messenger?.send({ type: "recording-stop" });
   }
 }
 

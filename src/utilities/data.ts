@@ -22,6 +22,7 @@ type SessionStopMessage = {
 
 type RecordingStartMessage = {
   type: "recording-start";
+  time?: string;
 };
 
 type RecordingStopMessage = {
@@ -36,7 +37,6 @@ export type DataMessage =
   | RecordingStopMessage;
 
 export default class Messenger extends EventEmitter {
-  private _ready: boolean;
   private _decoder: TextDecoder;
   private _encoder: TextEncoder;
   private _sender: DataChannelSender;
@@ -44,7 +44,6 @@ export default class Messenger extends EventEmitter {
 
   constructor(call: Call) {
     super();
-    this._ready = false;
 
     const channel = call.feature(Features.DataChannel);
 
@@ -56,8 +55,6 @@ export default class Messenger extends EventEmitter {
 
     channel.on("dataChannelReceiverCreated", (receiver) => {
       this._receiver = receiver;
-      this._ready = true;
-      this.emit("ready");
       receiver.on("messageReady", () => this._handleMessage());
       console.log("Data channel receiver intitialized");
       this.send({ type: "ping" });
@@ -78,10 +75,6 @@ export default class Messenger extends EventEmitter {
       "Received data message",
       JSON.parse(this._decoder.decode(message?.data)) as DataMessage,
     );
-  }
-
-  get ready() {
-    return this._ready;
   }
 
   send(d: DataMessage) {
