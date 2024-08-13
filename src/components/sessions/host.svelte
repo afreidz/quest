@@ -30,9 +30,11 @@
     }
   });
 
-  function pushURL() {
-    if (URL.canParse(urlToPush))
-      session.messenger?.send({ type: "push-url", url: urlToPush });
+  function pushURL(url: string | null) {
+    if (!url) return;
+    if (URL.canParse(url)) {
+      session.messenger?.send({ type: "push-url", url });
+    }
   }
 </script>
 
@@ -74,9 +76,32 @@
         bind:this={screen}
         class="w-full max-w-[1280px] min-w-[320px] aspect-video shadow-md border border-success bg-black rounded-box flex items-center justify-center"
       ></div>
-      <div class="py-4 w-full max-w-[1280px] min-w-[320px] relative z-[2]">
+      <div
+        class="py-4 w-full max-w-[1280px] min-w-[320px] relative z-[2] flex items-center gap-3"
+      >
+        {#if sessionRecord.revision.survey}
+          {@const surveyURL = new URL(
+            `/take-survey/${sessionRecord.revision.survey.id}/${sessionRecord.respondentId}`,
+            window.location.origin,
+          )}
+          <button
+            onclick={() => pushURL(surveyURL.href)}
+            disabled={!session.screen}
+            class="btn btn-outline">Push SUS Survey to Participant</button
+          >
+        {/if}
+        {#if sessionRecord.prototypeURL}
+          <button
+            onclick={() => pushURL(sessionRecord.prototypeURL)}
+            disabled={!session.screen}
+            class="btn btn-outline">Push Prototype to Participant</button
+          >
+        {/if}
         <form
-          onsubmit={preventDefault(() => pushURL())}
+          onsubmit={preventDefault(() => {
+            pushURL(urlToPush);
+            urlToPush = "";
+          })}
           class="join border w-full flex overflow-clip"
         >
           <label
@@ -87,9 +112,10 @@
             >Push URL To Participant</label
           >
           <input
+            required
             id="push"
+            type="url"
             name="push"
-            type="text"
             bind:value={urlToPush}
             disabled={!session.screen}
             class="join-item flex-1 px-2"

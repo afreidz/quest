@@ -90,3 +90,15 @@ export function observeMainContent(cb: (d: DOMRectReadOnly) => void) {
     disconnect: () => observer.disconnect(),
   } satisfies MainContentObserver;
 }
+
+export function extractIframeSrc(htmlString: string): string | null {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, "text/html");
+  const iframe = doc.querySelector("iframe");
+  const src = iframe?.getAttribute("src");
+
+  if (!src) return null;
+  if (!URL.canParse(src)) return null;
+
+  return src;
+}

@@ -31,17 +31,18 @@ const SessionCreateSchema = z.object({
   moderator: z.string(),
   scheduled: z.string(),
   respondent: z.string(),
+  prototype: z.string().optional(),
   invite: z.boolean().default(false),
 });
 
 const SessionUpdateSchema = z.object({
   callId: z.string().optional(),
+  started: z.string().optional(),
   videoURL: z.string().optional(),
   moderator: z.string().optional(),
-  recordingId: z.string().optional(),
-  started: z.string().optional(),
   completed: z.string().optional(),
   scheduled: z.string().optional(),
+  recordingId: z.string().optional(),
 });
 
 const SessionQuerySchema = z
@@ -110,6 +111,7 @@ export const create = defineAction({
           invite: sessionData.invite,
           moderator: sessionData.moderator,
           revisionId: sessionData.revision,
+          prototypeURL: sessionData.prototype,
           respondentId: sessionData.respondent,
           moderatorComsId: moderator.communicationUserId,
         },

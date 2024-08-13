@@ -76,7 +76,7 @@
   style={min && !collapsed ? "min-width: " + min + "px;" : ""}
   class:left-0={collapsable && !collapsed && location === "left"}
   class:right-0={collapsable && !collapsed && location === "right"}
-  class="bg-neutral border-neutral-200 transition-all duration-150 2xl:static ease-in-out flex-none flex flex-col z-10"
+  class="bg-neutral border-neutral-200 transition-all duration-200 2xl:static ease-in-out flex-none flex flex-col z-10"
 >
   {#if collapsable && collapsed}
     {@render collapseBtn()}

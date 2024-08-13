@@ -192,3 +192,22 @@ export function sessionToEmail(
     ],
   };
 }
+
+type DebouncedFunction<Args extends any[]> = (...args: Args) => void;
+
+export function debounce<Args extends any[]>(
+  func: (...args: Args) => void,
+  wait: number,
+): DebouncedFunction<Args> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  return function (...args: Args) {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, wait);
+  };
+}

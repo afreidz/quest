@@ -9,14 +9,14 @@
   $effect(() => store.setIncludeBenchmarkInRevision(compareBenchmark));
 </script>
 
-<div class="flex flex-col gap-4 rounded bg-base-100/15 p-3 my-6 shadow-md">
+<div class="flex flex-col gap-4 rounded bg-base-100/15 p-3 my-2 shadow-md mx-4">
   <strong>Customize Score:</strong>
   <div class="form-control">
     <label class="label cursor-pointer">
       <span class="label-text">Include Benchmark in SUS score</span>
       <input
         type="checkbox"
-        bind:checked="{compareBenchmark}"
+        bind:checked={compareBenchmark}
         class="toggle toggle-primary [--tglbg:#ffffff]"
       />
     </label>
@@ -24,13 +24,13 @@
   <label class="form-control !flex-row">
     <span class="label-text flex-1">Compare to revision</span>
     <select
-      bind:value="{compareRevision}"
+      bind:value={compareRevision}
       class="select select-bordered select-primary select-sm bg-neutral flex-1"
     >
-      <option value="{null}">None</option>
+      <option value={null}>None</option>
       {#each store.revisions.all as revision}
         {#if revision.id !== store.revisions.active?.id}
-          <option value="{revision}">{revision.title}</option>
+          <option value={revision}>{revision.title}</option>
         {/if}
       {/each}
     </select>

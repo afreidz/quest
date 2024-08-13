@@ -176,6 +176,7 @@ model Session {
 
   moderator       String
   moderatorComsId String
+  prototypeURL    String?
 
   respondentId String
   respondent   Respondent @relation(fields: [respondentId], references: [id])

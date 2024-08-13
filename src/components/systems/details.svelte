@@ -7,7 +7,7 @@
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
   import Scores from "@/components/systems/scores.svelte";
-  import Customize from "@/components/app/customize.svelte";
+  import CustomizeScores from "@/components/app/customize.svelte";
   import ConfirmForm from "@/components/app/confirm-form.svelte";
   import RevisionList from "@/components/systems/revision-list.svelte";
   import QuestionList from "@/components/surveys/question-list.svelte";
@@ -93,29 +93,36 @@
     <section class="flex flex-col m-auto gap-6 w-full max-w-[1000px]">
       <header class="text-xl font-semibold flex justify-between">
         <span class="opacity-50">{store.revisions.active?.title}</span>
-        <Actions
-          deleteTip="Delete Revision"
-          editTip="Edit Revision Title"
-          editForm={editRevisionForm}
-          deleteForm={deleteRevisionForm}
-          bind:editShown={showEdit}
-          bind:deleteShown={showConfirmDelete}
-        />
       </header>
       <RespondentList />
       <QuestionList survey={store.revisions.active?.survey} detailed />
     </section>
   </div>
   {#if store.revisions.all.length}
-    <Pane title="Revision Results" collapsable location="right">
-      <Scores />
-      <ChecklistRadar />
-      <div class="px-4">
-        <Customize />
-      </div>
+    <Pane
+      collapsable
+      location="right"
+      title="Revision Results"
+      actions={revisionActions}
+    >
+      <Scores collapseable />
+      <ChecklistRadar collapseable />
+      <CustomizeScores />
     </Pane>
   {/if}
 {/if}
+
+{#snippet revisionActions()}
+  <Actions
+    size="sm"
+    deleteTip="Delete Revision"
+    editTip="Edit Revision Title"
+    editForm={editRevisionForm}
+    deleteForm={deleteRevisionForm}
+    bind:editShown={showEdit}
+    bind:deleteShown={showConfirmDelete}
+  />
+{/snippet}
 
 {#snippet deleteRevisionForm()}
   <ConfirmForm

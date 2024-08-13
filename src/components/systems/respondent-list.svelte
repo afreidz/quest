@@ -1,28 +1,38 @@
 <script lang="ts">
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
+  import { debounce } from "@/utilities/events";
   import messages from "@/stores/messages.svelte";
+  import Pane from "@/components/app/pane.svelte";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
   import Scores from "@/components/systems/scores.svelte";
   import Avatar from "@/components/respondents/avatar.svelte";
   import ChecklistRadar from "@/components/surveys/checklist-radar.svelte";
   import type { Respondents, RespondentSchema } from "@/actions/respondents";
-  import Pane from "../app/pane.svelte";
 
   let loading = $state(false);
   let showNew = $state(false);
-  let suggestionText = $state("");
+  let respondents: Respondents = $state([]);
+  let search: HTMLInputElement | null = $state(null);
+  let newRespondent: Partial<RespondentSchema> = $state({});
 
-  let respondents = $derived.by(async () => {
-    return showNew
-      ? suggestionText
-        ? actions.respondents.getBySearch(suggestionText)
-        : actions.respondents.getAll({})
-      : { data: [] as Respondents };
+  $effect(() => {
+    if (search) search.focus();
   });
 
-  let newRespondent: Partial<RespondentSchema> = $state({});
+  $effect(() => {
+    if (showNew) handleRespondentSearch();
+  });
+
+  async function handleRespondentSearch() {
+    if (!search?.value.trim()) {
+      respondents = (await actions.respondents.getAll({})).data ?? [];
+      return;
+    }
+    respondents =
+      (await actions.respondents.getBySearch(search.value.trim())).data ?? [];
+  }
 
   async function toggleExisting(r: Respondents[number]) {
     if (!store.revisions.active) return;
@@ -172,71 +182,66 @@
   </div>
 </div>
 
-{#snippet newRespondentForm()}
-  {#snippet search()}
-    <div class="p-3 flex-none border-neutral-200 border-b">
-      <label
-        class="input input-bordered input-sm bg-base-100/10 flex items-center gap-2"
-      >
-        <input
-          type="text"
-          placeholder="Search"
-          class="grow skip-focus"
-          bind:value={suggestionText}
-        />
-        <iconify-icon class="text-xl" icon="material-symbols:search"
-        ></iconify-icon>
-      </label>
-    </div>
-  {/snippet}
-
-  {#snippet done()}
-    <footer class="flex p-3">
-      <button
-        onclick={preventDefault(() => (showNew = false))}
-        class="btn btn-primary skip-focus w-full">Done</button
-      >
-    </footer>
-  {/snippet}
-
-  {#snippet renderRespondent(respondent: Respondents[number])}
+{#snippet searchForRespondent()}
+  <div class="p-3 flex-none border-neutral-200 border-b">
     <label
-      class:highlight={store.clients.active?.id === respondent.id}
-      class="skip-focus btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
+      class="input input-bordered input-sm bg-base-100/10 flex items-center gap-2"
     >
-      <span class="flex-1">{respondent.name ?? respondent.email}</span>
       <input
-        type="checkbox"
-        class="checkbox checkbox-primary skip-focus"
-        onchange={() => toggleExisting(respondent)}
-        checked={store.revisions.active?.respondents.some(
-          (r) => r.id === respondent.id,
-        )}
+        type="text"
+        bind:this={search}
+        placeholder="Search"
+        class="grow skip-focus"
+        oninput={debounce(handleRespondentSearch, 500)}
       />
+      <iconify-icon class="text-xl" icon="material-symbols:search"
+      ></iconify-icon>
     </label>
-  {/snippet}
+  </div>
+{/snippet}
 
+{#snippet doneAddingRespondents()}
+  <footer class="flex p-3">
+    <button
+      onclick={preventDefault(() => (showNew = false))}
+      class="btn btn-primary skip-focus w-full">Done</button
+    >
+  </footer>
+{/snippet}
+
+{#snippet renderRespondent(respondent: Respondents[number])}
+  <label
+    class:highlight={store.clients.active?.id === respondent.id}
+    class="skip-focus btn btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-t-0 border-r-0 border-l-0 flex"
+  >
+    <span class="flex-1">{respondent.name ?? respondent.email}</span>
+    <input
+      type="checkbox"
+      class="checkbox checkbox-primary skip-focus"
+      onchange={() => toggleExisting(respondent)}
+      checked={store.revisions.active?.respondents.some(
+        (r) => r.id === respondent.id,
+      )}
+    />
+  </label>
+{/snippet}
+
+{#snippet newRespondentForm()}
   <form
     onsubmit={preventDefault(createNewRespondent)}
     class="flex-1 bg-base-100/10 border rounded-box flex font-normal overflow-clip"
   >
-    {#if !loading}
-      {#await respondents then respondents}
-        {#if respondents.data}
-          <Pane
-            {loading}
-            min={320}
-            size="sm"
-            collapsable
-            postlist={done}
-            prelist={search}
-            items={respondents.data}
-            render={renderRespondent}
-            title="Add Existing Respondent"
-          />
-        {/if}
-      {/await}
-    {/if}
+    <Pane
+      {loading}
+      min={320}
+      size="sm"
+      collapsable
+      items={respondents}
+      render={renderRespondent}
+      prelist={searchForRespondent}
+      title="Add Existing Respondent"
+      postlist={doneAddingRespondents}
+    />
     <div class="p-3 px-4 flex flex-col flex-1 gap-3">
       <header class="text-base font-semibold flex justify-between opacity-50">
         Create a New Respondent and Add To Revision

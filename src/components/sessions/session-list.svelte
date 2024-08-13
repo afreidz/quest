@@ -26,6 +26,7 @@
   import { preventDefault, sessionToICSInvite } from "@/utilities/events";
   import ChecklistRadar from "@/components/surveys/checklist-radar.svelte";
   import type { NewSessionSchema, SessionFromAll } from "@/actions/sessions";
+  import { extractIframeSrc } from "@/utilities/dom";
 
   onMount(async () => {
     await store.refreshMe();
@@ -36,7 +37,10 @@
 
   let loading = $state(false);
   let suggestionText = $state("");
+  let embedCodeValid = $state(false);
   let showConfirmCancel = $state(false);
+  let protoURL: string | null = $state(null);
+  let embedCode: string | null = $state(null);
   let showRescheduleSessionForm = $state(false);
   let video: HTMLVideoElement | null = $state(null);
   let showCreateSessionForm: boolean = $state(false);
@@ -111,6 +115,24 @@
   $effect(() => {
     if (store.me?.email && !newSession.moderator)
       newSession.moderator = store.me.email;
+  });
+
+  $effect(() => {
+    if (embedCode?.trim()) protoURL = null;
+  });
+
+  $effect(() => {
+    if (protoURL?.trim()) {
+      embedCode = null;
+      embedCodeValid = false;
+    }
+  });
+
+  $effect(() => {
+    if (embedCode?.trim()) {
+      newSession.prototype = extractIframeSrc(embedCode) ?? undefined;
+      if (newSession.prototype) embedCodeValid = true;
+    }
   });
 
   async function jumpToTime(n: number) {
@@ -247,6 +269,14 @@
     anchor.download = `quest-session-with-${store.sessions.active.respondent.email}.ics`;
     anchor.click();
   }
+
+  const howToGetFigmaEmbedCode = `1. Open the Figma file that you want to push to the participant.
+
+2. Click Share in the toolbar, and then Get embed code.
+
+3. To copy the embed code, click Copy.
+
+4. Paste the embed code into the textarea here.`;
 </script>
 
 <Pane
@@ -345,8 +375,12 @@
         class="flex-none border-b bg-neutral"
         checklist={session.revision.checklist}
       />
-      <Videos onclick={(r) => store.setActiveRecording(r)} />
-      <Transcript onclick={(t) => jumpToTime(t)} />
+      {#if store.recordings.all.length}
+        <Videos onclick={(r) => store.setActiveRecording(r)} />
+      {/if}
+      {#if store.sessions.active.transcripts.length}
+        <Transcript onclick={(t) => jumpToTime(t)} />
+      {/if}
     {/if}
   </Pane>
 {/if}
@@ -552,22 +586,19 @@
           </label>
         </section>
         <div class="flex flex-none gap-8">
-          <section class="flex flex-col gap-2 flex-1 p-1">
+          <section class="flex flex-col gap-2 flex-[0.4] p-1">
             <label class="form-control flex-none">
               <div class="label">
                 <span class="label-text">Moderator</span>
                 <span class="label-text-alt italic">Required</span>
               </div>
               <input
+                required
                 type="email"
                 bind:value={newSession.moderator}
                 class="input input-bordered bg-neutral w-full"
               />
             </label>
-          </section>
-        </div>
-        <div class="flex flex-col flex-1 gap-8">
-          <div class="form-control w-full">
             <label class="label cursor-pointer">
               <span class="label-text">Send invite to respondent email</span>
               <input
@@ -576,8 +607,55 @@
                 class="toggle toggle-primary [--tglbg:#ffffff]"
               />
             </label>
-          </div>
+          </section>
+          <section class="flex flex-col gap-2 flex-[0.6] p-1">
+            <label class="form-control flex-none">
+              <div class="label">
+                <span class="label-text">Prototype Embed Code</span>
+                {#if !embedCode?.trim()}
+                  <span
+                    data-tip={howToGetFigmaEmbedCode}
+                    class="label-text-alt tooltip tooltip-left before:!whitespace-pre-line before:border before:!text-left before:shadow-sm"
+                  >
+                    <iconify-icon class="text-xl" icon="mdi:information-outline"
+                    ></iconify-icon>
+                  </span>
+                {:else if !embedCodeValid}
+                  <iconify-icon
+                    class="text-xl text-error"
+                    icon="mdi:close-circle"
+                  ></iconify-icon>
+                {:else}
+                  <span
+                    data-tip={howToGetFigmaEmbedCode}
+                    class="label-text-alt tooltip tooltip-left before:!whitespace-pre-line before:border before:!text-left before:shadow-sm"
+                  >
+                    <iconify-icon
+                      class="text-xl text-success"
+                      icon="mdi:check-circle"
+                    ></iconify-icon>
+                  </span>
+                {/if}
+              </div>
+              <textarea
+                bind:value={embedCode}
+                class="textarea textarea-bordered bg-neutral w-full"
+              ></textarea>
+            </label>
+            <span class="w-full text-center text-xs">-or-</span>
+            <label class="form-control flex-none">
+              <div class="label">
+                <span class="label-text">Prototype URL</span>
+              </div>
+              <input
+                type="url"
+                bind:value={protoURL}
+                class="input input-bordered bg-neutral w-full disabled:bg-base-100/10"
+              />
+            </label>
+          </section>
         </div>
+        <div class="flex flex-col flex-1 gap-8"></div>
         <footer class="flex-none flex justify-end gap-4 p-1">
           <button
             class="btn btn-ghost"

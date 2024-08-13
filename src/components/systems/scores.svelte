@@ -7,9 +7,10 @@
 
   type Props = {
     respondent?: string;
+    collapseable?: boolean;
   };
 
-  let { respondent: respondentId }: Props = $props();
+  let { respondent: respondentId, collapseable = false }: Props = $props();
 
   let respondent = $derived(
     store.revisions.active?.respondents.find((r) => r.id === respondentId),
@@ -64,18 +65,31 @@
   </div>
 {/snippet}
 
-<div class="flex-1 group">
-  <CardHeader icon="mdi:speedometer" class="border-t group-first:border-t-0">
+<div class:collapse={collapseable} class="flex-1 group collapse-arrow">
+  {#if collapseable}
+    <input type="checkbox" checked />
+  {/if}
+  <CardHeader
+    icon="mdi:speedometer"
+    class="border-t group-first:border-t-0 {collapseable
+      ? 'collapse-title'
+      : ''}"
+  >
     <span
       >Survey Score {#if respondent}
         for {respondent.name ?? respondent.email}{/if}</span
     >
   </CardHeader>
-  <div class="p-4">
+  <div
+    class:p-4={!collapseable}
+    class:collapse-content={collapseable}
+    class="p-4"
+  >
     {#if store.revisions.active && score}
       <Gauge
         {score}
         {comparison}
+        class={collapseable ? "pt-4" : ""}
         benchmark={store.revisions.includeBenchmark}
       />
     {:else}
