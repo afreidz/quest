@@ -113,8 +113,9 @@
 
 {#if store.systems.active}
   <Pane
-    max="sm"
+    size="sm"
     {loading}
+    collapsable
     title="Revisions"
     render={renderRevision}
     actions={revisionActions}

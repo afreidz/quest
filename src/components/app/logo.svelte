@@ -24,7 +24,7 @@
   }: Props = $props();
 </script>
 
-<heading class="flex items-center gap-4 ps-4 pe-4 {className}">
+<heading class="flex items-center gap-4 pl-2 {className}">
   <a href="/" class:pointer-events-none={inert}>
     <svg
       fill="none"
@@ -57,7 +57,7 @@
   </a>
   <a href="/" class:pointer-events-none={inert}>
     <h1
-      class="bg-clip-text ml-4 text-transparent bg-gradient-to-b from-primary to-secondary text-center font-logo font-black text-3xl {textClass}"
+      class="bg-clip-text ml-2 text-transparent bg-gradient-to-b from-primary to-secondary text-center font-logo font-black text-3xl {textClass}"
     >
       QUEST
     </h1>

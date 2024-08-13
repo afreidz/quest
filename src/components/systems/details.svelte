@@ -107,7 +107,7 @@
     </section>
   </div>
   {#if store.revisions.all.length}
-    <Pane location="right">
+    <Pane title="Revision Results" collapsable location="right">
       <Scores />
       <ChecklistRadar />
       <div class="px-4">

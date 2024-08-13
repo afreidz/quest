@@ -26,7 +26,29 @@ export default {
       logo: ["Galano Grotesque"],
       mono: ["IBM Plex Mono", ...defaultTheme.fontFamily.mono],
     },
-    extend: {},
+    extend: {
+      containers: {
+        sm: "24rem",
+        md: "28rem",
+        lg: "33rem",
+        third: "33vw",
+        quarter: "25vw",
+      },
+      minWidth: {
+        sm: "24rem",
+        md: "28rem",
+        lg: "33rem",
+        third: "33vw",
+        quarter: "25vw",
+      },
+      maxWidth: {
+        sm: "24rem",
+        md: "28rem",
+        lg: "33rem",
+        third: "33vw",
+        quarter: "25vw",
+      },
+    },
   },
   daisyui: {
     themes: [{ base: UITheme }],

@@ -1,6 +1,8 @@
+import messages from "@/stores/messages.svelte";
+
 function isFocusable(
   element: Element | null,
-  skipSelectors: string[]
+  skipSelectors: string[],
 ): boolean {
   if (!element) return false;
 
@@ -41,13 +43,13 @@ function isFocusable(
   ];
 
   return focusableSelectors.some((selector) =>
-    (element as HTMLElement).matches(selector)
+    (element as HTMLElement).matches(selector),
   );
 }
 
 export function findFirstFocusableElement(
   root: HTMLElement | null,
-  skipSelectors: string[] = []
+  skipSelectors: string[] = [],
 ): HTMLElement | null {
   if (!root) return null;
 
@@ -59,4 +61,32 @@ export function findFirstFocusableElement(
   }
 
   return null;
+}
+
+export type MainContentObserver = {
+  pause: () => void;
+  resume: () => void;
+  disconnect: () => void;
+};
+export function observeMainContent(cb: (d: DOMRectReadOnly) => void) {
+  const container = document.getElementById("main-content");
+
+  if (!container) {
+    messages.error("Unable to observe main content");
+    return null;
+  }
+
+  const observer = new ResizeObserver((entries) => {
+    for (let entry of entries) {
+      cb(entry.contentRect);
+    }
+  });
+
+  observer.observe(container);
+
+  return {
+    pause: () => observer.unobserve(container),
+    resume: () => observer.observe(container),
+    disconnect: () => observer.disconnect(),
+  } satisfies MainContentObserver;
 }

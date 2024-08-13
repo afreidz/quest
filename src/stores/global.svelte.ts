@@ -1,13 +1,13 @@
 import { actions } from "astro:actions";
-import messages from "./messages.svelte";
 import type { User } from "@/actions/me";
+import messages from "@/stores/messages.svelte";
 import type { Surveys } from "@/actions/surveys";
 import type { Clients } from "@/actions/clients";
 import type { Systems } from "@/actions/systems";
+import { preloadVideos } from "@/utilities/video";
 import type { Sessions } from "@/actions/sessions";
 import type { Revisions } from "@/actions/revisions";
 import type { Recordings } from "@/actions/recordings";
-import { preloadVideos } from "@/utilities/video";
 
 type EntityState<T> = {
   all: T[];
@@ -16,21 +16,21 @@ type EntityState<T> = {
 };
 
 class QuestGlobalStore {
-  _me: Partial<User> | null = $state();
+  private _me: Partial<User> | null = $state();
 
-  _clients: EntityState<Clients[number]> = $state({
+  private _clients: EntityState<Clients[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _systems: EntityState<Systems[number]> = $state({
+  private _systems: EntityState<Systems[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _revisions: EntityState<Revisions[number]> & {
+  private _revisions: EntityState<Revisions[number]> & {
     includeBenchmark: boolean;
     compared: Awaited<Revisions>[number] | null;
   } = $state({
@@ -41,20 +41,20 @@ class QuestGlobalStore {
     includeBenchmark: true,
   });
 
-  _surveys: EntityState<Surveys[number]> = $state({
+  private _surveys: EntityState<Surveys[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
   });
 
-  _sessions: EntityState<Sessions[number]> = $state({
+  private _sessions: EntityState<Sessions[number]> = $state({
     all: [],
     active: null,
     unsaved: false,
     activeRecording: null,
   });
 
-  _recordings: EntityState<Recordings[number]> & {
+  private _recordings: EntityState<Recordings[number]> & {
     preloaded: Record<string, string>;
   } = $state({
     all: [],
@@ -283,6 +283,7 @@ class QuestGlobalStore {
     }
 
     this._sessions.active = session;
+    this._recordings.active = null;
   }
 
   async refreshActiveSession() {

@@ -7,7 +7,7 @@
   }
 </script>
 
-<div class="toast toast-center w-full min-w-[320px]">
+<div class="toast toast-center w-full min-w-[320px] z-50">
   {#each messages.all as message}
     <div
       class:alert-error={message.type === "error"}

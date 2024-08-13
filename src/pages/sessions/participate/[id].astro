@@ -19,6 +19,6 @@ const session = resp.data;
 
 <BaseLayout>
   <SessionInit {session} role="participant" client:only="svelte">
-    <Participate client:only="svelte" />
+    <Participate {session} client:only="svelte" />
   </SessionInit>
 </BaseLayout>

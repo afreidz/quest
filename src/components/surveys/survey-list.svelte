@@ -117,6 +117,7 @@
 
 <Pane
   {loading}
+  collapsable
   render={renderSurvey}
   actions={surveyActions}
   prelist={filterSurveys}

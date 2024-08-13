@@ -15,7 +15,7 @@ const { class: className } = Astro.props;
 
 <BaseLayout>
   <main
-    class="grid grid-rows-[5rem,auto] grid-cols-[5rem,auto] max-h-screen h-full"
+    class="grid grid-rows-[4rem,auto] grid-cols-[4rem,auto] max-h-screen h-full"
   >
     <div class="navbar bg-neutral border-b border-neutral-200 col-span-2">
       <div class="flex-1">
@@ -23,8 +23,10 @@ const { class: className } = Astro.props;
       </div>
       <AuthMenu client:visible {fname} {lname} {image} />
     </div>
-    <Nav />
-    <div class={`overflow-auto max-h-[calc(100vh-5rem)] ${className ?? ""}`}>
+    <Nav client:visible />
+    <div
+      class={`relative overflow-auto max-h-[calc(100vh-4rem)] ${className ?? ""}`}
+    >
       <slot />
     </div>
   </main>

@@ -104,7 +104,13 @@
     </section>
     <Actions class="p-3" />
   </div>
-  <Pane location="right" min="500" max="500" class="flex flex-col">
+  <Pane
+    size="lg"
+    collapsable
+    location="right"
+    class="flex flex-col"
+    title="Session Checklist"
+  >
     <HostTools session={sessionRecord} />
   </Pane>
 </div>

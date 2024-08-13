@@ -16,6 +16,10 @@ type PushURLMessage = {
   url: string;
 };
 
+type SessionStopMessage = {
+  type: "session-stop";
+};
+
 type RecordingStartMessage = {
   type: "recording-start";
 };
@@ -27,6 +31,7 @@ type RecordingStopMessage = {
 export type DataMessage =
   | PingTestMessage
   | PushURLMessage
+  | SessionStopMessage
   | RecordingStartMessage
   | RecordingStopMessage;
 
