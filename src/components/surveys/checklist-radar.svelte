@@ -74,6 +74,12 @@
       (checklist?.questions || store.revisions.active?.checklist?.questions) ??
       [];
 
+    const respondents = checklist
+      ? checklist.revisionAsChecklist?.respondents.map((r) => r.id)
+      : store.revisions.active?.checklist?.revisionAsChecklist?.respondents.map(
+          (r) => r.id,
+        );
+
     const comparedSurveyId = store.revisions.compared?.checklist?.id;
     const comparedQuestions = store.revisions.compared?.checklist?.questions;
 
@@ -86,7 +92,9 @@
             (r) =>
               r.surveyId === activeSurveyId &&
               r.questionId === question.id &&
-              (respondentId ? r.respondentId === respondentId : true),
+              (respondentId
+                ? r.respondentId === respondentId
+                : respondents?.includes(r.respondentId)),
           ).length ?? 0;
       });
       return Math.round((count * 100) / activeQuestions.length);
@@ -105,7 +113,9 @@
             (r) =>
               r.surveyId === comparedSurveyId &&
               r.questionId === question.id &&
-              (respondentId ? r.respondentId === respondentId : true),
+              (respondentId
+                ? r.respondentId === respondentId
+                : respondents?.includes(r.respondentId)),
           ).length ?? 0;
       });
       return Math.round((count * 100) / comparedQuestions.length);

@@ -40,23 +40,23 @@
       (er) => er.id === r.id,
     );
     if (existing) {
-      await actions.respondents
-        .removeFromRevisions({
-          id: r.id,
-          revisionIds: [store.revisions.active.id],
-        })
-        .catch((err) => {
-          messages.error(err.message, err.detail);
-        });
+      const resp = await actions.respondents.removeFromRevisions({
+        id: r.id,
+        revisionIds: [store.revisions.active.id],
+      });
+
+      if (resp.error) {
+        messages.error("Unable to remove respondent from revision", resp.error);
+      }
     } else {
-      await actions.respondents
-        .addToRevisions({
-          id: r.id,
-          revisionIds: [store.revisions.active.id],
-        })
-        .catch((err) => {
-          messages.error(err.message, err.detail);
-        });
+      const resp = await actions.respondents.addToRevisions({
+        id: r.id,
+        revisionIds: [store.revisions.active.id],
+      });
+
+      if (resp.error) {
+        messages.error("Unable to add respondent to revision", resp.error);
+      }
     }
     await store.refreshActiveRevision();
   }
@@ -66,26 +66,41 @@
     if (!store.revisions.active) return;
 
     loading = true;
-    const resp = await actions.respondents
-      .create({
-        ...newRespondent,
-        email: newRespondent.email!,
-        revisionId: store.revisions.active.id,
-      })
-      .catch((err) => {
-        console.log(err);
-        messages.error(err.message, err.detail);
-        return null;
-      });
+    const resp = await actions.respondents.create({
+      ...newRespondent,
+      email: newRespondent.email!,
+      revisionId: store.revisions.active.id,
+    });
 
     loading = false;
     newRespondent = {};
 
-    if (!resp) return;
+    if (resp.error) {
+      messages.error("Unable to add respondent to revision", resp.error);
+      return;
+    }
 
     await store.refreshActiveRevision();
     messages.success(
       "Respondent has been created",
+      JSON.stringify(resp, null, 2),
+    );
+  }
+
+  async function removeFromRevision(respondent: string) {
+    if (!store.revisions.active) return;
+    const resp = await actions.respondents.removeFromRevisions({
+      id: respondent,
+      revisionIds: [store.revisions.active.id],
+    });
+
+    if (resp.error) {
+      messages.error("Unable to remove respondent from revision", resp.error);
+    }
+
+    await store.refreshActiveRevision();
+    messages.success(
+      "Respondent has been removed from the revision",
       JSON.stringify(resp, null, 2),
     );
   }
@@ -121,7 +136,7 @@
           >
             <div class="flex justify-center mt-4">
               <ul class="join">
-                <li class="btn btn-outline btn-sm join-item">
+                <!-- <li class="btn btn-outline btn-sm join-item">
                   <a
                     href="#"
                     data-tip="View respondent details"
@@ -129,8 +144,8 @@
                   >
                     <iconify-icon icon="mdi:account-details"></iconify-icon>
                   </a>
-                </li>
-                <li class="btn btn-outline btn-sm join-item">
+                </li> -->
+                <!-- <li class="btn btn-outline btn-sm join-item">
                   <a
                     href="#"
                     data-tip="Start a live session"
@@ -138,27 +153,34 @@
                   >
                     <iconify-icon icon="tabler:live-photo"></iconify-icon>
                   </a>
-                </li>
-                <li class="btn btn-outline btn-sm join-item">
-                  <a
-                    href="#"
-                    data-tip="Go to survey"
-                    class="block tooltip-left tooltip tooltip-primary"
-                  >
-                    <iconify-icon icon="ri:survey-line"></iconify-icon>
-                  </a>
-                </li>
-                <li class="btn btn-outline btn-sm join-item">
-                  <a
-                    href="#"
-                    data-tip="Go to checklist"
-                    class="block tooltip-left tooltip tooltip-primary"
-                  >
-                    <iconify-icon icon="ic:baseline-checklist"></iconify-icon>
-                  </a>
-                </li>
+                </li> -->
+                {#if store.revisions.active.survey}
+                  <li class="btn btn-outline btn-sm join-item">
+                    <a
+                      target="_blank"
+                      data-tip="Go to survey"
+                      class="block tooltip-left tooltip tooltip-primary"
+                      href={`/surveys/take/${store.revisions.active.survey.id}/${respondent.id}`}
+                    >
+                      <iconify-icon icon="ri:survey-line"></iconify-icon>
+                    </a>
+                  </li>
+                {/if}
+                {#if store.revisions.active.checklist}
+                  <li class="btn btn-outline btn-sm join-item">
+                    <a
+                      target="_blank"
+                      data-tip="Go to checklist"
+                      class="block tooltip-left tooltip tooltip-primary"
+                      href={`/checklist/${store.revisions.active.checklist.id}/${respondent.id}`}
+                    >
+                      <iconify-icon icon="ic:baseline-checklist"></iconify-icon>
+                    </a>
+                  </li>
+                {/if}
                 <li class="btn btn-outline btn-sm join-item">
                   <button
+                    onclick={() => removeFromRevision(respondent.id)}
                     data-tip="Remove from revision"
                     class="block tooltip-left tooltip tooltip-primary"
                   >

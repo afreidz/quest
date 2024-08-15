@@ -1,0 +1,30 @@
+---
+import theme from "@/utilities/theme";
+import BaseLayout from "./base.astro";
+import Logo from "@/components/app/logo.svelte";
+
+type Props = {
+  hideHeader?: boolean;
+};
+
+const { hideHeader }: Props = Astro.props;
+---
+
+<BaseLayout class="flex flex-col items-stretch">
+  {
+    !hideHeader && (
+      <div class="flex-1 flex justify-start py-2 absolute left-0 top-0 right-0 pr-4">
+        <Logo
+          inert
+          class="gap-0"
+          svgClass="!opacity-50"
+          subTextClass="!opacity-20"
+          logoStop1={theme["base-100"]}
+          logoStop2={theme["base-100"]}
+          textClass="!bg-gradient-none !text-base-100 ml-0 mr-1 opacity-50"
+        />
+      </div>
+    )
+  }
+  <slot />
+</BaseLayout>

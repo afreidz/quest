@@ -1,0 +1,24 @@
+---
+import { actions } from "astro:actions";
+import PublicLayout from "@/layouts/public.astro";
+import TakeSurvey from "@/components/surveys/take.svelte";
+
+const surveyId = Astro.params.sid;
+const respondentId = Astro.params.rid;
+const hideMode = Astro.url.searchParams.get("hideMode") == "true";
+
+if (!surveyId) return Astro.redirect("/404");
+if (!respondentId) return Astro.redirect("/404");
+
+const survey = (await Astro.callAction(actions.surveys.getById, surveyId)).data;
+const respondent = (
+  await Astro.callAction(actions.respondents.getById, respondentId)
+).data;
+
+if (!survey) return Astro.redirect("/404");
+if (!respondent) return Astro.redirect("/404");
+---
+
+<PublicLayout hideHeader={hideMode}>
+  <TakeSurvey {respondent} {survey} hideInfo={hideMode} client:only="svelte" />
+</PublicLayout>

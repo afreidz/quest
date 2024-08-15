@@ -7,6 +7,7 @@ const AUTHLESS_ROUTES = [
   "/public",
   "/api/auth",
   "/auth/signin",
+  "/suveys/take",
   "/_actions/public",
   "/sessions/events",
   "/sessions/participate",

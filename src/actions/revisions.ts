@@ -20,11 +20,13 @@ export const include = {
       },
       revisionAsChecklist: {
         include: {
+          respondents: true,
           system: { include: { client: true } },
         },
       },
       revisionAsSurvey: {
         include: {
+          respondents: true,
           system: { include: { client: true } },
         },
       },
@@ -44,11 +46,13 @@ export const include = {
       },
       revisionAsChecklist: {
         include: {
+          respondents: true,
           system: { include: { client: true } },
         },
       },
       revisionAsSurvey: {
         include: {
+          respondents: true,
           system: { include: { client: true } },
         },
       },

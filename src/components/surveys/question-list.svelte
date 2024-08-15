@@ -44,10 +44,10 @@
     }[];
   };
 
-  let proposed: Groups = $state([]);
-
   let newGroupName = $state("");
   let newQuestionText = $state("");
+  let proposed: Groups = $state([]);
+  let showDetails: boolean = $state(true);
   let showNewGroupDialog: boolean = $state(false);
   let showNewQuestionDialog: boolean = $state(false);
   let confirmDialog: HTMLDialogElement | null = $state(null);
@@ -57,10 +57,8 @@
   let newGroupNameInput: HTMLInputElement | null = $state(null);
   let showConfirmDialog: "save" | "delete" | null = $state(null);
   let newQuestionDialog: HTMLDialogElement | null = $state(null);
-
   let { editable: canEdit = false, survey, detailed = true }: Props = $props();
 
-  let showDetails: boolean = $state(true);
   let detailsExposed: boolean = $derived(detailed && showDetails);
   let surveyType = $derived(survey?.type || store.surveys.active?.type);
 
@@ -73,6 +71,18 @@
       clone((survey?.questions || store.surveys.active?.questions) ?? []),
       ({ group }) => group?.text ?? "null",
     );
+
+    const respondents = (
+      survey
+        ? survey.revisionAsChecklist?.respondents ||
+          survey.revisionAsSurvey?.respondents ||
+          []
+        : store.surveys.active
+          ? store.surveys.active.revisionAsChecklist?.respondents ||
+            store.surveys.active.revisionAsSurvey?.respondents ||
+            []
+          : []
+    ).map((r) => r.id);
 
     return orderByPosition(
       Object.entries(groupedObj).map(([groupName, questions], i) => ({
@@ -105,12 +115,16 @@
                 respondents: ro.responses
                   .filter(
                     (r) =>
-                      r.questionId === question.id && r.surveyId === surveyId,
+                      r.questionId === question.id &&
+                      r.surveyId === surveyId &&
+                      respondents.includes(r.respondentId),
                   )
                   .map((resp) => resp.respondent.email),
                 count: ro.responses.filter(
                   (r) =>
-                    r.questionId === question.id && r.surveyId === surveyId,
+                    r.questionId === question.id &&
+                    r.surveyId === surveyId &&
+                    respondents.includes(r.respondentId),
                 ).length,
               };
             }),

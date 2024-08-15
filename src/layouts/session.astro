@@ -1,20 +1,7 @@
 ---
-import theme from "@/utilities/theme";
-import BaseLayout from "./base.astro";
-import Logo from "@/components/app/logo.svelte";
+import PublicLayout from "./public.astro";
 ---
 
-<BaseLayout class="flex flex-col items-stretch">
-  <div class="flex-none flex justify-start py-2 absolute left-0 top-0">
-    <Logo
-      inert
-      class="gap-0"
-      svgClass="!opacity-50"
-      subTextClass="!opacity-20"
-      logoStop1={theme["base-100"]}
-      logoStop2={theme["base-100"]}
-      textClass="!bg-gradient-none !text-base-100 ml-0 mr-1 opacity-50"
-    />
-  </div>
+<PublicLayout>
   <slot />
-</BaseLayout>
+</PublicLayout>

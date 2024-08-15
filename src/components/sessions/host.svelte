@@ -81,7 +81,7 @@
       >
         {#if sessionRecord.revision.survey}
           {@const surveyURL = new URL(
-            `/take-survey/${sessionRecord.revision.survey.id}/${sessionRecord.respondentId}`,
+            `/surveys/take/${sessionRecord.revision.survey.id}/${sessionRecord.respondentId}?hideMode=true`,
             window.location.origin,
           )}
           <button
