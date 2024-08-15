@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { actions } from "astro:actions";
   import store from "@/stores/global.svelte";
   import { SurveyType } from "@hsalux/quest-db";
@@ -9,7 +10,7 @@
   import type { RevisionFromAll } from "@/actions/revisions";
   import ConfirmForm from "@/components/app/confirm-form.svelte";
 
-  let loading = $state(false);
+  let loading = $state(true);
   let showConfirmDelete = $state(false);
 
   let editedTitle = $state("");
@@ -19,6 +20,11 @@
   let showNewRevision = $state(false);
   let newSurveyInput: HTMLSelectElement | null = $state(null);
   let surveyType = $state<keyof typeof SurveyType | undefined>();
+
+  onMount(async () => {
+    await store.refreshAllRevisions();
+    loading = false;
+  });
 
   $effect(() => {
     if (store.systems.active?.title && !editedTitle) {
@@ -111,17 +117,15 @@
   }
 </script>
 
-{#if store.systems.active}
-  <Pane
-    size="sm"
-    {loading}
-    collapsable
-    title="Revisions"
-    render={renderRevision}
-    actions={revisionActions}
-    items={store.revisions.all}
-  />
-{/if}
+<Pane
+  size="sm"
+  {loading}
+  collapsable
+  title="Revisions"
+  render={renderRevision}
+  actions={revisionActions}
+  items={store.revisions.all}
+/>
 
 {#snippet renderRevision(revision: RevisionFromAll)}
   <div

@@ -193,6 +193,8 @@ model Session {
   // feedback          SummarizedFeedbackItem[]
   // results           SummarizedChecklistResult[]
   // suggestions       SummarizedSuggestion[]
+
+  @@unique([respondentId, revisionId])
 }
 
 model SessionRecording {

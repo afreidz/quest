@@ -9,9 +9,8 @@
   import type { ClientFromAll } from "@/actions/clients";
   import SystemsList from "@/components/clients/systems-list.svelte";
 
-  let loading = $state(true);
-
   let newName = $state("");
+  let loading = $state(true);
   let showNewDialog = $state(false);
 
   let searchString = $state("");
@@ -19,6 +18,7 @@
 
   onMount(async () => {
     await store.refreshAllClients();
+    loading = false;
     // if (!store.clients.active && store.clients.all.length)
     //   store.setActiveClient(store.clients.all[0]);
   });
@@ -51,7 +51,6 @@
 
   $effect(() => {
     if (search) search.focus();
-    loading = false;
   });
 
   async function createNewClient() {

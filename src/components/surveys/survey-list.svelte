@@ -11,7 +11,7 @@
   import type { SurveyFromAll } from "@/actions/surveys";
   import QuestionList from "@/components/surveys/question-list.svelte";
 
-  let loading = $state(false);
+  let loading = $state(true);
   let showNew = $state(false);
   let includeSurveys = $state(true);
   let includeChecklists = $state(true);
@@ -25,6 +25,7 @@
     );
     store.setActiveSurvey(survey || store.surveys.all[0]);
     window.location.hash = "";
+    loading = false;
   });
 
   let newChecklist: {

@@ -10,7 +10,6 @@
     SessionQuery,
     SessionFromAll,
     NewSessionSchema,
-    Sessions,
   } from "@/actions/sessions";
 
   import { onMount } from "svelte";
@@ -29,11 +28,12 @@
   onMount(async () => {
     await store.refreshMe();
     await store.refreshAllSessions();
+    loading = false;
   });
 
   const now = Temporal.Now.instant().epochMilliseconds;
 
-  let loading = $state(false);
+  let loading = $state(true);
   let suggestionText = $state("");
   let embedCodeValid = $state(false);
   let showFiltersForm = $state(false);
@@ -377,7 +377,14 @@
                 type="button"
                 onclick={() => (newSession.revision = revision.id)}
                 class:highlight={newSession.revision === revision.id}
-                class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex"
+                disabled={revision.sessions.some(
+                  (s) => s.respondentId === newSession.respondent,
+                )}
+                class:tooltip={revision.sessions.some(
+                  (s) => s.respondentId === newSession.respondent,
+                )}
+                data-tip="This respondent already has a scheduled or completed session for this revision"
+                class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex tooltip-top tooltip-primary"
               >
                 <span class="flex-1">{revision.title}</span>
                 <div class="badge badge-secondary">

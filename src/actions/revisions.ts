@@ -6,6 +6,7 @@ import { PaginationSchema } from "@/utilities/actions";
 
 export const include = {
   system: { include: { client: true } },
+  sessions: true,
   survey: {
     include: {
       questions: {

@@ -21,6 +21,7 @@ const include = {
       checklist: true,
     },
   },
+  sessions: true,
   responses: {
     include: {
       question: true,
