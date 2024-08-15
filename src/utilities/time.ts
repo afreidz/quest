@@ -53,3 +53,18 @@ export const displayFormatter = new Intl.DateTimeFormat("en-us", {
   hour: "numeric",
   minute: "numeric",
 });
+
+export const parseDateTime = (dateStr: string, timeStr?: string): Date => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (timeStr) {
+    const [hours, minutes, seconds] = timeStr.split(":").map(Number);
+    return new Date(year, month - 1, day, hours, minutes, seconds);
+  }
+  return new Date(year, month - 1, day);
+};
+
+export const formatTime = (date: Date): string => {
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+};

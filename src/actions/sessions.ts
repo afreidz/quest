@@ -2,10 +2,12 @@ import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
+import { Temporal } from "@js-temporal/polyfill";
 import { sessionToEmail } from "@/utilities/events";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { PaginationSchema } from "@/utilities/actions";
 import { EmailClient } from "@azure/communication-email";
+import { parseDateTime, formatTime } from "@/utilities/time";
 import { include as revisionIncludes } from "@/actions/revisions";
 import { CallRecording } from "@azure/communication-call-automation";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
@@ -45,24 +47,16 @@ const SessionUpdateSchema = z.object({
   recordingId: z.string().optional(),
 });
 
-const SessionQuerySchema = z
-  .object({
-    clients: z.array(z.string()).optional(),
-    systems: z.array(z.string()).optional(),
-    revisions: z.array(z.string()).optional(),
-    respondents: z.array(z.string()).optional(),
-  })
-  .refine(
-    (data) =>
-      !!data.revisions ? !data.systems?.length && !data.clients?.length : true,
-    {
-      message:
-        "If 'revision' is defined, 'system' and 'client' must be undefined",
-    },
-  )
-  .refine((data) => (!!data.systems ? !data.clients?.length : true), {
-    message: "If 'system' is defined, 'client' must be undefined",
-  });
+const SessionQuerySchema = z.object({
+  clients: z.array(z.string()).optional(),
+  systems: z.array(z.string()).optional(),
+  moderator: z.string().email().optional(),
+  revisions: z.array(z.string()).optional(),
+  respondents: z.array(z.string()).optional(),
+  incomplete: z.boolean().default(false).optional(),
+  hasNoRecordings: z.boolean().default(false).optional(),
+  hasNoTranscripts: z.boolean().default(false).optional(),
+});
 
 export const create = defineAction({
   input: SessionCreateSchema,
@@ -157,35 +151,79 @@ export const getById = defineAction({
 });
 
 export const getByQuery = defineAction({
-  input: SessionQuerySchema,
+  input: SessionQuerySchema.optional(),
   handler: async (input) => {
-    return await orm.session.findMany({
-      where: {
-        OR: [
-          {
-            respondentId: { in: input.respondents },
+    const whereConditions: any = [];
+
+    if (input?.respondents) {
+      whereConditions.push({
+        respondentId: { in: input.respondents },
+      });
+    }
+
+    if (input?.hasNoRecordings === true) {
+      whereConditions.push({
+        recordings: { none: {} },
+      });
+    }
+
+    if (input?.hasNoTranscripts === true) {
+      whereConditions.push({
+        transcripts: { none: {} },
+      });
+    }
+
+    if (input?.incomplete === true) {
+      whereConditions.push({
+        completed: { equals: null },
+      });
+    }
+
+    if (input?.moderator) {
+      whereConditions.push({ moderator: input.moderator });
+    }
+
+    if (input?.revisions) {
+      whereConditions.push({
+        revisionId: { in: input.revisions },
+      });
+    }
+
+    if (input?.systems && input?.clients) {
+      whereConditions.push({
+        revision: {
+          is: {
+            systemId: { in: input.systems },
+            system: {
+              is: { clientId: { in: input.clients } },
+            },
           },
-          { revisionId: { in: input.revisions } },
-          {
-            revision: {
+        },
+      });
+    } else if (input?.systems && !input?.clients) {
+      whereConditions.push({
+        revision: {
+          is: {
+            systemId: { in: input.systems },
+          },
+        },
+      });
+    } else if (input?.clients) {
+      whereConditions.push({
+        revision: {
+          is: {
+            system: {
               is: {
-                OR: [
-                  {
-                    systemId: { in: input.systems },
-                  },
-                  {
-                    system: {
-                      is: {
-                        clientId: { in: input.clients },
-                      },
-                    },
-                  },
-                ],
+                clientId: { in: input.clients },
               },
             },
           },
-        ],
-      },
+        },
+      });
+    }
+
+    return await orm.session.findMany({
+      where: whereConditions.length > 0 ? { AND: whereConditions } : undefined,
       include,
     });
   },
@@ -331,4 +369,5 @@ export type Sessions = Awaited<
 
 export type SessionById = Sessions[number];
 export type SessionFromAll = Sessions[number];
+export type SessionQuery = z.infer<typeof SessionQuerySchema>;
 export type NewSessionSchema = z.infer<typeof SessionCreateSchema>;

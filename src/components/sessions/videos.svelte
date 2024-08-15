@@ -6,13 +6,15 @@
   import { displayTimeFormatter } from "@/utilities/time";
   import { getRecordingSchedule } from "@/utilities/video";
   import CardHeader from "@/components/app/card-header.svelte";
+  import type { SessionById, SessionFromAll } from "@/actions/sessions";
 
   type Props = {
+    session: SessionFromAll | SessionById;
     onclick?: (r: (typeof recordingSchedules)[number]["recording"]) => void;
   };
 
-  let { onclick }: Props = $props();
   let token: string | null = $state(null);
+  let { onclick, session }: Props = $props();
   let recordingSchedules: Awaited<ReturnType<typeof getRecordingSchedule>> =
     $state([]);
 
@@ -27,10 +29,10 @@
   });
 
   $effect(() => {
-    if (token && store.recordings.all.length) {
+    if (token && session.recordings.length) {
       store
         .preloadRecordings(token)
-        .then(() => getRecordingSchedule(store.recordings.all, token))
+        .then(() => getRecordingSchedule(session.recordings, token))
         .then((s) => (recordingSchedules = s));
     }
   });

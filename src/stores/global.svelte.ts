@@ -5,9 +5,9 @@ import type { Surveys } from "@/actions/surveys";
 import type { Clients } from "@/actions/clients";
 import type { Systems } from "@/actions/systems";
 import { preloadVideos } from "@/utilities/video";
-import type { Sessions } from "@/actions/sessions";
 import type { Revisions } from "@/actions/revisions";
 import type { Recordings } from "@/actions/recordings";
+import type { SessionQuery, Sessions } from "@/actions/sessions";
 
 type EntityState<T> = {
   all: T[];
@@ -266,10 +266,10 @@ class QuestGlobalStore {
     this._surveys.active = refreshed.data;
   }
 
-  async refreshAllSessions() {
-    const all = await actions.sessions.getAll({});
+  async refreshAllSessions(query: SessionQuery = {}) {
+    const all = await actions.sessions.getByQuery(query);
 
-    if (all.error) messages.error("Unable to refresh sessions");
+    if (all.error) messages.error("Unable to refresh sessions", all.error);
 
     this._sessions.all = all.data ?? [];
   }

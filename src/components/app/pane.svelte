@@ -6,6 +6,7 @@
     min?: number;
     title?: string;
     class?: string;
+    static?: boolean;
     actions?: Snippet;
     loading?: boolean;
     prelist?: Snippet;
@@ -14,6 +15,8 @@
     collapsed?: boolean;
     collapsable?: boolean;
     render?: Snippet<[T]>;
+    emptyContent?: Snippet;
+    collapseContent?: Snippet;
     location?: "left" | "right";
     as?: keyof HTMLElementTagNameMap;
     size?: "sm" | "md" | "lg" | "1/4" | "1/3" | "auto";
@@ -31,9 +34,12 @@
     items = [],
     as = "div",
     size = "md",
+    emptyContent,
+    collapseContent,
     location = "left",
     collapsable = false,
     class: classList = "",
+    static: staticState = false,
     collapsed = $bindable(false),
   }: Props = $props();
 
@@ -48,7 +54,7 @@
     onclick={() => (collapsed = !collapsed)}
     class:tooltip-right={location === "left"}
     class:tooltip-left={location === "right"}
-    class="tooltip btn btn-sm btn-ghost m-1 tooltip-primary"
+    class="tooltip btn btn-sm btn-ghost m-1 tooltip-primary after:z-30"
     data-tip={`${collapsed ? "Expand" : "Collapse"} ${title ?? ""}`}
   >
     <iconify-icon
@@ -72,7 +78,7 @@
   class:border-r={location === "left"}
   class:border-l={location === "right"}
   class:top-0={collapsable && !collapsed}
-  class:absolute={collapsable && !collapsed}
+  class:absolute={collapsable && !collapsed && !staticState}
   style={min && !collapsed ? "min-width: " + min + "px;" : ""}
   class:left-0={collapsable && !collapsed && location === "left"}
   class:right-0={collapsable && !collapsed && location === "right"}
@@ -80,6 +86,11 @@
 >
   {#if collapsable && collapsed}
     {@render collapseBtn()}
+    {#if collapseContent}
+      <div class="flex flex-col items-center mt-4">
+        {@render collapseContent()}
+      </div>
+    {/if}
   {/if}
   {#if (title || actions) && !collapsed}
     <h2
@@ -108,10 +119,12 @@
       {#if !loading}
         {#if children}
           {@render children()}
-        {:else}
+        {:else if items && items.length}
           {#each items as item}
             {@render render?.(item)}
           {/each}
+        {:else if emptyContent}
+          {@render emptyContent()}
         {/if}
       {/if}
     </div>

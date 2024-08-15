@@ -30,18 +30,20 @@
       >
     </div>
   {:then _}
-    <div
-      class:hidden={!ready}
-      class="aspect-video shadow-2xl max-w-[1280px] border border-success bg-black rounded-box flex items-center justify-center overflow-clip"
-    >
-      <!-- svelte-ignore a11y_media_has_caption -->
-      <video
-        controls
-        preload="auto"
-        bind:this={video}
-        class="size-full"
-        src={store.recordings.preloaded[store.recordings.active.id]}
-      ></video>
-    </div>
+    {#if store.recordings.active}
+      <div
+        class:hidden={!ready}
+        class="aspect-video shadow-2xl max-w-[1280px] border border-success bg-black rounded-box flex items-center justify-center overflow-clip"
+      >
+        <!-- svelte-ignore a11y_media_has_caption -->
+        <video
+          controls
+          preload="auto"
+          bind:this={video}
+          class="size-full"
+          src={store.recordings.preloaded[store.recordings.active.id]}
+        ></video>
+      </div>
+    {/if}
   {/await}
 {/if}

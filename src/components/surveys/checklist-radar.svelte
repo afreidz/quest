@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import store from "@/stores/global.svelte";
   import type { SurveyFromAll } from "@/actions/surveys";
   import CardHeader from "@/components/app/card-header.svelte";
@@ -93,6 +92,8 @@
       return Math.round((count * 100) / activeQuestions.length);
     });
 
+    if (active.every((v) => v === 0)) return [];
+
     if (!comparedQuestions?.length || !comparedSurveyId) return [active];
 
     const compared = labels.map((label) => {
@@ -110,7 +111,14 @@
       return Math.round((count * 100) / comparedQuestions.length);
     });
 
+    if (active.every((v) => v === 0) && compared.every((v) => v === 0))
+      return [];
+
     return [active, compared];
+  });
+
+  $effect(() => {
+    if (canvas) createChart();
   });
 
   function createChart() {
@@ -168,8 +176,6 @@
       chart.update();
     }
   });
-
-  onMount(createChart);
 </script>
 
 {#if showIfNoResponses || values.length !== 0}
