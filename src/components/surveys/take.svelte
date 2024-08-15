@@ -14,6 +14,7 @@
   };
 
   let loading = $state(false);
+  let completed = $state(false);
   let slides: HTMLElement[] = $state([]);
   let activeSlide: HTMLElement | null = $state(null);
   let existing: Record<string, string | null> = $state({});
@@ -75,7 +76,7 @@
       ReturnType<typeof actions.surveys.respondToQuestion>
     >[] = await Promise.all(
       survey.questions.map((q) => {
-        return actions.surveys.respondToQuestion({
+        return actions.public.respondToSurveyQuestion({
           question: q.id,
           survey: survey.id,
           respondent: respondent.id,
@@ -91,7 +92,10 @@
         "Unable to save some responses",
         resp.map((r) => r.error).join("\n"),
       );
+      return;
     }
+
+    completed = true;
   }
 </script>
 
@@ -125,54 +129,73 @@
       class="flex-1 rounded-box border bg-neutral m-4 mt-14 overflow-auto flex snap-mandatory snap-x"
     >
       {#if !loading}
-        {#each orderByPosition(survey.questions) as question, i (question.id)}
+        {#if completed}
           <div
-            bind:this={slides[i]}
             class="size-full shrink-0 snap-center flex flex-col items-center justify-center gap-8"
           >
             <strong
               class="text-4xl font-extrabold max-w-screen-lg my-4 text-center"
-              >{question.text}</strong
-            >
-            <ul class="join bg-base-100/10">
-              {#each question.responseOptions as response, j}
-                <li
-                  class="join-item flex-1 border has-[:checked]:ring-1 ring-primary"
-                >
-                  <div class="form-control p-3">
-                    <label class="label cursor-pointer flex gap-3">
-                      <input
-                        required
-                        type="radio"
-                        name={question.id}
-                        value={response.id}
-                        onclick={() => moveToNextSlide(i)}
-                        checked={responses[question.id] === response.id}
-                        onchange={() => updateValue(question.id, response.id)}
-                        class="radio radio-primary checked:shadow-[0_0_0_4px_#ffffff_inset,_0_0_0_4px_#ffffff_inset]"
-                      />
-                      <span class="label-text text-nowrap"
-                        >{response.label}</span
-                      >
-                    </label>
-                  </div>
-                </li>
-              {/each}
-            </ul>
-            <i class="opacity-40"
-              >Choose an answer to proceed to the next question</i
+              >Thank you for submitting your responses!</strong
             >
           </div>
-        {/each}
+        {:else}
+          {#each orderByPosition(survey.questions) as question, i (question.id)}
+            <div
+              bind:this={slides[i]}
+              class="size-full shrink-0 snap-center flex flex-col items-center justify-center gap-8"
+            >
+              <strong
+                class="text-4xl font-extrabold max-w-screen-lg my-4 text-center"
+                >{question.text}</strong
+              >
+              <ul class="join bg-base-100/10">
+                {#each question.responseOptions as response, j}
+                  <li
+                    class="join-item flex-1 border has-[:checked]:ring-1 ring-primary"
+                  >
+                    <div class="form-control p-3">
+                      <label class="label cursor-pointer flex gap-3">
+                        <input
+                          required
+                          type="radio"
+                          name={question.id}
+                          value={response.id}
+                          onclick={() => moveToNextSlide(i)}
+                          checked={responses[question.id] === response.id}
+                          onchange={() => updateValue(question.id, response.id)}
+                          class="radio radio-primary checked:shadow-[0_0_0_4px_#ffffff_inset,_0_0_0_4px_#ffffff_inset]"
+                        />
+                        <span class="label-text text-nowrap"
+                          >{response.label}</span
+                        >
+                      </label>
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+              <i class="opacity-40">
+                {#if i + 1 === survey.questions.length}
+                  Submit your answers using the button below
+                {:else}
+                  Choose an answer to proceed to the next question
+                {/if}
+              </i>
+            </div>
+          {/each}
+        {/if}
       {/if}
     </main>
-    <footer
-      class:ml-[400px]={!hideInfo}
-      class="fixed bottom-0 left-0 right-0 flex justify-center gap-4 p-10"
-    >
-      <button type="submit" disabled={clean || loading} class="btn btn-primary"
-        >Submit Responses</button
+    {#if !completed}
+      <footer
+        class:ml-[400px]={!hideInfo}
+        class="fixed bottom-0 left-0 right-0 flex justify-center gap-4 p-10"
       >
-    </footer>
+        <button
+          type="submit"
+          disabled={clean || loading}
+          class="btn btn-primary">Submit Responses</button
+        >
+      </footer>
+    {/if}
   </form>
 {/if}

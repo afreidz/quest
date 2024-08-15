@@ -145,12 +145,12 @@ export const respondToQuestion = defineAction({
         freeformResponse: data.freeForm,
       },
       create: {
-        createdBy: user.email!,
         surveyId: data.survey,
         questionId: data.question,
         responseId: data.response,
         respondentId: data.respondent,
         freeformResponse: data.freeForm,
+        createdBy: user?.email ?? "system@quest.hsalux.app",
       },
     });
   },
