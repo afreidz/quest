@@ -38,7 +38,7 @@
       class="text-xl opacity-30 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
     ></iconify-icon>
   </a>
-  <a
+  <!-- <a
     href="/analytics"
     data-tip="Practice Analytics"
     class="btn btn-ghost btn-sm tooltip tooltip-right tooltip-primary flex items-center justify-center group"
@@ -47,5 +47,5 @@
       icon="material-symbols:analytics-outline"
       class="text-xl opacity-30 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
     ></iconify-icon>
-  </a>
+  </a> -->
 </nav>

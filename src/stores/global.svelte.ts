@@ -93,10 +93,6 @@ class QuestGlobalStore {
 
   async refreshMe() {
     const me = await actions.me.getSession({});
-
-    if (me.error || !me.data)
-      messages.error("Unable to get current user details", me.error);
-
     this._me = me?.data ?? null;
   }
 

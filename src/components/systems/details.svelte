@@ -19,6 +19,7 @@
     systemId: string;
   };
 
+  let loading = $state(true);
   let editedTitle = $state("");
   let showEdit: boolean = $state(false);
   let showConfirmDelete: boolean = $state(false);
@@ -39,6 +40,7 @@
     const system = store.systems.all.find((s) => s.id === systemId);
     store.setActiveSystem(system ?? null);
     await store.refreshAllRevisions();
+    loading = false;
   });
 
   async function deleteRevision(returnValue?: string) {
@@ -88,12 +90,24 @@
 </script>
 
 <RevisionList />
-{#if store.revisions.active}
+{#if loading}
+  <div class="flex-1 flex items-center justify-center">
+    <span class="loading loading-spinner loading-lg">Loading revision...</span>
+  </div>
+{:else if store.revisions.active}
   <div class="flex-1 p-4 overflow-auto">
     <section class="flex flex-col m-auto gap-6 w-full max-w-[1000px]">
-      <header class="text-xl font-semibold flex justify-between">
-        <span class="opacity-50">{store.revisions.active?.title}</span>
-      </header>
+      <div class="breadcrumbs text-sm !pb-0 pt-2">
+        <ul>
+          <li class="font-semibold">
+            <a href={`/clients#${store.clients.active?.id}`}
+              >{store.clients.active?.name}</a
+            >
+          </li>
+          <li>{store.systems.active?.title}</li>
+          <li>{store.revisions.active.title}</li>
+        </ul>
+      </div>
       <RespondentList />
       <QuestionList survey={store.revisions.active?.survey} detailed />
     </section>

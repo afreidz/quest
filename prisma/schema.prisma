@@ -64,11 +64,12 @@ model Respondent {
   title    String?
   profile  String?
 
-  surveys    Survey[]
-  sessions   Session[]
-  revisions  Revision[]
-  responses  Response[]
-  utterances TranscriptionSegment[]
+  surveys          Survey[]
+  sessions         Session[]
+  revisions        Revision[]
+  responses        Response[]
+  utterances       TranscriptionSegment[]
+  completedSurveys CompletedSurveys[]
 
   @@unique([email])
 }
@@ -86,15 +87,26 @@ model Survey {
 
   type SurveyType
 
-  questions   Question[]
-  responses   Response[]
-  respondents Respondent[]
+  questions            Question[]
+  responses            Response[]
+  respondents          Respondent[]
+  completedRespondents CompletedSurveys[]
 
   surveyRevisionId String?   @unique
   revisionAsSurvey Revision? @relation("RevisionSurvey", fields: [surveyRevisionId], references: [id], onDelete: Cascade)
 
   checklistRevisionId String?   @unique
   revisionAsChecklist Revision? @relation("RevisionChecklist", fields: [checklistRevisionId], references: [id], onDelete: Cascade)
+}
+
+model CompletedSurveys {
+  surveyId     String
+  respondentId String
+
+  respondent Respondent @relation(fields: [respondentId], references: [id])
+  survey     Survey     @relation(fields: [surveyId], references: [id])
+
+  @@id([surveyId, respondentId])
 }
 
 model Question {

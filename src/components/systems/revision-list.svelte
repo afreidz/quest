@@ -27,6 +27,10 @@
   });
 
   $effect(() => {
+    if (showNewRevision && newSurveyInput) newSurveyInput.focus();
+  });
+
+  $effect(() => {
     if (store.systems.active?.title && !editedTitle) {
       editedTitle = store.systems.active.title;
     }

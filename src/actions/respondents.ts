@@ -13,6 +13,7 @@ const include = {
       },
     },
   },
+  completedSurveys: true,
   _count: { select: { revisions: true, responses: true } },
   revisions: {
     include: {
@@ -21,7 +22,6 @@ const include = {
       checklist: true,
     },
   },
-  sessions: true,
   responses: {
     include: {
       question: true,

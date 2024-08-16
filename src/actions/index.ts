@@ -12,6 +12,7 @@ import * as respondents from "./respondents";
 export const server = {
   public: {
     getComsToken: tokens.getComsToken,
+    completeSurvey: surveys.completeSurvey,
     respondToSurveyQuestion: surveys.respondToQuestion,
     createRespondentUtterance: utterances.createRespondentUtterance,
   },

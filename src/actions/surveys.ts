@@ -156,6 +156,45 @@ export const respondToQuestion = defineAction({
   },
 });
 
+export const completeSurvey = defineAction({
+  input: z.object({
+    survey: z.string(),
+    respondent: z.string(),
+  }),
+  handler: async (input) => {
+    return await orm.completedSurveys.upsert({
+      where: {
+        surveyId_respondentId: {
+          surveyId: input.survey,
+          respondentId: input.respondent,
+        },
+      },
+      update: {},
+      create: {
+        surveyId: input.survey,
+        respondentId: input.respondent,
+      },
+    });
+  },
+});
+
+export const resetSurveyCompletion = defineAction({
+  input: z.object({
+    survey: z.string(),
+    respondent: z.string(),
+  }),
+  handler: async (input) => {
+    return await orm.completedSurveys.delete({
+      where: {
+        surveyId_respondentId: {
+          surveyId: input.survey,
+          respondentId: input.respondent,
+        },
+      },
+    });
+  },
+});
+
 export const updateChecklistById = defineAction({
   input: z.object({
     id: z.string(),

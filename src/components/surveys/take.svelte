@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { actions } from "astro:actions";
+  import store from "@/stores/global.svelte";
   import messages from "@/stores/messages.svelte";
   import { preventDefault } from "@/utilities/events";
   import { orderByPosition } from "@/utilities/order";
@@ -13,13 +14,16 @@
     respondent: RespondentFromAll;
   };
 
-  let loading = $state(false);
-  let completed = $state(false);
+  let loading = $state(true);
+  let canEdit = $derived(!!store.me);
   let slides: HTMLElement[] = $state([]);
   let activeSlide: HTMLElement | null = $state(null);
   let existing: Record<string, string | null> = $state({});
   let responses: Record<string, string | null> = $state({});
   let { hideInfo = false, survey, respondent }: Props = $props();
+  let completed = $derived(
+    respondent.completedSurveys.some((s) => s.respondentId === respondent.id),
+  );
 
   let clean = $derived(
     survey.questions.every((q) => {
@@ -27,7 +31,8 @@
     }),
   );
 
-  onMount(() => {
+  onMount(async () => {
+    await store.refreshMe();
     survey.questions.forEach((q) => {
       const resp = respondent.responses.find(
         (r) =>
@@ -38,6 +43,7 @@
       existing[q.id] = resp?.responseId ?? null;
       responses[q.id] = resp?.responseId ?? null;
     });
+    loading = false;
   });
 
   $effect(() => {
@@ -95,7 +101,33 @@
       return;
     }
 
-    completed = true;
+    const completedResp = await actions.public.completeSurvey({
+      survey: survey.id,
+      respondent: respondent.id,
+    });
+
+    if (completedResp.error) {
+      messages.error("Unable to complete survey", completedResp.error);
+      return;
+    }
+
+    window.location.reload();
+  }
+
+  async function markIncomplete() {
+    if (!store.me) return;
+
+    const resp = await actions.surveys.resetSurveyCompletion({
+      survey: survey.id,
+      respondent: respondent.id,
+    });
+
+    if (resp.error) {
+      messages.error("Unable to mark survey incomplete", resp.error);
+      return;
+    }
+
+    window.location.reload();
   }
 </script>
 
@@ -137,6 +169,16 @@
               class="text-4xl font-extrabold max-w-screen-lg my-4 text-center"
               >Thank you for submitting your responses!</strong
             >
+            {#if canEdit}
+              <div class="flex items-center gap-4">
+                <span>Admin:</span>
+                <button
+                  type="button"
+                  onclick={markIncomplete}
+                  class="btn btn-primary">Mark an incomplete</button
+                >
+              </div>
+            {/if}
           </div>
         {:else}
           {#each orderByPosition(survey.questions) as question, i (question.id)}
@@ -192,7 +234,7 @@
       >
         <button
           type="submit"
-          disabled={clean || loading}
+          disabled={loading || (completed && clean)}
           class="btn btn-primary">Submit Responses</button
         >
       </footer>
