@@ -68,3 +68,10 @@ export const formatTime = (date: Date): string => {
   const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 };
+
+export function formatDurationToHHMMSS(duration: Temporal.Duration) {
+  const hours = String(duration.hours).padStart(2, "0");
+  const minutes = String(duration.minutes).padStart(2, "0");
+  const seconds = String(duration.seconds).padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+}

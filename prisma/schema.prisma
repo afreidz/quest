@@ -223,10 +223,11 @@ model SessionRecording {
 
 model KeyMoment {
   id        String   @id @default(uuid())
-  time      DateTime @default(now()) @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
-  text String
+  text String?
+  time String
 
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)

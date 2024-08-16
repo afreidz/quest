@@ -2,12 +2,10 @@ import orm from "@hsalux/quest-db";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
-import { Temporal } from "@js-temporal/polyfill";
 import { sessionToEmail } from "@/utilities/events";
 import { AzureKeyCredential } from "@azure/core-auth";
 import { PaginationSchema } from "@/utilities/actions";
 import { EmailClient } from "@azure/communication-email";
-import { parseDateTime, formatTime } from "@/utilities/time";
 import { include as revisionIncludes } from "@/actions/revisions";
 import { CallRecording } from "@azure/communication-call-automation";
 import { CommunicationIdentityClient } from "@azure/communication-identity";
@@ -22,9 +20,10 @@ const idClient = new CommunicationIdentityClient(endpoint, credential);
 const recordingDestinationContainerUrl = `https://${import.meta.env.PUBLIC_STORAGE_ACCOUNT}.blob.core.windows.net/participant-videos/`;
 
 const include = {
-  revision: { include: revisionIncludes },
+  moments: true,
   recordings: true,
   respondent: true,
+  revision: { include: revisionIncludes },
   transcripts: { include: { recording: true } },
 };
 
@@ -56,6 +55,12 @@ const SessionQuerySchema = z.object({
   incomplete: z.boolean().default(false).optional(),
   hasNoRecordings: z.boolean().default(false).optional(),
   hasNoTranscripts: z.boolean().default(false).optional(),
+});
+
+const SesssionMomentSchema = z.object({
+  time: z.string(),
+  session: z.string(),
+  text: z.string().optional(),
 });
 
 export const create = defineAction({
@@ -360,6 +365,41 @@ export const stopRecording = defineAction({
     }
 
     return resp;
+  },
+});
+
+export const addMoment = defineAction({
+  input: SesssionMomentSchema,
+  handler: async (input, context) => {
+    const creator = (await getSession(context.request))?.user as User;
+    return await orm.keyMoment.create({
+      data: {
+        text: input.text,
+        time: input.time,
+        sessionId: input.session,
+        createdBy: creator.email ?? "system@quest.hsalux.app",
+      },
+    });
+  },
+});
+
+export const updateMomentText = defineAction({
+  input: z.object({
+    moment: z.string(),
+    text: z.string(),
+  }),
+  handler: async (input) => {
+    return await orm.keyMoment.update({
+      where: { id: input.moment },
+      data: { text: input.text },
+    });
+  },
+});
+
+export const deleteMoment = defineAction({
+  input: z.string(),
+  handler: async (id) => {
+    return await orm.keyMoment.delete({ where: { id } });
   },
 });
 

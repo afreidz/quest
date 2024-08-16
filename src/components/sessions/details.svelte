@@ -17,6 +17,7 @@
   import { Temporal } from "@js-temporal/polyfill";
   import Actions from "@/components/app/actions.svelte";
   import Videos from "@/components/sessions/videos.svelte";
+  import Moments from "@/components/sessions/moments.svelte";
   import CardHeader from "@/components/app/card-header.svelte";
   import Transcript from "@/components/sessions/transcript.svelte";
   import SessionVideo from "@/components/sessions/session-video.svelte";
@@ -146,8 +147,8 @@
     min={500}
     collapsable
     location="right"
-    class="!bg-base-100/20"
     actions={sessionActions}
+    class="!bg-base-100/20 overflow-auto"
     title={`Session with ${session.respondent.name || session.respondent.email}`}
   >
     <div class="collapse collapse-arrow rounded-none">
@@ -224,6 +225,9 @@
       {/if}
       {#if session.transcripts.length}
         <Transcript {session} onclick={(t) => jumpToTime(t)} />
+      {/if}
+      {#if session.moments.length}
+        <Moments {session} />
       {/if}
     {/if}
   </Pane>

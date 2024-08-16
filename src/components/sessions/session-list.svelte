@@ -384,7 +384,7 @@
                   (s) => s.respondentId === newSession.respondent,
                 )}
                 data-tip="This respondent already has a scheduled or completed session for this revision"
-                class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex tooltip-top tooltip-primary"
+                class="btn bg-neutral btn-primary btn-lg btn-outline rounded-none w-full text-left border-neutral-200 border-r-0 border-l-0 [&:not(:first-child)]:border-t-0 flex tooltip-top tooltip-primary disabled:!pointer-events-auto disabled:hover:!border-none"
               >
                 <span class="flex-1">{revision.title}</span>
                 <div class="badge badge-secondary">

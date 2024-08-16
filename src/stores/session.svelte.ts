@@ -49,7 +49,6 @@ class QuestSessionStore {
   private _recordingId?: string = $state();
   private _transcriber?: Transcriber = $state();
   private _messenger?: DataMessenger = $state();
-  private _recordingSince?: Date | null = $state(null);
   private _client?: CallClient = $state(new CallClient());
   private _cred?: AzureCommunicationTokenCredential = $state();
 
@@ -71,6 +70,7 @@ class QuestSessionStore {
   private _speakers?: AudioDeviceInfo = $state();
   private _microphone?: AudioDeviceInfo = $state();
   private _participants: Participant[] = $state([]);
+  private _recordingSince?: Date | null = $state(null);
   private _screenView?: VideoStreamRendererView = $state();
   private _deviceManager = $derived(this._client?.getDeviceManager());
 
@@ -244,6 +244,10 @@ class QuestSessionStore {
 
   get messenger() {
     return this._messenger;
+  }
+
+  get recordingSince() {
+    return this._recordingSince;
   }
 
   async mute() {

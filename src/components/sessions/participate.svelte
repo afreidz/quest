@@ -4,6 +4,7 @@
   import sessionStore from "@/stores/session.svelte";
   import type { DataMessage } from "@/utilities/data";
   import type { SessionById } from "@/actions/sessions";
+  import { formatDurationToHHMMSS } from "@/utilities/time";
   import Actions from "@/components/sessions/actions.svelte";
 
   type Props = {
@@ -48,13 +49,6 @@
 
   function updateRecording() {
     now = Temporal.Now.zonedDateTimeISO();
-  }
-
-  function formatDurationToHHMMSS(duration: Temporal.Duration) {
-    const hours = String(duration.hours).padStart(2, "0");
-    const minutes = String(duration.minutes).padStart(2, "0");
-    const seconds = String(duration.seconds).padStart(2, "0");
-    return `${hours}:${minutes}:${seconds}`;
   }
 </script>
 

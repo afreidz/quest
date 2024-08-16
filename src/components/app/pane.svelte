@@ -52,9 +52,8 @@
   <button
     class:mt-4={collapsed}
     onclick={() => (collapsed = !collapsed)}
-    class:tooltip-right={location === "left"}
-    class:tooltip-left={location === "right"}
-    class="tooltip btn btn-sm btn-ghost m-1 tooltip-primary after:z-30"
+    class:!tooltip-left={location === "right" && collapsed}
+    class="tooltip tooltip-right btn btn-sm btn-ghost m-1 tooltip-primary before:z-30"
     data-tip={`${collapsed ? "Expand" : "Collapse"} ${title ?? ""}`}
   >
     <iconify-icon
@@ -82,7 +81,7 @@
   style={min && !collapsed ? "min-width: " + min + "px;" : ""}
   class:left-0={collapsable && !collapsed && location === "left"}
   class:right-0={collapsable && !collapsed && location === "right"}
-  class="bg-neutral border-neutral-200 transition-all duration-200 2xl:static ease-in-out flex-none flex flex-col z-10"
+  class="h-full max-h-full bg-neutral border-neutral-200 transition-all duration-200 2xl:static ease-in-out flex-none flex flex-col z-10"
 >
   {#if collapsable && collapsed}
     {@render collapseBtn()}
@@ -95,7 +94,7 @@
   {#if (title || actions) && !collapsed}
     <h2
       class:pl-2={collapsable}
-      class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
+      class="h-16 p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
     >
       {#if collapsable}
         {@render collapseBtn()}
@@ -114,7 +113,7 @@
     {/if}
     <div
       class:skeleton={loading}
-      class="bg-neutral rounded-none flex-1 overflow-auto {classList}"
+      class="bg-neutral rounded-none flex-1 max-h-[calc(100%_-_4rem)] {classList}"
     >
       {#if !loading}
         {#if children}
@@ -133,55 +132,3 @@
     {/if}
   {/if}
 </svelte:element>
-
-<!-- <div
-  class:min-w-sm={min === "sm"}
-  class:min-w-md={min === "md"}
-  class:max-w-sm={max === "sm"}
-  class:max-w-md={max === "md"}
-  class:min-w-third={min === "1/3"}
-  class:max-w-third={max === "1/3"}
-  class:min-w-quarter={min === "1/4"}
-  class:max-w-quarter={max === "1/4"}
-  class:border-r={location === "left"}
-  class:border-l={location === "right"}
-  class="@container flex-1 bg-neutral flex flex-col border-neutral-200 sticky top-0"
->
-  <div
-    class:@sm:w-full={min === "sm"}
-    class:@md:w-full={min === "md"}
-    class:@third:w-full={min === "1/3"}
-    class:@quarter:w-full={min === "1/4"}
-    class="w-10"
-  >
-    {#if title || actions}
-      <h2
-        class="p-3 flex-none border-neutral-200 border-b text-xl font-bold flex justify-between items-center"
-      >
-        {#if title}
-          <span>{title}</span>
-        {/if}
-        {#if actions}
-          {@render actions()}
-        {/if}
-      </h2>
-    {/if}
-    {#if prelist}
-      {@render prelist()}
-    {/if}
-    <div
-      class:skeleton={loading}
-      class="bg-neutral rounded-none flex-1 overflow-auto {classList}"
-    >
-      {#if !loading}
-        {#if children}
-          {@render children()}
-        {:else}
-          {#each items as item}
-            {@render render?.(item)}
-          {/each}
-        {/if}
-      {/if}
-    </div>
-  </div>
-</div> -->
