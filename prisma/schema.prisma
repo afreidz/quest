@@ -24,7 +24,8 @@ model System {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   createdBy String
 
-  title String
+  title   String
+  details String?
 
   clientId  String
   client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)

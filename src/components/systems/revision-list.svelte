@@ -7,7 +7,9 @@
   import Pane from "@/components/app/pane.svelte";
   import { preventDefault } from "@/utilities/events";
   import Actions from "@/components/app/actions.svelte";
+  import Editable from "@/components/app/editable.svelte";
   import type { RevisionFromAll } from "@/actions/revisions";
+  import CardHeader from "@/components/app/card-header.svelte";
   import ConfirmForm from "@/components/app/confirm-form.svelte";
 
   let loading = $state(true);
@@ -15,6 +17,7 @@
 
   let editedTitle = $state("");
   let showEdit = $state(false);
+  let systemDetails = $state("");
 
   let newName = $state("");
   let showNewRevision = $state(false);
@@ -24,6 +27,12 @@
   onMount(async () => {
     await store.refreshAllRevisions();
     loading = false;
+  });
+
+  $effect(() => {
+    if (store.revisions.active && !systemDetails) {
+      systemDetails = store.revisions.active.system.details ?? "";
+    }
   });
 
   $effect(() => {
@@ -74,8 +83,8 @@
       .updateById({
         id: store.systems.active.id,
         data: {
-          ...store.systems.active,
           title: editedTitle,
+          details: store.systems.active.details ?? undefined,
         },
       })
       .catch((err) => {
@@ -125,11 +134,33 @@
   size="sm"
   {loading}
   collapsable
-  title="Revisions"
+  class="overflow-auto"
   render={renderRevision}
   actions={revisionActions}
   items={store.revisions.all}
+  postlist={systemDetailsSnippet}
+  title={store.systems.active?.title}
 />
+
+{#snippet systemDetailsSnippet()}
+  <div class="collapse collapse-arrow border-t rounded-none">
+    <input type="checkbox" checked />
+    <CardHeader class="collapse-title" icon="mdi:details">Details</CardHeader>
+    <div class="bg-base-100/10 collapse-content">
+      <Editable
+        as="div"
+        size="sm"
+        editAs="textarea"
+        onUpdate={(v) => {
+          systemDetails = v;
+          updateSystem();
+        }}
+        value={systemDetails}
+        class="flex-1 mt-4 text-sm text-justify italic opacity-50"
+      />
+    </div>
+  </div>
+{/snippet}
 
 {#snippet renderRevision(revision: RevisionFromAll)}
   <div

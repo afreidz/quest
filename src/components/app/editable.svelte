@@ -3,9 +3,9 @@
   import type { HTMLAttributes } from "svelte/elements";
 
   type Props = HTMLAttributes<any> & {
-    value: string;
     class?: string;
     enabled?: boolean;
+    value?: string | null;
     editAs?: "input" | "textarea";
     onUpdate?: (s: string) => void;
     as: keyof HTMLElementTagNameMap;
@@ -24,10 +24,15 @@
   }: Props = $props();
 
   let editing: boolean = $state(false);
-  let currentValue: string = $state(value);
-  let originalValue: string = $state(value);
   let form: HTMLFormElement | null = $state(null);
+  let currentValue: string | undefined | null = $state(value);
+  let originalValue: string | undefined | null = $state(value);
   let input: HTMLInputElement | HTMLTextAreaElement | null = $state(null);
+
+  $effect(() => {
+    if (value) currentValue = value;
+    if (value) originalValue = value;
+  });
 
   $effect(() => {
     if (editing && input) input.focus();
@@ -36,7 +41,7 @@
   function update() {
     editing = false;
     if (currentValue === originalValue) return;
-    onUpdate?.(currentValue);
+    onUpdate?.(currentValue ?? "");
   }
 </script>
 
@@ -107,7 +112,7 @@
       if (enabled) editing = true;
     }}
   >
-    {value}
+    {value ?? "Click to edit"}
     {#if enabled}
       <button
         value="confirm"

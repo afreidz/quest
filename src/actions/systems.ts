@@ -4,9 +4,14 @@ import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
 import { PaginationSchema } from "@/utilities/actions";
 
-const schema = z.object({
+const CreateSchema = z.object({
   clientId: z.string(),
   title: z.string().min(2).max(100),
+});
+
+const UpdateSchema = z.object({
+  details: z.string().optional(),
+  title: z.string().min(2).max(100).optional(),
 });
 
 const include = {
@@ -27,7 +32,7 @@ export const getAll = defineAction({
 });
 
 export const create = defineAction({
-  input: schema,
+  input: CreateSchema,
   handler: async (input, context) => {
     const user = (await getSession(context.request))?.user as User;
     return await orm.system.create({
@@ -63,7 +68,7 @@ export const getById = defineAction({
 export const updateById = defineAction({
   input: z.object({
     id: z.string(),
-    data: schema,
+    data: UpdateSchema,
   }),
   handler: async ({ id, data }) => {
     return await orm.system.update({

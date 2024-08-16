@@ -109,14 +109,25 @@
         </ul>
       </div>
       <RespondentList />
-      <QuestionList survey={store.revisions.active?.survey} detailed />
+      <QuestionList
+        detailed
+        detailsHideable={false}
+        survey={store.revisions.active?.survey}
+      />
+      <QuestionList
+        detailed
+        editable={false}
+        detailsHideable={false}
+        survey={store.revisions.active?.checklist}
+      />
     </section>
   </div>
   {#if store.revisions.all.length}
     <Pane
       collapsable
       location="right"
-      title="Revision Results"
+      class="overflow-auto"
+      title="Revision Details"
       actions={revisionActions}
     >
       <Scores collapseable />

@@ -18,6 +18,7 @@
   type Props = {
     editable?: boolean;
     detailed?: boolean;
+    detailsHideable?: boolean;
     survey?: RevisionFromAll["survey"];
   };
 
@@ -44,6 +45,13 @@
     }[];
   };
 
+  let {
+    survey,
+    detailed = true,
+    detailsHideable = true,
+    editable: canEdit = false,
+  }: Props = $props();
+
   let newGroupName = $state("");
   let newQuestionText = $state("");
   let proposed: Groups = $state([]);
@@ -57,7 +65,6 @@
   let newGroupNameInput: HTMLInputElement | null = $state(null);
   let showConfirmDialog: "save" | "delete" | null = $state(null);
   let newQuestionDialog: HTMLDialogElement | null = $state(null);
-  let { editable: canEdit = false, survey, detailed = true }: Props = $props();
 
   let detailsExposed: boolean = $derived(detailed && showDetails);
   let surveyType = $derived(survey?.type || store.surveys.active?.type);
@@ -383,10 +390,7 @@
   <div
     class="card-body p-6 {surveyType !== 'CHECKLIST' ? 'pt-0' : ''} relative"
   >
-    {#if surveyType !== "CHECKLIST"}
-      <CardHeader class="-mx-6">Survey Questions</CardHeader>
-    {/if}
-    {#if detailed && hasResponses && !editable && groups.findIndex((g) => group.id === g.id) === 0}
+    {#if detailed && hasResponses && detailsHideable && !editable && groups.findIndex((g) => group.id === g.id) === 0}
       {@render toggleRespondents(undefined)}
     {/if}
     {#if group.name !== "null"}
@@ -429,7 +433,7 @@
         {/if}
       </strong>
     {/if}
-    <div class="flex gap-4">
+    <div class:mt-8={detailed && detailsHideable} class="flex gap-4 mt-3">
       {#if editable}
         <div class="flex-none w-1/4">
           <label
@@ -551,6 +555,9 @@
   </div>
 {/snippet}
 
+<h3 class="font-semibold text-xl opacity-50">
+  {#if surveyType === "CHECKLIST"}Checklist{:else}Survey Questions{/if}
+</h3>
 {#if editable}
   <div
     class="flex justify-between p-4 bg-neutral border rounded-box shadow-lg sticky top-4 left-0 right-0 z-[2]"
