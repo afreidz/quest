@@ -15,6 +15,7 @@
   function jumpVideoToTime(
     utterance: (typeof store.sessions.all)[number]["transcripts"][number],
   ) {
+    store.setActiveUtterance(utterance);
     const recording = session.recordings.find(
       (r) => r.id === utterance.recordingId,
     );

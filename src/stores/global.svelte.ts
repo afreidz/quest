@@ -63,6 +63,13 @@ class QuestGlobalStore {
     unsaved: false,
   });
 
+  private _utterances: EntityState<Sessions[number]["transcripts"][number]> =
+    $state({
+      all: [],
+      active: null,
+      unsaved: false,
+    });
+
   get me() {
     return this._me;
   }
@@ -89,6 +96,10 @@ class QuestGlobalStore {
 
   get recordings() {
     return this._recordings;
+  }
+
+  get utterances() {
+    return this._utterances;
   }
 
   async refreshMe() {
@@ -280,6 +291,7 @@ class QuestGlobalStore {
 
     this._sessions.active = session;
     this._recordings.active = null;
+    this._utterances.active = null;
   }
 
   async refreshActiveSession() {
@@ -348,6 +360,17 @@ class QuestGlobalStore {
       this.recordings.all,
       token,
     );
+  }
+
+  setActiveUtterance(u: typeof this.utterances.active) {
+    if (this.utterances.unsaved) return;
+
+    if (!u) {
+      this._utterances.active = null;
+      return;
+    }
+
+    this._utterances.active = u;
   }
 }
 

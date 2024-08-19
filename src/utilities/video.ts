@@ -116,6 +116,8 @@ export async function getRecordingSchedule(
   }[] = [];
 
   for (const recording of recordings) {
+    if (!recording.started)
+      throw new Error(`Unable to get start time of recording ${recording.id}`);
     const startTime = getInstant(recording.started.toString());
 
     const durationSeconds = await getVideoDuration(

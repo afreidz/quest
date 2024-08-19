@@ -38,13 +38,17 @@
     "chart.js": "^4.4.3",
     "iconify-icon": "^2.1.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.38.0",
+    "mousetrap": "^1.6.5",
     "nanostores": "^0.10.3",
     "svelte": "^5.0.0-next.199",
     "svelte-dnd-action": "^0.9.48",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "wavesurfer.js": "^7.8.4"
   },
   "devDependencies": {
+    "@svelte-put/shortcut": "^4.0.0-next.4",
     "@types/chart.js": "^2.9.41",
+    "@types/mousetrap": "^1.6.15",
     "@types/uuid": "^10.0.0",
     "daisyui": "^4.11.1",
     "prettier": "^3.3.3",
