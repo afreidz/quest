@@ -95,6 +95,7 @@ export default class SessionTranscriber {
     if (!recording) return;
     if (this.muted()) return;
     if (!this.transcribing) return;
+    if (!recording.started) return;
     if (!e.result.text?.trim()) return;
 
     const action =
@@ -102,7 +103,7 @@ export default class SessionTranscriber {
         ? actions.utterances.createModeratorUtterance
         : actions.public.createRespondentUtterance;
 
-    const started = Temporal.Instant.from(recording.started.toString());
+    const started = Temporal.Instant.from(recording.started.toISOString());
     const duration = (e.result.duration * 100) / 1000000; //milliseconds;
 
     const since = now().toInstant().since(started);

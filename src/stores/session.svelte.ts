@@ -73,6 +73,7 @@ class QuestSessionStore {
   private _recordingSince?: Date | null = $state(null);
   private _screenView?: VideoStreamRendererView = $state();
   private _deviceManager = $derived(this._client?.getDeviceManager());
+  private _recorder: ReturnType<Call["feature"]> | null = $state(null);
 
   private _permissions: DevicePermission = $state({
     audio: false,
@@ -384,11 +385,18 @@ class QuestSessionStore {
     if (!agent) return;
 
     const call = agent.join({ groupId: this.id });
+    const recorder = call.feature(Features.Recording);
 
     this._call = call;
     this._agent = agent;
     this._client = client;
     this._cred = credential;
+    this._recorder = recorder;
+
+    recorder.on("isRecordingActiveChanged", () => {
+      console.log("Recording Change", recorder);
+      this._recording = recorder.isRecordingActive;
+    });
 
     this._transcriber = new Transcriber(
       this.role === "host"
@@ -430,11 +438,6 @@ class QuestSessionStore {
     call.on("remoteParticipantsUpdated", ({ added, removed }) => {
       removed.forEach((r) => this.removeParticipant(r));
       added.forEach((r) => this.addParticipant(r));
-    });
-
-    const recorder = call.feature(Features.Recording);
-    recorder.on("isRecordingActiveChanged", () => {
-      this._recording = recorder.isRecordingActive;
     });
 
     this._connected = true;

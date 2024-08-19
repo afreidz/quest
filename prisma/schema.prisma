@@ -187,9 +187,10 @@ model Session {
   started   DateTime? @db.Timestamptz(3)
   completed DateTime? @db.Timestamptz(3)
 
-  moderator       String
-  moderatorComsId String
-  prototypeURL    String?
+  moderator         String
+  moderatorComsId   String
+  prototypeURL      String?
+  storageLocationId String?
 
   respondentId String
   respondent   Respondent @relation(fields: [respondentId], references: [id])
@@ -218,7 +219,8 @@ model SessionRecording {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   videoURL             String?
-  started              DateTime
+  started              DateTime?
+  ended                DateTime?
   TranscriptionSegment TranscriptionSegment[]
 }
 

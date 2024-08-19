@@ -324,24 +324,12 @@ export const startRecording = defineAction({
       },
     });
 
-    const started = new Date();
-
     const recording = await orm.sessionRecording.create({
       data: {
         id: resp.recordingId,
         sessionId: session.id,
-        started,
       },
     });
-
-    if (!session.started) {
-      await orm.session.update({
-        where: { id: sessionId },
-        data: {
-          started,
-        },
-      });
-    }
 
     return recording.id;
   },
@@ -355,7 +343,7 @@ export const stopRecording = defineAction({
       where: { recordings: { some: { id } } },
     });
 
-    if (session && !session.completed) {
+    if (session) {
       await orm.session.update({
         where: { id: session.id },
         data: {

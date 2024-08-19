@@ -2,7 +2,7 @@
   import store from "@/stores/global.svelte";
   import Avatar from "@/components/respondents/avatar.svelte";
   import CardHeader from "@/components/app/card-header.svelte";
-  import { getInstant, displayTimeFormatter } from "@/utilities/time";
+  import { getInstant, formatDurationToHHMMSS } from "@/utilities/time";
   import type { SessionById, SessionFromAll } from "@/actions/sessions";
 
   type Props = {
@@ -28,12 +28,15 @@
   function displayUtteranceTime(
     utterance: (typeof session)["transcripts"][number],
   ) {
-    const start = getInstant(utterance.recording.started.toString());
-    const instant = start.add({
+    if (!utterance.recording.started) return "00:00:00";
+
+    const recordingStart = getInstant(utterance.recording.started.toString());
+    const utteranceStart = recordingStart.add({
       milliseconds: utterance.offset - utterance.duration,
     });
 
-    return displayTimeFormatter.format(new Date(instant.epochMilliseconds));
+    const duration = utteranceStart.since(recordingStart);
+    return formatDurationToHHMMSS(duration);
   }
 </script>
 
