@@ -412,6 +412,8 @@ export const createClip = defineAction({
 
     const clip = new URL("/api/clip", import.meta.env.AZURE_FUNCTION_APP_URL);
 
+    console.log(`Creating clip ${clip.href}`);
+
     const resp = await fetch(clip.href, {
       method: "post",
       body: JSON.stringify({
@@ -419,9 +421,14 @@ export const createClip = defineAction({
         url: recording.videoURL,
         duration: input.duration,
       }),
+    }).catch((err) => {
+      throw err;
     });
 
-    if (!resp.ok) throw new Error(`Unable to create clip`);
+    if (!resp.ok) {
+      console.log(resp.statusText);
+      throw new Error("Unable to create clip");
+    }
 
     const { url } = await resp.json();
 
