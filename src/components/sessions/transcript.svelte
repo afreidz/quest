@@ -6,24 +6,21 @@
   import type { SessionById, SessionFromAll } from "@/actions/sessions";
 
   type Props = {
-    onclick?: (s: number) => void;
     session: SessionFromAll | SessionById;
   };
 
-  let { onclick, session }: Props = $props();
+  let { session }: Props = $props();
 
-  function jumpVideoToTime(
+  function selectUtterance(
     utterance: (typeof store.sessions.all)[number]["transcripts"][number],
   ) {
-    store.setActiveUtterance(utterance);
     const recording = session.recordings.find(
       (r) => r.id === utterance.recordingId,
     );
-    if (!recording) return;
-    store.setActiveRecording(recording);
 
-    const ms = utterance.offset - utterance.duration;
-    onclick?.(ms / 1000);
+    store.setActiveUtterance(null);
+    store.setActiveUtterance(utterance);
+    store.setActiveRecording(recording ?? null);
   }
 
   function displayUtteranceTime(
@@ -72,7 +69,7 @@
             }}
           />
           <button
-            onclick={() => jumpVideoToTime(utterance)}
+            onclick={() => selectUtterance(utterance)}
             class="chat-bubble shadow-sm"
             class:chat-bubble-secondary={utterance.moderator}
           >

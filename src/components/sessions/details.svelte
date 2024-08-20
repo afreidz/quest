@@ -127,13 +127,6 @@
     anchor.download = `quest-session-with-${store.sessions.active.respondent.email}.ics`;
     anchor.click();
   }
-
-  async function jumpToTime(n: number) {
-    if (video) {
-      video.currentTime = n;
-      video.play();
-    }
-  }
 </script>
 
 {#if store.sessions.active}
@@ -151,6 +144,19 @@
     class="!bg-base-100/20 overflow-auto"
     title={`Session with ${session.respondent.name || session.respondent.email}`}
   >
+    {#if session.completed}
+      <ChecklistRadar
+        collapsed
+        collapseable
+        showDetails={true}
+        toggleDetails={true}
+        headerClass="bg-neutral"
+        showIfNoResponses={false}
+        respondent={session.respondent.id}
+        class="flex-none border-b bg-neutral"
+        checklist={session.revision.checklist}
+      />
+    {/if}
     <div class="collapse collapse-arrow rounded-none">
       <input type="checkbox" checked />
       <CardHeader icon="tabler:live-photo" class="bg-neutral collapse-title">
@@ -210,21 +216,11 @@
       </div>
     </div>
     {#if session.completed}
-      <ChecklistRadar
-        collapseable
-        showDetails={true}
-        toggleDetails={true}
-        headerClass="bg-neutral"
-        showIfNoResponses={false}
-        respondent={session.respondent.id}
-        class="flex-none border-b bg-neutral"
-        checklist={session.revision.checklist}
-      />
       {#if session.recordings.length}
         <Videos {session} onclick={(r) => store.setActiveRecording(r)} />
       {/if}
       {#if session.transcripts.length}
-        <Transcript {session} onclick={(t) => jumpToTime(t)} />
+        <Transcript {session} />
       {/if}
       {#if session.moments.length}
         <Moments {session} />

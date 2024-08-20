@@ -10,6 +10,7 @@
     class?: string;
     header?: boolean;
     showKey?: boolean;
+    collapsed?: boolean;
     respondent?: string;
     headerClass?: string;
     showDetails?: boolean;
@@ -40,6 +41,7 @@
     class: className = "",
     respondent: respondentId,
     showIfNoResponses = true,
+    collapsed = $bindable(false),
     showDetails: defaultShowDetails,
   }: Props = $props();
 
@@ -194,7 +196,7 @@
     class="flex-1 group rounded-none border-b-0 collapse-arrow {className}"
   >
     {#if collapseable}
-      <input type="checkbox" checked />
+      <input type="checkbox" checked={!collapsed} />
     {/if}
     {#if header}
       <CardHeader

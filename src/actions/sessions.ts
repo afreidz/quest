@@ -304,7 +304,8 @@ export const startRecording = defineAction({
     callId: z.string(),
     sessionId: z.string(),
   }),
-  handler: async ({ callId, sessionId }) => {
+  handler: async ({ callId, sessionId }, context) => {
+    const creator = (await getSession(context.request))?.user as User;
     const session = await orm.session.findFirst({ where: { id: sessionId } });
     if (!session) throw new Error(`Unable to find session id: "${sessionId}"`);
 
@@ -326,8 +327,10 @@ export const startRecording = defineAction({
 
     const recording = await orm.sessionRecording.create({
       data: {
+        type: "FULL",
         id: resp.recordingId,
         sessionId: session.id,
+        createdBy: creator.email!,
       },
     });
 
@@ -388,6 +391,52 @@ export const deleteMoment = defineAction({
   input: z.string(),
   handler: async (id) => {
     return await orm.keyMoment.delete({ where: { id } });
+  },
+});
+
+export const createClip = defineAction({
+  input: z.object({
+    recordingId: z.string(),
+    start: z.number().min(0),
+    duration: z.number().min(0).max(300).optional(),
+  }),
+  handler: async (input, context) => {
+    const creator = (await getSession(context.request))?.user as User;
+
+    const recording = await orm.sessionRecording.findFirst({
+      where: { id: input.recordingId },
+    });
+
+    if (!recording || !recording.videoURL)
+      throw new Error(`Unable to find recording ${input.recordingId}`);
+
+    const clip = new URL("/api/clip", import.meta.env.AZURE_FUNCTION_APP_URL);
+
+    const resp = await fetch(clip.href, {
+      method: "post",
+      body: JSON.stringify({
+        start: input.start,
+        url: recording.videoURL,
+        duration: input.duration,
+      }),
+    });
+
+    if (!resp.ok) throw new Error(`Unable to create clip`);
+
+    const { url } = await resp.json();
+
+    if (!url) throw new Error("No clip was created");
+
+    return await orm.sessionRecording.create({
+      data: {
+        type: "CLIP",
+        videoURL: url,
+        offset: input.start,
+        createdBy: creator.email!,
+        duration: input.duration ?? 0,
+        sessionId: recording.sessionId,
+      },
+    });
   },
 });
 

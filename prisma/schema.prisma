@@ -187,10 +187,9 @@ model Session {
   started   DateTime? @db.Timestamptz(3)
   completed DateTime? @db.Timestamptz(3)
 
-  moderator         String
-  moderatorComsId   String
-  prototypeURL      String?
-  storageLocationId String?
+  moderator       String
+  moderatorComsId String
+  prototypeURL    String?
 
   respondentId String
   respondent   Respondent @relation(fields: [respondentId], references: [id])
@@ -203,7 +202,6 @@ model Session {
   recordings  SessionRecording[]
   transcripts TranscriptionSegment[]
 
-  // clips       SessionClip[]
   // feedback          SummarizedFeedbackItem[]
   // results           SummarizedChecklistResult[]
   // suggestions       SummarizedSuggestion[]
@@ -211,17 +209,29 @@ model Session {
   @@unique([respondentId, revisionId])
 }
 
+enum RecordingType {
+  FULL
+  CLIP
+}
+
 model SessionRecording {
   id        String   @id @default(uuid())
+  createdBy String   @default("system@quest.hsalux.app")
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   sessionId String
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  videoURL             String?
-  started              DateTime?
-  ended                DateTime?
-  TranscriptionSegment TranscriptionSegment[]
+  videoURL String?
+  started  DateTime?
+  ended    DateTime?
+
+  type RecordingType @default(FULL)
+
+  offset   Float?
+  duration Float?
+
+  transcripts TranscriptionSegment[]
 }
 
 model KeyMoment {
@@ -239,8 +249,8 @@ model KeyMoment {
 model TranscriptionSegment {
   id String @id @default(uuid())
 
-  offset   Int
-  duration Int
+  offset   Float
+  duration Float
 
   text      String
   moderator Boolean?
@@ -254,18 +264,6 @@ model TranscriptionSegment {
   recordingId String
   recording   SessionRecording @relation(fields: [recordingId], references: [id])
 }
-
-// model SessionClip {
-//   id        String   @id @default(uuid())
-//   createdAt DateTime @default(now())
-//   createdBy String
-
-//   startTime DateTime
-//   endTime   DateTime
-
-//   sessionId String
-//   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-// }
 
 // model SummarizedFeedbackItem {
 //   id         String    @id @default(uuid())

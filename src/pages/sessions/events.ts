@@ -118,7 +118,6 @@ export const POST: APIRoute = async ({ request }) => {
   if (isStateChangeNotification(body[0])) {
     const id = body[0].data.recordingId;
     const started = body[0].data.startDateTime;
-    const storageLocationId = body[0].data.correlationId;
 
     if (started && id) {
       const session = await orm.session.findFirst({
@@ -133,7 +132,7 @@ export const POST: APIRoute = async ({ request }) => {
       if (session && !session.started) {
         await orm.session.update({
           where: { id: session.id },
-          data: { started, storageLocationId },
+          data: { started },
         });
       }
     }
