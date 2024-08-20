@@ -414,6 +414,11 @@ export const createClip = defineAction({
 
     console.log(`Creating clip ${clip.href}`);
 
+    const headers = new Headers();
+    const auth = context.request.headers.get("Authorization") ?? undefined;
+
+    if (auth) headers.set("Authorization", auth);
+
     const resp = await fetch(clip.href, {
       method: "post",
       body: JSON.stringify({
@@ -421,6 +426,7 @@ export const createClip = defineAction({
         url: recording.videoURL,
         duration: input.duration,
       }),
+      headers,
     }).catch((err) => {
       throw err;
     });
