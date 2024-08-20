@@ -10,8 +10,8 @@ import { writeFile, readFile, unlink, access, mkdir } from "fs/promises";
 import { app, HttpRequest, type HttpResponseInit } from "@azure/functions";
 
 const container = "participant-videos";
-const key = process.env.AZURE_STORAGE_ACCOUNT_KEY;
-const account = process.env.AZURE_STORAGE_ACCOUNT;
+const key = process.env.AZURE_STORAGE_ACCOUNT_KEY!;
+const account = process.env.AZURE_STORAGE_ACCOUNT!;
 
 type ClipBody = {
   url: string;
