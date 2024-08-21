@@ -1,4 +1,5 @@
 import orm from "@hsalux/quest-db";
+import { getToken } from "@auth/core/jwt";
 import type { User } from "@auth/core/types";
 import { getSession } from "auth-astro/server";
 import { defineAction, z } from "astro:actions";
@@ -401,7 +402,8 @@ export const createClip = defineAction({
     duration: z.number().min(0).max(300).optional(),
   }),
   handler: async (input, context) => {
-    const creator = (await getSession(context.request))?.user as User;
+    const session = await getSession(context.request);
+    const creator = session?.user as User;
 
     const recording = await orm.sessionRecording.findFirst({
       where: { id: input.recordingId },
@@ -412,12 +414,16 @@ export const createClip = defineAction({
 
     const clip = new URL("/api/clip", import.meta.env.AZURE_FUNCTION_APP_URL);
 
-    console.log(`Creating clip ${clip.href}`);
+    console.log(`Creating clip ${clip.href}`, session);
 
     const headers = new Headers();
-    const auth = context.request.headers.get("Authorization") ?? undefined;
+    const token = await getToken({
+      req: context.request,
+      secret: import.meta.env.AUTH_SECRET,
+      salt: "",
+    });
 
-    if (auth) headers.set("Authorization", auth);
+    if (token) headers.set("Authorization", `Bearer ${token}`);
 
     const resp = await fetch(clip.href, {
       method: "post",
